@@ -1,0 +1,20 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_MER_Buffer_Sections" Id="{87be11c6-549d-40f4-964a-eb6cff320382}">
+    <Declaration><![CDATA[TYPE T_MER_Buffer_Sections :
+STRUCT
+	/// Start position of the section (triggered by pin sensor)
+	dinSecStartPos: DINT;
+	/// End position of the section (triggered by pin sensor)
+	dinSecEndPos: DINT;
+	/// Calculated trigger start position within the section
+	dinTrigStartPos: DINT;
+	/// Calculated trigger end position within the section
+	dinTrigEndPos: DINT;
+	/// Trigger start and end position defines the position window to release a hanger					
+	usiState: USINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

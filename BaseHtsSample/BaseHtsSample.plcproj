@@ -27,6 +27,162 @@
     <Compile Include="DUTs\GVLs\Io.TcGVL">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\Const_DRV.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\E_Typ_DRV.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\FB_DRV.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Out.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\FB_STB.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\STB_CmdState.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_Ilk.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_Out.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\STB (Stopper buffer)\T_Ctrl_SIf_STB_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\Const_SLB.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\FB_SLB.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\SLB_CmdState.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\Const_MER.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_AUTO_MODE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_MODE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\FB_MER.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\MER_CmdState.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Line.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_MER_Buffer_Sections.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_CtrlModule.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\IBuffer.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Sequence.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\FB_ICL.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\T_Ctrl_SIf_ICL.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\T_Ctrl_SIf_ICL_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\T_Ctrl_SIf_ICL_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\T_Ctrl_SIf_ICL_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\ICL Test\T_Ctrl_SIf_ICL_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Program\MiddlePRG_1.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -52,10 +208,16 @@
     <Folder Include="POUs\" />
     <Folder Include="POUs\Controller\" />
     <Folder Include="POUs\Controller\Lvl0\" />
+    <Folder Include="POUs\Controller\Lvl0\DRV %28Drive%29" />
+    <Folder Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29" />
+    <Folder Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\" />
     <Folder Include="POUs\Controller\Lvl2\" />
     <Folder Include="POUs\Controller\Lvl1" />
     <Folder Include="POUs\Controller\Driver" />
+    <Folder Include="POUs\Controller\Lvl2\MER %28Merger%29\" />
     <Folder Include="POUs\Controller\Lvl3" />
+    <Folder Include="POUs\Controller\Lvl3\BaseCtrlModule\" />
+    <Folder Include="POUs\Controller\Lvl3\ICL Test" />
     <Folder Include="POUs\Program\" />
     <Folder Include="POUs\Utility Functions\" />
   </ItemGroup>
@@ -98,6 +260,37 @@
     </LibraryReference>
   </ItemGroup>
   <ItemGroup>
+    <SubObject Include="FB_CtrlModule.Always" />
+    <SubObject Include="FB_CtrlModule.checkChildAlmClass" />
+    <SubObject Include="FB_CtrlModule.CtrlInit" />
+    <SubObject Include="FB_CtrlModule.FB_init" />
+    <SubObject Include="FB_CtrlModule.getCmdState" />
+    <SubObject Include="FB_CtrlModule.IoInBridge" />
+    <SubObject Include="FB_CtrlModule.IoOutBridge" />
+    <SubObject Include="FB_CtrlModule.SIf_Cur_1" />
+    <SubObject Include="FB_CtrlModule.SIf_Par_1" />
+    <SubObject Include="FB_CtrlModule.SIf_Par_1.Set" />
+    <SubObject Include="FB_CtrlModule.StateMachine" />
+    <SubObject Include="FB_CtrlModule.sta_OFF" />
+    <SubObject Include="FB_CtrlModule.sta_RUN" />
+    <SubObject Include="FB_CtrlModule.sta_RUNBusy" />
+    <SubObject Include="FB_CtrlModule.sta_RUNBusy_1" />
+    <SubObject Include="FB_CtrlModule.sta_RUN_1" />
+    <SubObject Include="FB_CtrlModule.sta_STOP" />
+    <SubObject Include="FB_CtrlModule.sta_STOPBusy" />
+    <SubObject Include="FB_CtrlModule_1.Always" />
+    <SubObject Include="FB_CtrlModule_1.CtrlInit" />
+    <SubObject Include="FB_CtrlModule_1.FB_init" />
+    <SubObject Include="FB_CtrlModule_1.getCmdState" />
+    <SubObject Include="FB_CtrlModule_1.getCtrlSIf" />
+    <SubObject Include="FB_CtrlModule_1.IoInBridge" />
+    <SubObject Include="FB_CtrlModule_1.IoOutBridge" />
+    <SubObject Include="FB_CtrlModule_1.StateMachine" />
+    <SubObject Include="FB_CtrlModule_1.sta_OFF" />
+    <SubObject Include="FB_CtrlModule_1.sta_RUN" />
+    <SubObject Include="FB_CtrlModule_1.sta_RUNBusy" />
+    <SubObject Include="FB_CtrlModule_1.sta_STOP" />
+    <SubObject Include="FB_CtrlModule_1.sta_STOPBusy" />
     <SubObject Include="FB_DPJ_1.Always" />
     <SubObject Include="FB_DPJ_1.checkChildAlmClass" />
     <SubObject Include="FB_DPJ_1.CtrlInit" />
@@ -163,11 +356,35 @@
     <SubObject Include="FB_IDR_1.sta_PON" />
     <SubObject Include="FB_IDR_1.sta_RUN" />
     <SubObject Include="FB_IDR_1.sta_RUNBusy" />
+    <SubObject Include="FB_MER.MaxCapacity" />
+    <SubObject Include="FB_MER.MaxCapacity.Get" />
+    <SubObject Include="FB_MER.NumOfHangers" />
+    <SubObject Include="FB_MER.NumOfHangers.Get" />
     <SubObject Include="FB_SLB.AddBufferZone_1" />
     <SubObject Include="FB_SLB.checkStateAllZones_1" />
     <SubObject Include="FB_SLB.CmdToAllZones_1" />
+    <SubObject Include="FB_SLB.MaxCapacity" />
+    <SubObject Include="FB_SLB.MaxCapacity.Get" />
+    <SubObject Include="FB_SLB.NumOfHangers" />
+    <SubObject Include="FB_SLB.NumOfHangers.Get" />
     <SubObject Include="FB_SLB.StopAllZones_1" />
     <SubObject Include="FB_SLB.StopAllZones_1" />
+    <SubObject Include="FB_STB.Always" />
+    <SubObject Include="FB_STB.FB_init" />
+    <SubObject Include="FB_STB.getCmdState" />
+    <SubObject Include="FB_STB.getCtrlSIf" />
+    <SubObject Include="FB_STB.IoInBridge" />
+    <SubObject Include="FB_STB.IoOutBridge" />
+    <SubObject Include="FB_STB.StateMachine" />
+    <SubObject Include="FB_STB.sta_ERROR" />
+    <SubObject Include="FB_STB.sta_OFF" />
+    <SubObject Include="FB_STB.sta_OFFBusy" />
+    <SubObject Include="FB_STB.sta_RELEASE" />
+    <SubObject Include="FB_STB.sta_RELEASEBusy" />
+    <SubObject Include="FB_STB.sta_RELEASE_ALL" />
+    <SubObject Include="FB_STB.sta_RELEASE_ALLBusy" />
+    <SubObject Include="FB_STB.sta_STOP" />
+    <SubObject Include="FB_STB.sta_STOPBusy" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="BaseHtsSample.tmc">

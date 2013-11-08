@@ -1,10 +1,46 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.20">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
   <DUT Name="E_CtrlId" Id="{fbb9f2d2-c911-4ba8-bff4-7e84f684cb30}">
     <Declaration><![CDATA[TYPE E_CtrlId :
 (
 	//not defined after startup...
 	NONE,
-	RFW_11 := 420,	
+	ICL_1 := 200,
+	MER_2 := 201,
+	MER_3 := 202,
+	MER_8 := 203,
+	SLB_2 := 210,
+	DSB_2 := 211,
+	SEP_2 := 212,
+	BUF_5 := 220,
+	SBI_5 := 221,	
+	DBO_5 := 222,
+	BUF_3 := 230,
+	SBI_3 := 231,
+	SBO_3 := 232,
+	BUF_10 := 240,
+	SBI_10 := 241,
+	SBO_10 := 242,
+	DPJ_4 := 250,
+	RFW_4 := 251,
+	RFD_4 := 252,
+	JUN_4a := 253,
+	JUN_4b := 254,
+		
+	SLB_8 := 260,
+	SEP_8 := 261,
+	DPJ_9 := 270,
+	RFW_9 := 271,
+	RFD_9 := 272,
+	JUN_9a := 273,
+	JUN_9b := 274,
+
+	TLC_2 := 291,
+	TLP_3 := 292,
+	TLP_10 := 293,
+	TLP_4 := 294,
+	TLP_5 := 295,
+	CHD_4 := 296,
+	TLK_9 := 298,
 	E_CtrlIdMax
 );
 END_TYPE

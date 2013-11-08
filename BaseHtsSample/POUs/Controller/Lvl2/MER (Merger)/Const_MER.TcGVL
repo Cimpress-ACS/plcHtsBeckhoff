@@ -1,0 +1,9 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="Const_MER" Id="{0a3bd31e-7e82-4797-a874-656c6580e338}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cusiMinAddedChilds: USINT := 1;
+	cusiSectionBuffer_SIZE: USINT := 20;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

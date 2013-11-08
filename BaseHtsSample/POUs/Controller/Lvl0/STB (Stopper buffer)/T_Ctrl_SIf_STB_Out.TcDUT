@@ -1,0 +1,15 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_STB_Out" Id="{ca806445-0b1d-4696-8748-9388e3bedcd1}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Out :
+STRUCT
+	/// Output for controlling the pneumatic cylinder 
+	/// if bolRetract2 is not used  = 1 -> second pin up first pin (inlet) down second up 
+	bolRetract: T_Ctrl_IoBool;
+	/// = 1 -> second pin down (outlet)
+	bolRetract2: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

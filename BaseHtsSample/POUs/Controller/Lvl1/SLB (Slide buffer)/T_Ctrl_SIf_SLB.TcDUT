@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_SLB" Id="{89d45234-a941-492a-b2ea-34c8ba037614}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB :
+STRUCT
+	/// configuration
+	Cfg: T_Ctrl_SIf_SLB_Cfg;
+	/// parameter
+	Par: T_Ctrl_SIf_SLB_Par;
+	/// current values
+	Cur: T_Ctrl_SIf_SLB_Cur;
+	/// io input
+	In: T_Ctrl_SIf_SLB_In;
+	/// io output
+	/// ...no physical Output
+	/// alarm number used in this controller
+	Alm: ARRAY[1..3] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

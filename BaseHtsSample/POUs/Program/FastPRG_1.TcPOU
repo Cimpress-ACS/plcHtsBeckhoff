@@ -1,12 +1,10 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.20">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
   <POU Name="FastPRG_1" Id="{b624d175-54f8-4f4a-ae3e-53272a249758}">
     <Declaration><![CDATA[PROGRAM FastPRG_1
 VAR
 	bolPlcStartupDone: BOOL := FALSE;
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
-	
-	fbRFR_11: FB_RFR;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -20,8 +18,6 @@ END_VAR
 
 Function desription:
 call of all controller (FUB) for the fast task class.
-
-for the RFID is necessary to call to driver FUB at about 2-3ms for reaching baudhrate!
 
 History:
 Version		Date			Author		Comment
@@ -37,8 +33,6 @@ ________________________________________________________________________________
 IF (NOT bolPlcStartupDone) THEN
 	bolPlcStartupDone := TRUE;	
 	
-	// init	
-	g_pFB_RFR := ADR(fbRFR_11);
 
 END_IF
 // -----------------------------------------------------------------------------------------------
@@ -71,8 +65,6 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
 	//****************************************************************************************************
 	// cyclic controller calls
 	//****************************************************************************************************
-	
-	fbRFR_11();
 
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>

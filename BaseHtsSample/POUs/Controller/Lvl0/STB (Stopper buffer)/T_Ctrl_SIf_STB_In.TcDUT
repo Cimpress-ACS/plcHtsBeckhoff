@@ -1,0 +1,14 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_STB_In" Id="{22b4dc48-8fea-4333-9726-ce31b9e08b35}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_In :
+STRUCT
+	/// Sensor hanger detected
+	bolHangerDetected: T_Ctrl_IoBool;
+	/// Sensor buffer full
+	bolBufferFull: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

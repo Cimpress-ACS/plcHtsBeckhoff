@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.20">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
   <GVL Name="Global" Id="{7e4d3905-9bd8-4d24-9c31-71fd51336e6c}">
     <Declaration><![CDATA[VAR_GLOBAL
 	/// instance array of all controller instances

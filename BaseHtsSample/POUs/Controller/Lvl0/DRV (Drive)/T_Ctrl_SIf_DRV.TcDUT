@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DRV" Id="{b729fbc0-b7c9-4505-b510-6905e9b782f4}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DRV :
+STRUCT
+	///configuration
+	Cfg: T_Ctrl_SIf_DRV_Cfg;
+	///parameter
+	Par: T_Ctrl_SIf_DRV_Par;
+	///current values
+	Cur: T_Ctrl_SIf_DRV_Cur;
+	///io input
+	In: T_Ctrl_SIf_DRV_In;
+	///io output
+	Out: T_Ctrl_SIf_DRV_Out;
+	///alarm number used in this controller
+	Alm: ARRAY[1..4] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

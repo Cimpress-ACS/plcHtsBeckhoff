@@ -1,0 +1,16 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_SLB_Par" Id="{e7909300-593b-4f1b-8987-1863dcec7ea9}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB_Par :
+STRUCT
+	/// [ms] Interval buffer emptying
+	udiIntervalBufferEmptying_ms: UDINT;
+	/// [ms] Interval buffer filling
+	udiIntervalBufferFilling_ms: UDINT;
+	///[ms] simulation time for hanger coming in
+	udiSimIncomingTime_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

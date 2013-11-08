@@ -1,0 +1,19 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_MOD_Cfg" Id="{a152a10c-49c9-4020-bd4f-6e748500800a}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MOD_Cfg :
+STRUCT
+	// Enable communication to line control
+	bolComToLineControlEnabled : BOOL;
+
+(*
+	/// Maximale buffer capacity only this controller without childs
+	dinMaxCapacity: DINT;
+	/// Send every Done Job to Line controller
+	bolDtChToLine_send: BOOL;
+*)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

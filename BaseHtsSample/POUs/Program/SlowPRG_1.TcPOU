@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.18">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
   <POU Name="SlowPRG_1" Id="{1880a415-9f7f-4d4a-ad15-2dcfa97d058e}">
     <Declaration><![CDATA[PROGRAM SlowPRG_1
 VAR
@@ -6,7 +6,14 @@ VAR
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
 	jj:INT;
-	bolCtrlRst: BOOL;
+	bolCtrlRst: BOOL;		// Global alarm reset for ICL
+	bolSimulateAll: BOOL; // Switches all controllers in ICL to simulation with pos. edge
+	bolSimulationActive: BOOL;
+
+		
+	FUB_ICL_TEST : 	FB_ICL();
+	stSequence : T_Sequence;
+
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -33,8 +40,67 @@ ________________________________________________________________________________
 // -----------------------------------------------------------------------------------------------
 IF (NOT bolPlcStartupDone) THEN
 	bolPlcStartupDone := TRUE;	
-	
+		
 	// init	
+	FUB_ICL_TEST.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.ICL_1); 
+		
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLC_2];
+	stSequence.uinGroupRun:= 1;
+	stSequence.uinGroupStop:= 1;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	FUB_ICL_TEST.AddSeqChild(stSequence);
+	
+	// New run Group starts here!	
+	FUB_ICL_TEST.AddRunGrpTime(5000); // Wait 5sec before change to next group
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
+	stSequence.uinGroupRun:= 2;
+	stSequence.uinGroupStop:= 1;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	FUB_ICL_TEST.AddSeqChild(stSequence);
+	
+	// New run Group starts here!
+	FUB_ICL_TEST.AddRunGrpTime(2000); // Wait 2sec before change to next group
+	// New stop Group starts here!
+	FUB_ICL_TEST.AddRunGrpTime(6000); // Wait 6sec before change to next group
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_5];
+	stSequence.uinGroupRun:= 3;
+	stSequence.uinGroupStop:= 2;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	FUB_ICL_TEST.AddSeqChild(stSequence);
+	
+	// New run Group starts here!
+	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
+	// New stop Group starts here!
+	FUB_ICL_TEST.AddRunGrpTime(6000); // Wait 6sec before change to next group
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_10];
+	stSequence.uinGroupRun:= 4;
+	stSequence.uinGroupStop:= 3;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	FUB_ICL_TEST.AddSeqChild(stSequence);
+			
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -63,10 +129,36 @@ END_IF
 // -----------------------------------------------------------------------------------------------
 IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
 	
+
 	//****************************************************************************************************
-	// cyclic controller calls
+	// SIMULATE all controller
+	//****************************************************************************************************
+	
+	IF (bolSimulateAll = TRUE) AND (bolSimulationActive = FALSE) THEN
+		// Enable simulation for all controller	
+		FOR jj:=0 TO E_CtrlId.E_CtrlIdMax BY 1 DO
+			IF (g_a_pCtrlCIf[jj]<>0) THEN // check if entry exist
+				g_a_pCtrlCIf[jj]^.SwCfg.bolSimulation := TRUE;
+			END_IF
+		END_FOR	
+		bolSimulationActive:= TRUE;
+		// Trigger an alarm reset
+		bolCtrlRst:= TRUE;
+	END_IF
+		
+	IF (bolSimulateAll = FALSE) AND (bolSimulationActive = TRUE) THEN
+		// Disable simulation for all controller	
+		FOR jj:=0 TO E_CtrlId.E_CtrlIdMax BY 1 DO
+			IF (g_a_pCtrlCIf[jj]<>0) THEN // check if entry exist
+				g_a_pCtrlCIf[jj]^.SwCfg.bolSimulation := FALSE;
+			END_IF
+		END_FOR	
+		bolSimulationActive:= FALSE;		
+	END_IF
+
 	//****************************************************************************************************
 	// call alarm message handler
+	//****************************************************************************************************
 	g_fbAlm_Man(bolCtrlRst:= bolCtrlRst);
 	IF (bolCtrlRst) THEN
 		FOR jj:=0 TO E_CtrlId.E_CtrlIdMax BY 1 DO
@@ -76,6 +168,12 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
 		END_FOR
 		bolCtrlRst := FALSE;
 	END_IF
+
+
+
+	//FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SEP_2]^.);
+	
+	FUB_ICL_TEST();
 
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
