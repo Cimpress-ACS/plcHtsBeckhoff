@@ -35,12 +35,13 @@ VAR
 	usiNumOfStopGrpWaitTime: USINT:= 0;
 
 		
-	//ToDO: DSC keine lösung
 	// Array includes all registered childs of type IBuffer
 	a_IBufferChildCtrl: ARRAY [0..Base_Const.cMaxNrOfChilds] OF IBuffer; 
 	usiNumOfIBufferChild: USINT;
 	//ToDO: DSC keine lösung
-		
+	dinNumberOfHangers: DINT;
+	dinMaxCapacity: DINT;
+	ii : INT;
 END_VAR
 
 VAR CONSTANT
@@ -75,6 +76,7 @@ History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		06.11.2013		AVM/DSC		Start history
+0.00.2		14.11.2013		AVM/MRU		Changes in sum methods
 
 ___________________________________________________________________________________________________*)
 
@@ -321,7 +323,14 @@ END_IF
 
 // ToDO: DSC An dieser Stelle müssen alle MaxCapacity und NUmberOfHangers der Childs summiert werden, diese vom Typ Buffer sind!
 // Lösung ???
-
+IF (usiNumOfIBufferChild>0) THEN 
+	dinNumberOfHangers:= 0;
+	dinMaxCapacity:= 0;
+	FOR ii:= 0 TO (usiNumOfIBufferChild-1) DO
+		dinNumberOfHangers:= dinNumberOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
+		dinMaxCapacity:= dinMaxCapacity +  + a_IBufferChildCtrl[ii].MaxCapacity;
+	END_FOR
+END_IF
 (*
 // Get Maximal Value of capacity
 SIf_MOD.Cur.dinMaxCapacity := SIf_MOD.Cfg.dinMaxCapacity + pDPJ_4_SIF^.Cur.dinMaxCapacity + pDPJ_9_SIF^.Cur.dinMaxCapacity + pMER_2_SIF^.Cur.dinMaxCapacity + pMER_3_SIF^.Cur.dinMaxCapacity + pMER_8_SIF^.Cur.dinMaxCapacity;
@@ -771,23 +780,19 @@ END_IF]]></ST>
     <Method Name="AddIBufferChilds" Id="{ae2e4263-3a44-444b-92b8-49091e6f8bda}">
       <Declaration><![CDATA[METHOD AddIBufferChilds
 VAR_INPUT
-	ChildTypeIBuffer: POINTER TO IBuffer;
+	IChildTypeIBuffer: IBuffer;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[
-
-;
-(*
-// Method add childs with type of IBuffer to the array
+        <ST><![CDATA[// Method add childs with type of IBuffer to the array
 IF (usiNumOfIBufferChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	// Add child controller to list
-	a_IBufferChildCtrl[usiNumOfIBufferChild] := ChildTypeIBuffer;
+	a_IBufferChildCtrl[usiNumOfIBufferChild] := IChildTypeIBuffer;
 	// Inc. number of IBuffer childs
 	usiNumOfIBufferChild:= usiNumOfIBufferChild+1;
 END_IF
 
-*)]]></ST>
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="AddSeqChild" Id="{2fe459e6-884c-486a-9468-9b121f2d6cc6}">
@@ -840,6 +845,21 @@ IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
+    <Method Name="checkChildValid" Id="{6b168a5d-2ae6-4cd6-8ab9-bafec9f23057}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (usiNumOfSeq = usiNumOfValidPointerSeqChild) THEN
+	checkChildValid:= TRUE;
+ELSE
+	checkChildValid:= FALSE;	
+	// Invalid child pointer
+	IF (usiNumOfSeq <> usiNumOfValidPointerSeqChild) THEN
+		// SIf.Alm[1].strText := 'Invalid child pointer'; 
+		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Property Name="SIf_Cur" Id="{c6c17e21-272e-4930-99f1-fd98980b03c2}">
       <Declaration><![CDATA[PROPERTY PUBLIC SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur]]></Declaration>
       <Get Name="Get" Id="{381f4e34-6e43-432f-b505-24fe1da2657d}">
@@ -878,21 +898,6 @@ END_VAR
         </Implementation>
       </Set>
     </Property>
-    <Method Name="checkChildValid" Id="{6b168a5d-2ae6-4cd6-8ab9-bafec9f23057}">
-      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF (usiNumOfSeq = usiNumOfValidPointerSeqChild) THEN
-	checkChildValid:= TRUE;
-ELSE
-	checkChildValid:= FALSE;	
-	// Invalid child pointer
-	IF (usiNumOfSeq <> usiNumOfValidPointerSeqChild) THEN
-		// SIf.Alm[1].strText := 'Invalid child pointer'; 
-		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-	END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
     <ObjectProperties>﻿<XmlArchive>
   <Data>
     <o xml:space="preserve" t="POUImageProperty">

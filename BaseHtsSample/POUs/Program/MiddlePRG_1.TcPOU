@@ -392,7 +392,6 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
 	fbSLB_8();
 	fbSEP_8();
 
-	
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
     </Implementation>

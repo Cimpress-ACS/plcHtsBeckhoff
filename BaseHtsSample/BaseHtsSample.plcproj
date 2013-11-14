@@ -147,6 +147,9 @@
     <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\IBuffer.TcIO">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_IBuffer.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD.TcDUT">
       <SubType>Code</SubType>
     </Compile>
@@ -240,10 +243,10 @@
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.8,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.0.10,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.3.0,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.3.3,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">
@@ -385,6 +388,10 @@
     <SubObject Include="FB_STB.sta_RELEASE_ALLBusy" />
     <SubObject Include="FB_STB.sta_STOP" />
     <SubObject Include="FB_STB.sta_STOPBusy" />
+    <SubObject Include="TestIBuffer.MaxCapacity" />
+    <SubObject Include="TestIBuffer.MaxCapacity.Get" />
+    <SubObject Include="TestIBuffer.NumOfHangers" />
+    <SubObject Include="TestIBuffer.NumOfHangers.Get" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="BaseHtsSample.tmc">

@@ -13,7 +13,12 @@ VAR
 		
 	FUB_ICL_TEST : 	FB_ICL();
 	stSequence : T_Sequence;
-
+	pFB_Test: POINTER TO FB_STB;
+	pFB_Test1: POINTER TO FB_MER;
+	pFB_Test2: POINTER TO IBuffer;
+	//pFB_Test2: POINTER TO TestIBuffer;
+	pFB_Test3: POINTER TO FB_IBuffer;
+	IChildTypeIBuffer: IBuffer;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -100,7 +105,30 @@ IF (NOT bolPlcStartupDone) THEN
 	stSequence.intStatusSeqStop:= cSTA_OFF;
 	// Add sequence group
 	FUB_ICL_TEST.AddSeqChild(stSequence);
-			
+	
+	pFB_Test := g_a_pCtrlInst[E_CtrlId.SEP_2];
+	IF (pFB_Test <> 0) THEN	
+		FUB_ICL_TEST.AddIBufferChilds(pFB_Test^); 
+	END_IF
+	
+	
+	pFB_Test3 := g_a_pCtrlInst[E_CtrlId.SLB_8];
+	//IF (FB_Test2 <> 0) THEN	
+		FUB_ICL_TEST.AddIBufferChilds(pFB_Test3^); 
+	//END_IF
+
+(*	pFB_Test := g_a_pCtrlInst[E_CtrlId.TLC_2];
+	IF (pFB_Test <> 0) THEN	
+		FUB_ICL_TEST.AddIBufferChilds(pFB_Test^); 
+	END_IF
+*)	
+	(*xResult2 := __QUERYINTERFACE(itfbase, itfderived2); // variablen vom Type ItfBase bzw ItfDerived2
+
+	IF (xResult1 = TRUE) THEN
+		
+	END_IF
+	*)
+	
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -171,8 +199,7 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
 
 
 
-	//FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SEP_2]^.);
-	
+	//FB_Test();
 	FUB_ICL_TEST();
 
 END_IF
