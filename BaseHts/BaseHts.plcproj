@@ -14,18 +14,42 @@
     <Implicit_Jitter_Distribution>{57f05b07-3808-4313-9cc7-0ab158ea60a2}</Implicit_Jitter_Distribution>
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
-    <Title>Base_Elements</Title>
-    <ProjectVersion>0.0.0.8</ProjectVersion>
+    <Title>Base_Hts</Title>
+    <ProjectVersion>0.0.0.1</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.8 - Update to Base PLC 0.3.3.0
-0.0.0.7 - Updated to newest tc2_utilities
-0.0.0.6 - Added the PRS controller
-0.0.0.5 - Added the UMC and VPC controller</Description>
+    <Description>0.0.0.1 - First release</Description>
     <!--    <OutputType>Exe</OutputType>
     <RootNamespace>MyApplication</RootNamespace>
     <AssemblyName>MyApplication</AssemblyName>-->
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_CtrlModule.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_IBuffer.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\IBuffer.TcIO">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Sequence.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Version\Global_Version.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -38,6 +62,7 @@
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl3" />
     <Folder Include="POUs\Controller\Lvl1" />
+    <Folder Include="POUs\Controller\Lvl3\BaseCtrlModule\" />
     <Folder Include="POUs\Utility Functions\" />
     <Folder Include="Version\" />
   </ItemGroup>
@@ -60,10 +85,10 @@
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.8,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.0.12,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.3.0,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">

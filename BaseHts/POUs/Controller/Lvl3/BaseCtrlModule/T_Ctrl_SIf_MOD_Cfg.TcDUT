@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_MOD_Cfg" Id="{f0fe96f1-b13b-4eb4-8283-2744a79896e4}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MOD_Cfg :
+STRUCT
+	/// Enable communication to line control
+	bolComToLineControlEnabled: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

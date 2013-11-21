@@ -23,7 +23,7 @@ History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		25.09.2013		AVME/KVO	Start history
-
+0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
 
 ___________________________________________________________________________________________________*)
 
@@ -32,8 +32,7 @@ ________________________________________________________________________________
 // -----------------------------------------------------------------------------------------------
 IF (NOT bolPlcStartupDone) THEN
 	bolPlcStartupDone := TRUE;	
-	
-
+	g_uinStartProzess:=1; // For StartUp order	
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -42,8 +41,9 @@ END_IF
 // The host system is downloading all parameter at startup. 
 // bolPlcStartupDone will be set to true after the Host is done with the initialization
 // -----------------------------------------------------------------------------------------------
-IF (bolPlcStartupDone AND (NOT bolHostInitDone) AND NOT bolInitDone) THEN
+IF (bolPlcStartupDone AND (NOT bolHostInitDone) AND (NOT bolInitDone) AND (g_uinStartProzess>=c_uinCntTaskClass)) THEN
 	bolHostInitDone := TRUE;
+	g_uinStartProzess := 11; // For StartUp order
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -51,8 +51,8 @@ END_IF
 // -----------------------------------------------------------------------------------------------
 // Start PLC code initialization
 // -----------------------------------------------------------------------------------------------
-IF NOT bolInitDone AND bolPlcStartupDone AND bolHostInitDone THEN
-		
+IF (NOT bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess>=(10+c_uinCntTaskClass))) THEN
+	g_uinStartProzess := 21; // For StartUp order
 	bolInitDone := TRUE;
 END_IF
 // -----------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ END_IF
 // -----------------------------------------------------------------------------------------------
 // Normal Run mode after all the initialization is done
 // -----------------------------------------------------------------------------------------------
-IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone) THEN
+IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess>=(20+c_uinCntTaskClass))) THEN
 	
 	//****************************************************************************************************
 	// cyclic controller calls

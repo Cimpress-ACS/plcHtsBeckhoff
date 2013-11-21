@@ -1,24 +1,25 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Sequence" Id="{aa5b5ec1-1edd-4ca4-bd36-41f74481618e}">
+  <DUT Name="T_Sequence" Id="{4d894d1e-357e-4d17-9e26-0a129728b4a5}">
     <Declaration><![CDATA[TYPE T_Sequence :
 STRUCT
 	pChild: POINTER TO fb_CtrlBase;
-	// Access to CIF of child
+	/// Access to CIF of child
 	pCIF: POINTER TO T_Ctrl_CIf;
-	// Associated run sequence group
+	/// Associated run sequence group
 	uinGroupRun: UINT;
-	// Associated stop sequence group
+	/// Associated stop sequence group
 	uinGroupStop: UINT;
-	// Command to be executed for run sequence
+	/// Command to be executed for run sequence
 	intCmdSeqRun: INT;
-	// Expected status for run sequence
+	/// Expected status for run sequence
 	intStatusSeqRun: INT;
-	// Command to be executed for run sequence
+	/// Command to be executed for run sequence
 	intCmdSeqStop: INT;
-	// Expected status for run sequence
+	/// Expected status for run sequence
 	intStatusSeqStop: INT;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

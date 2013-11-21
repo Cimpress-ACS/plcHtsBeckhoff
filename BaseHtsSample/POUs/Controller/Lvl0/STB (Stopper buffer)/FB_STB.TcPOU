@@ -136,7 +136,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{067520ef-d7af-4f5e-be35-7fdfa680e81c}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -183,7 +182,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{e7dadc70-07b6-43ad-8187-1a260f291d89}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
@@ -365,7 +363,7 @@ END_IF
 		// [ms] Timeout buffer emptying -> ERROR,(0 = disable monitoring)
 		IF ((me.StateMachine.udiTimeInState_ms > (SIf.Par.udiTimeoutBufferEmptying_ms)) AND (SIf.Par.udiTimeoutBufferEmptying_ms <> 0)) THEN
 			// SIf.Alm[1].strText := 'Timeout buffer emptying';
-			g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 			me.StateMachine.intStateNext := cSTA_ERROR;
 		ELSIF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN				// Buffer emptied -> RELEASE_ALL
 			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALL;
@@ -381,7 +379,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{fd8edd42-1566-403c-bc08-8fcb0a460fb4}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -572,7 +569,6 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 	me.StateMachine.intStateNext := cSTA_OFFBusy;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE" Id="{f579ff53-53a1-4377-acaa-125238094396}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
@@ -610,7 +606,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{1cd7205a-49b1-49da-a22f-3c1f51debead}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -647,7 +642,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{a894c515-da66-4281-a742-0f29e96b3276}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -663,7 +657,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 			// switch off?
 			IF (SIf.Out.bolRetract.map = TRUE) THEN
 				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
-				g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
 			END_IF
 			SIf.Out.bolRetract.map := FALSE;
 		END_IF	
@@ -680,7 +674,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 			// switch off?
 			IF (SIf.Out.bolRetract2.map = TRUE) THEN
 				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
-				g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
 			END_IF
 			SIf.Out.bolRetract2.map := FALSE;
 		END_IF	
@@ -689,7 +683,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALL" Id="{d821b193-0663-4ca5-bd7d-fe9b1baff0fa}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
@@ -720,7 +713,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{4a1f8612-00dc-47c9-bd20-6eec249fbeb7}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -756,7 +748,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{ba8f95fb-a5cd-41dc-a112-e8f814372aeb}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -821,7 +812,7 @@ END_IF]]></ST>
 		// Error cylinder position lost
 		IF ((bolErrorPosLost=TRUE) AND (Sif.cfg.bolCylPosLostMonitoring=TRUE))THEN
 			// SIf.Alm[3].strText := 'Cylinder position lost. Hangers slip through';
-			g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 			bolErrorPosLost:= FALSE;
 			uinPosEdgeCounter:= 0;
 			me.StateMachine.intStateNext := cSTA_ERROR;
@@ -838,7 +829,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASEBusy" Id="{dbad0b5c-4abf-4bc9-bcbc-f1a9939a26d3}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
@@ -902,7 +892,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{4eaceae8-f272-477c-91a1-d8d66568f620}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_STB
@@ -910,7 +899,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{7b7b02ab-436e-4d31-a8d2-b641856617b5}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -937,7 +925,6 @@ END_CASE;
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{d26536bf-32f3-4de8-a83a-90153cbbf964}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -957,7 +944,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{2861a6e2-efd1-4f62-b5f3-47a4d1e1def1}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -1001,7 +987,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{5e9e2b6b-bef6-46cc-86a8-e57e8b117d27}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -1074,7 +1059,6 @@ SIf.Cfg.uinNumOfHangersPerPulse:= 1;
 SIF.Cfg.bolCylPosLostMonitoring:= FALSE;
 SIF.Cfg.bolReleaseAllNonPulse:= FALSE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="MaxCapacity" Id="{c830a565-75fa-42b6-945c-3cd30fc3db6e}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT

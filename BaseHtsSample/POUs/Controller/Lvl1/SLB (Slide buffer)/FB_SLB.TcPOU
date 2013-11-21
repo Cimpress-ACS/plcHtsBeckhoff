@@ -121,7 +121,7 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	// Set alarm all buffer zones full
 	IF (SIf.Cur.bolAllBuffersFull = TRUE) THEN	
 		// SIf.Alm[3].strText := 'All buffer zones full';	 
-		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 	END_IF
 			
 END_IF
@@ -137,7 +137,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{064d2b8f-1d4e-411e-b0d2-efb25b6513df}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -161,7 +160,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RELEASE_ALL();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{fbdeb249-4a71-492b-9419-95642d1749b0}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -178,7 +176,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{daf8f478-e2a6-4f1c-86e1-f6c455211a71}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
@@ -295,7 +292,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{5020b7f9-fc74-4027-ad56-ac46e69fe052}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -330,7 +326,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{8afb30f0-8ac1-4f1b-b1a2-5a6a3b29a679}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -363,7 +358,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{6c50a082-5662-47d0-af7a-dde8c506c573}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_SLB
@@ -371,7 +365,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcSumNumOfHangers" Id="{fcf40f00-9229-4023-a361-fbaaedb3af54}">
       <Declaration><![CDATA[METHOD PROTECTED CalcSumNumOfHangers : DINT
@@ -396,7 +389,6 @@ END_FOR
 // Return result
 CalcSumNumOfHangers:= dinSumNumOfHangers;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddBufferZone" Id="{c919d9a3-ed5c-4949-a7e3-00bddca08e51}">
       <Declaration><![CDATA[METHOD AddBufferZone
@@ -418,7 +410,6 @@ IF (usiNumOfBufferZones <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllZones" Id="{a50276a2-bc4d-413c-9627-cf806cc490fa}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllZones : BOOL
@@ -451,7 +442,6 @@ IF (usiNumOfCheckedChilds = usiNumOfBufferZones) THEN
 	checkStateAllZones:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAllZonesFull" Id="{61ca53fd-ac86-4707-88dc-db1b96791ce3}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesFull : BOOL
@@ -480,7 +470,6 @@ IF (usiNumOfFullZones = usiNumOfBufferZones) THEN
 	checkAllZonesFull:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{46a14c4f-907b-4869-9bee-6d1bed692005}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -572,7 +561,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAllZonesEmpty" Id="{60d77361-fbff-49d5-be54-03769bf526df}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesEmpty : BOOL
@@ -601,7 +589,6 @@ IF (usiNumOfEmptyZones = usiNumOfBufferZones) THEN
 	checkAllZonesEmpty:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{602d17ba-3d4f-47bf-82a1-5a0fde8b2254}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -641,7 +628,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcMaxCapacity" Id="{3ecc436e-ef6a-4f3b-a3ce-2236398cd41e}">
       <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
@@ -666,7 +652,6 @@ END_FOR
 // Return result
 CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{75a8833b-1e78-4b83-93cd-fe613005ca30}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -685,7 +670,6 @@ FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
 END_FOR
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildValid" Id="{08aa2e75-a9cf-456a-a610-27f040014ec6}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
@@ -699,18 +683,17 @@ ELSE
 	// Invalid child pointer
 	IF (usiNumOfBufferZones <> usiNumOfValidPointerToZone) THEN
 		// SIf.Alm[1].strText := 'Invalid child pointer'; 
-		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 	END_IF
 	
  	// Invalid configuration
 	IF (usiNumOfBufferZones<Const_SLB.cusiMinAddedChilds) THEN
 		// SIf.Alm[2].strText := 'Invalid configuration. Slide buffer needs min. 1 buffer zone'; 
-		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 	END_IF
 	
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllZones" Id="{92233b0d-d3e0-4136-9b44-c842a1d29265}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllZones
@@ -730,7 +713,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALL" Id="{76fd16b6-1173-493e-9689-73825cadb893}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
@@ -761,7 +743,6 @@ END_FOR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{fa80132e-6ca7-4445-9920-cf6588c1b4e8}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -778,7 +759,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="RefillZones" Id="{3b46ab61-4d07-4059-9528-cc82275d5183}">
       <Declaration><![CDATA[METHOD RefillZones
@@ -884,7 +864,6 @@ CASE SubStateMachineRefill OF
 		
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{cd79588d-e8ba-445a-b153-878bc34a9981}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -951,7 +930,6 @@ SIf.Par.udiIntervalBufferFilling_ms:= 2000;
 SIf.Par.udiSimIncomingTime_ms := 20000;
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{e648cd96-a75a-4c46-af0c-f8e156659dce}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -991,7 +969,6 @@ SIf.Par.udiSimIncomingTime_ms := 20000;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{72571d0b-5a63-4f3c-bc0f-d55940738591}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -1034,7 +1011,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="MaxCapacity" Id="{ee5e74fd-0140-4eeb-b69b-45f048ca4a04}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
@@ -1046,9 +1022,7 @@ END_VAR
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Property Name="NumOfHangers" Id="{16f196cd-d1b3-45cd-9a57-a98753807966}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
@@ -1060,9 +1034,7 @@ END_VAR
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <ObjectProperties />
   </POU>

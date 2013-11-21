@@ -121,7 +121,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{8acc7955-c219-4313-8a91-5036c612a513}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_DRV
@@ -129,7 +128,6 @@ END_IF;
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERROR" Id="{305fabd5-8e2c-4a76-b670-aa097351bcb8}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
@@ -170,7 +168,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{d1778193-98ae-4752-bd86-b7cb3abcab69}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -255,7 +252,7 @@ END_VAR
 		// State Change Condition
 		IF ((udiPulseTimeoutTimer >= Sif.Par.udi_pulseTimeout_ms) AND (SIf.Cfg.bolPulseExist = TRUE)) THEN
 			// SIf.Alm[2].strText := 'Timeout no pulse detected';
-			g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 
 			me.StateMachine.intStateNext :=  cSTA_ERROR;		
 		ELSIF (me.intCmd=cCMD_OFF) THEN
@@ -273,7 +270,6 @@ END_VAR
 		SIf.Cur.dinSpeed_um_s := 0;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{f6cdf501-088c-42c0-9f18-58df00f58e3b}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -331,7 +327,6 @@ SIf.Cfg.dinDistPerPulse_um := 28400; // 28,4[mm/puls]
 SIf.Cfg.usiCountBlockedSupervis := 0;
 SIf.Cfg.dinPinDistance_um := 305000;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{cb070c1c-dfd2-45e1-b34e-b505ce0da6d3}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -370,7 +365,6 @@ SIf.Cfg.dinPinDistance_um := 305000;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{f0f309e2-77d5-43c2-b887-d4418de037cc}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -396,7 +390,6 @@ ELSE
 	SIf.In.bolOverload.intern := FALSE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="SetSpeed" Id="{e071e26b-cb11-46bf-89df-26a09f31a88f}">
       <Declaration><![CDATA[METHOD PRIVATE SetSpeed
@@ -418,7 +411,6 @@ CASE SIf.Par.usi_speedLevel OF
 		SIf.Out.bolSpeed_2.intern := FALSE;
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{52b283c3-472c-4357-b3fb-a97819e5bc34}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -436,7 +428,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	THIS^.Out_bolSpeed_2 := SIf.Out.bolSpeed_2.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{87efbb44-18ef-432e-8458-e6868d9de683}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -452,7 +443,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUN();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{6cefa5d6-9d97-4b6b-a34b-c920dd99eacb}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -489,7 +479,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{95b7057d-b4ff-4bf1-ad8e-43d2f4619740}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -503,7 +492,7 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	IF (me.StateMachine.intState<>cSTA_OFF) AND (me.StateMachine.intState<>cSTA_ERROR) AND (me.StateMachine.intState<>cSTA_ERRORQuit) THEN
 		IF SIf.In.bolOverload.intern THEN
 			// SIf.Alm[1].strText := 'Drive overload'; 
-			g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
 			me.StateMachine.intStateNext := cSTA_ERROR;		
 		END_IF
 		
@@ -531,7 +520,7 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 			// Check distance to last Pin, if to far away, set error
 			IF (a_dintPinDistance[intI] > ((SIf.Par.int_MaxBrokenPins+1) * SIf.Cfg.dinPinDistance_um)) THEN
 				// SIf.Alm[3].strText := 'Drive blocked, Pins are broken'; 
-				g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 				a_dintPinDistance[intI] := 0;		
 				me.StateMachine.intStateNext := cSTA_ERROR;		
 			ELSE
@@ -566,7 +555,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{ae5a794a-13e5-4491-a68d-4fdbf5746439}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -606,7 +594,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

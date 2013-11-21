@@ -1,57 +1,48 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_CtrlModule" Id="{e53e60f8-5338-4cf7-a5b3-aaad7750bee0}">
+  <POU Name="FB_CtrlModule" Id="{5299705f-e45b-4ebe-a1c2-db9471753ef2}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_CtrlModule EXTENDS FB_CtrlBase
 VAR_INPUT
-	// Inputs from global module for general supervision 
-	// Emergency circuit ok
+	/// Inputs from global module for general supervision 
+	/// Emergency circuit ok
 	In_bolEmergencyOffOk: BOOL;
-	// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
+	/// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
 	In_bolNoGeneralError: BOOL;
 END_VAR
-
 VAR
-	// Timeout supervision of Keep alive Toggle Bit
+	/// Timeout supervision of Keep alive Toggle Bit
 	udinTimeToggle_ms: UDINT;
-	// Specific interface struct
+	/// Specific interface struct
 	SIf_MOD: T_Ctrl_SIf_MOD;
-	
 	uinGroupIndex: UINT;
 	intCheckCounter: INT;
 	uinMaxNrOfGroups: UINT := Base_Const.cMaxNrOfChilds;
-		
-	// List of sequences
+	/// List of sequences
 	aListOfSeq: ARRAY[0..Base_Const.cMaxNrOfChilds] OF T_Sequence;
-	usiNumOfSeq: USINT:= 0;
-	usiNumOfValidPointerSeqChild: USINT:= 0;
-	
-	// [ms] List of waiting times for run sequence until the next group will execute
-	// If wait time is zero, next group will be directly executed after current group.  
+	usiNumOfSeq: USINT := 0;
+	usiNumOfValidPointerSeqChild: USINT := 0;
+	/// [ms] List of waiting times for run sequence until the next group will execute
+	/// If wait time is zero, next group will be directly executed after current group.  
 	aListOfRunGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
-	usiNumOfRunGrpWaitTime: USINT:= 0;
-
-	// [ms] List of waiting times for stop sequence until the next group will execute
-	// If wait time is zero, next group will be directly executed after current group. 
+	usiNumOfRunGrpWaitTime: USINT := 0;
+	/// [ms] List of waiting times for stop sequence until the next group will execute
+	/// If wait time is zero, next group will be directly executed after current group. 
 	aListOfStopGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
-	usiNumOfStopGrpWaitTime: USINT:= 0;
-
-		
-	// Array includes all registered childs of type IBuffer
-	a_IBufferChildCtrl: ARRAY [0..Base_Const.cMaxNrOfChilds] OF IBuffer; 
+	usiNumOfStopGrpWaitTime: USINT := 0;
+	/// Array includes all registered childs of type IBuffer
+	a_IBufferChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF IBuffer;
 	usiNumOfIBufferChild: USINT;
-	//ToDO: DSC keine lösung
-	dinNumberOfHangers: DINT;
-	dinMaxCapacity: DINT;
-	ii : INT;
+	/// Counter
+	ii: INT;
 END_VAR
-
 VAR CONSTANT
-	// sub States for run and stop sequences
+	/// sub States for run and stop sequences
 	cSTA_SUB_INITIALIZED: INT := 500;
 	cSTA_SUB_SEND_GROUP_CMD: INT := 502;
 	cSTA_SUB_CHECK_GROUP_STATUS: INT := 504;
 	cSTA_SUB_WAIT: INT := 506;
 	cSTA_SUB_FINISHED: INT := 508;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	
@@ -76,7 +67,7 @@ History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		06.11.2013		AVM/DSC		Start history
-0.00.2		14.11.2013		AVM/MRU		Changes in sum methods
+0.00.2		14.11.2013		AVM/MRU		Changes in some methods
 
 ___________________________________________________________________________________________________*)
 
@@ -97,12 +88,13 @@ IF (me.bolActivate) THEN // cyclic call enabled
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="sta_RUNBusy" Id="{92ec11b9-cd13-45ee-80cf-afa92457d69f}">
+    <Method Name="sta_RUNBusy" Id="{7f3e7b04-e77a-4182-80ce-7fccf9dcb370}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
 VAR
 	ii: INT;
 	bolFurtherGrpExist: BOOL;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
 //--------------------------------------------------------------------------------------
@@ -209,7 +201,7 @@ END_VAR]]></Declaration>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CtrlInit" Id="{aaca18ca-6032-4f3f-bd6b-308aab6553b0}">
+    <Method Name="CtrlInit" Id="{05aff3de-8f6a-4a4e-9910-4306b6f90e2e}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
 VAR
 	ii: INT;
@@ -225,7 +217,7 @@ FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
 END_FOR]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{4dde8bfb-4ee4-4e54-9172-dcf348d3572b}">
+    <Method Name="sta_RUN" Id="{d1fbdb92-98ab-4389-80a1-b3dec03ae065}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
@@ -260,7 +252,7 @@ END_FOR]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Always" Id="{0f0d2e9d-0054-4ccc-b363-d26d8961a04d}">
+    <Method Name="Always" Id="{c46e8b91-857d-4fb5-beea-e5fb8b205486}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -309,7 +301,7 @@ IF (SIf_MOD.Cfg.bolComToLineControlEnabled = TRUE) THEN
 	ELSE
 		IF (udinTimeToggle_ms >= SIf_MOD.Par.udiComTimeOutLineCtrl_ms) THEN
 			// Set Alarm: SIf_MOD.Alm[2].strText := 'Communication error to line control'; 
-			g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,2,UDINT_TO_DINT(udinTimeToggle_ms),ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,UDINT_TO_DINT(udinTimeToggle_ms),ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
 		END_IF
 		udinTimeToggle_ms:= udinTimeToggle_ms + me.FUBInfo.udiSample_ms;
 	END_IF
@@ -318,26 +310,17 @@ ELSE
 	SIf_MOD.Cur.bolKeepAliveHost:= NOT SIf_MOD.Cur.bolKeepAlivePlc;
 END_IF
 
-
-
-
-// ToDO: DSC An dieser Stelle müssen alle MaxCapacity und NUmberOfHangers der Childs summiert werden, diese vom Typ Buffer sind!
-// Lösung ???
+//-------------------------------------------------------------------------------
+// Calculate the sum of all hangers in the system and the capacity of the system
+//-------------------------------------------------------------------------------
 IF (usiNumOfIBufferChild>0) THEN 
-	dinNumberOfHangers:= 0;
-	dinMaxCapacity:= 0;
+	SIf_mod.Cur.dinNumOfHangers:= 0;
+	SIf_mod.Cur.dinMaxCapacity:= 0;
 	FOR ii:= 0 TO (usiNumOfIBufferChild-1) DO
-		dinNumberOfHangers:= dinNumberOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
-		dinMaxCapacity:= dinMaxCapacity +  + a_IBufferChildCtrl[ii].MaxCapacity;
+		SIf_mod.Cur.dinNumOfHangers:= SIf_mod.Cur.dinNumOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
+		SIf_mod.Cur.dinMaxCapacity:= SIf_mod.Cur.dinMaxCapacity +  + a_IBufferChildCtrl[ii].MaxCapacity;
 	END_FOR
 END_IF
-(*
-// Get Maximal Value of capacity
-SIf_MOD.Cur.dinMaxCapacity := SIf_MOD.Cfg.dinMaxCapacity + pDPJ_4_SIF^.Cur.dinMaxCapacity + pDPJ_9_SIF^.Cur.dinMaxCapacity + pMER_2_SIF^.Cur.dinMaxCapacity + pMER_3_SIF^.Cur.dinMaxCapacity + pMER_8_SIF^.Cur.dinMaxCapacity;
-*)
-
-
-
 
 // ----------------------------------------------------------------------------------
 // Conditions Always
@@ -360,12 +343,13 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{482073f6-d461-4e00-8c5e-2d9177fa8e04}">
+    <Method Name="sta_STOPBusy" Id="{3bfecbdf-ed2b-47f5-9dcd-cff526c584fe}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
 VAR
 	ii: INT;
 	bolFurtherGrpExist: BOOL;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
 //--------------------------------------------------------------------------------------
@@ -473,7 +457,7 @@ END_VAR]]></Declaration>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{68bea456-6df4-4574-8a96-3ba3773b5de6}">
+    <Method Name="sta_STOP" Id="{22b4ab9b-d33d-46b0-8891-8e066415cf9f}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -506,7 +490,7 @@ END_VAR]]></Declaration>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{f96a8955-5b1b-47ba-9a8c-8193edfd363f}">
+    <Method Name="FB_init" Id="{181afcb7-be85-4afd-a4e2-7117e2c3149e}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -564,7 +548,7 @@ SIf_MOD.Par.udiComTimeOutLineCtrl_ms:= 5000;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{d2694fe8-217c-4c05-a2ed-326411452812}">
+    <Method Name="getCmdState" Id="{fad52ed9-76e2-4347-ae21-6981a22aa4d5}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -597,7 +581,7 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{1f4933e5-e0a4-43e1-b98b-f91b61159d83}">
+    <Method Name="IoInBridge" Id="{306e6c22-0824-48bf-8779-ba9db5c291bd}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -614,7 +598,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFF" Id="{cd98bba7-3b81-4ce1-b8f8-754da3d8564c}">
+    <Method Name="sta_OFF" Id="{4cc7810a-e1e4-4320-9766-fc06440f9973}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -645,7 +629,7 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildAlmClass" Id="{a14124c6-f0bf-44d0-a8ff-c26726d84868}">
+    <Method Name="checkChildAlmClass" Id="{7f527770-c2b6-4ffc-805a-fcd769acbda4}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
 ]]></Declaration>
       <Implementation>
@@ -682,7 +666,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{729b0b4b-d87f-4efd-985c-00a6d238f067}">
+    <Method Name="StateMachine" Id="{e93f4442-9cf0-4e12-a0eb-baa90a0ef00f}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -701,7 +685,7 @@ CASE me.StateMachine.intState OF
 END_CASE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{6baba8f8-2ddb-4d58-8459-ea594a256982}">
+    <Method Name="IoOutBridge" Id="{443c3954-9a7d-401c-81fa-e3f1f05abf69}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -714,9 +698,8 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFFBusy" Id="{8074cb93-85a5-48dc-a69d-d84c2004eaca}">
+    <Method Name="sta_EOFFBusy" Id="{1f56f4ac-822b-4d0e-a996-1c0078209af6}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFFBusy : BOOL
-
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -745,7 +728,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFF" Id="{865e4db0-de90-4c27-8982-f742cada0f1d}">
+    <Method Name="sta_EOFF" Id="{73f7f3d2-c75d-4ab4-b064-19d78f208e4c}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -777,29 +760,12 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddIBufferChilds" Id="{ae2e4263-3a44-444b-92b8-49091e6f8bda}">
-      <Declaration><![CDATA[METHOD AddIBufferChilds
-VAR_INPUT
-	IChildTypeIBuffer: IBuffer;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method add childs with type of IBuffer to the array
-IF (usiNumOfIBufferChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	// Add child controller to list
-	a_IBufferChildCtrl[usiNumOfIBufferChild] := IChildTypeIBuffer;
-	// Inc. number of IBuffer childs
-	usiNumOfIBufferChild:= usiNumOfIBufferChild+1;
-END_IF
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="AddSeqChild" Id="{2fe459e6-884c-486a-9468-9b121f2d6cc6}">
+    <Method Name="AddSeqChild" Id="{1a3d9b64-c04f-4dbe-ad58-d72797ddc05a}">
       <Declaration><![CDATA[METHOD AddSeqChild
 VAR_INPUT
 	stSequence: T_Sequence;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Method add a sequence to list
 IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
@@ -819,11 +785,12 @@ IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddRunGrpTime" Id="{0f3cbde9-11c4-485a-a580-b7f45704541c}">
+    <Method Name="AddRunGrpTime" Id="{d5d372bd-2ae3-4dda-ab91-694d6dcf3210}">
       <Declaration><![CDATA[METHOD AddRunGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Method add a wait time to the list
 IF (usiNumOfRunGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
@@ -832,11 +799,12 @@ IF (usiNumOfRunGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddStopGrpTime" Id="{6167010d-13b7-47c0-93fb-2af357c1c941}">
+    <Method Name="AddStopGrpTime" Id="{e77e8a4e-bd84-4724-b775-8dfe88eae5a3}">
       <Declaration><![CDATA[METHOD AddStopGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
-END_VAR]]></Declaration>
+END_VAR
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Method add a wait time to the list
 IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
@@ -845,8 +813,9 @@ IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildValid" Id="{6b168a5d-2ae6-4cd6-8ab9-bafec9f23057}">
-      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL]]></Declaration>
+    <Method Name="checkChildValid" Id="{04eec75d-e0ab-4528-a634-263b7b3260c7}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
+]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF (usiNumOfSeq = usiNumOfValidPointerSeqChild) THEN
 	checkChildValid:= TRUE;
@@ -855,62 +824,59 @@ ELSE
 	// Invalid child pointer
 	IF (usiNumOfSeq <> usiNumOfValidPointerSeqChild) THEN
 		// SIf.Alm[1].strText := 'Invalid child pointer'; 
-		g_fbAlm_Man.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 	END_IF
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Property Name="SIf_Cur" Id="{c6c17e21-272e-4930-99f1-fd98980b03c2}">
-      <Declaration><![CDATA[PROPERTY PUBLIC SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur]]></Declaration>
-      <Get Name="Get" Id="{381f4e34-6e43-432f-b505-24fe1da2657d}">
-        <Declaration><![CDATA[VAR
+    <Method Name="AddIBufferChilds" Id="{1653482d-b7fc-4d4c-8652-970ddd7ed51d}">
+      <Declaration><![CDATA[METHOD AddIBufferChilds
+VAR_INPUT
+	pFB_ChildTypeIBuffer: POINTER TO FB_IBuffer;
 END_VAR
-
-
-
 ]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method add childs with type of IBuffer to the array
+IF (usiNumOfIBufferChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add child controller to list
+	a_IBufferChildCtrl[usiNumOfIBufferChild] := pFB_ChildTypeIBuffer^;
+	// Inc. number of IBuffer childs
+	usiNumOfIBufferChild:= usiNumOfIBufferChild+1;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="SIf_Cur" Id="{f21e5f4e-5e91-488f-9816-c03ebebc01e3}">
+      <Declaration><![CDATA[PROPERTY SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur
+]]></Declaration>
+      <Get Name="Get" Id="{d9c131bb-94ee-454a-96c6-9efe85dd58b1}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_Cur:= ADR(SIf_MOD.Cur);]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Property Name="SIf_Par" Id="{b28d2473-2160-41be-9ac9-c93e44774b99}">
-      <Declaration><![CDATA[PROPERTY PUBLIC SIf_Par : POINTER TO T_Ctrl_SIf_MOD_Par]]></Declaration>
-      <Set Name="Set" Id="{7e4170f4-cf06-4793-a54a-8c1ae268a5e5}">
-        <Declaration><![CDATA[PUBLIC 
-VAR
-END_VAR
+    <Property Name="SIf_Par" Id="{b495bbc3-8932-49eb-943f-54cf4c24bcd1}">
+      <Declaration><![CDATA[PROPERTY SIf_Par : POINTER TO T_Ctrl_SIf_MOD_Par
 ]]></Declaration>
+      <Set Name="Set" Id="{9f928969-9680-4125-81f2-f126f62cc354}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.Par:= SIf_Par^;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SIf_Cfg" Id="{98e5346a-b1fd-43f7-afb7-b2abbe71fd2c}">
-      <Declaration><![CDATA[PROPERTY PUBLIC SIf_Cfg : POINTER TO T_Ctrl_SIf_MOD_Cfg]]></Declaration>
-      <Set Name="Set" Id="{3f481394-9476-4597-9641-53e64886114a}">
-        <Declaration><![CDATA[PUBLIC 
-VAR
-END_VAR
+    <Property Name="SIf_Cfg" Id="{059aa02b-d233-40d4-9f8e-7c0f4fd8c05b}">
+      <Declaration><![CDATA[PROPERTY SIf_Cfg : POINTER TO T_Ctrl_SIf_MOD_Cfg
 ]]></Declaration>
+      <Set Name="Set" Id="{9171c737-6f62-4db4-9582-572202199f51}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.Cfg:= SIf_Cfg^;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <ObjectProperties>﻿<XmlArchive>
-  <Data>
-    <o xml:space="preserve" t="POUImageProperty">
-      <n n="ImageData" />
-      <v n="TransparencyColor">"White"</v>
-      <v n="MakeTransparent">false</v>
-    </o>
-  </Data>
-  <TypeList>
-    <Type n="Boolean">System.Boolean</Type>
-    <Type n="POUImageProperty">{bb741845-1ec5-4be9-bb0d-2cf7058af574}</Type>
-    <Type n="String">System.String</Type>
-  </TypeList>
-</XmlArchive></ObjectProperties>
+    <ObjectProperties />
   </POU>
 </TcPlcObject>
