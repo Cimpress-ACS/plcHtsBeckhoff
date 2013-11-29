@@ -7,6 +7,7 @@ END_VAR
 VAR
 	// Specific interface struct for public access
 	SIf: T_Ctrl_SIf_ICL;
+	
 END_VAR
 
 VAR CONSTANT
@@ -111,6 +112,7 @@ SUPER^.Always();
 
 // Read specific informations (SIf) from base module
 SIf.Cur.Module:= SUPER^.SIf_Cur^;
+SIf.In.Module:= SUPER^.SIf_MOD.In;
 // Write specific informations (SIf) to base module
 SUPER^.SIf_Par:= ADR(SIf.Par.Module);
 SUPER^.SIf_Cfg:= ADR(SIf.Cfg.Module);
@@ -218,7 +220,6 @@ END_VAR
 VAR
 	udiTaskCnt: UDINT;
 	ii: UINT;
-
 END_VAR
 
 ]]></Declaration>
@@ -279,7 +280,8 @@ END_IF
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+        <ST><![CDATA[SUPER^.IoInBridge();
+// digitale and analoge inputs read from hardware or forcing
 
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	;
@@ -315,7 +317,8 @@ END_CASE;]]></ST>
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+        <ST><![CDATA[SUPER^.IoOutBridge();
+// digitale and analoge inputs read from hardware or forcing
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	// check interlocks to prevent damages
 	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN

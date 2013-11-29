@@ -6,6 +6,8 @@ STRUCT
 	dinMaxCapacity: DINT;
 	/// Actual number of hangers calculated from all childs which implement interface IBuffer
 	dinNumOfHangers: DINT;
+	/// Actual Item Count of this controller with all childs
+	dinCurrentItemCount: DINT;
 	/// Togglebit to Line Control
 	bolKeepAliveHost: BOOL;
 	bolKeepAlivePlc: BOOL;

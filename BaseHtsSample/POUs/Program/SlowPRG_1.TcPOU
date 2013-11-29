@@ -43,6 +43,7 @@ Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		06.09.2013		AVME/KVO	Start history
 0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
+0.00.3		29.11.2013		AVME/MRU	Some Bugs fixed in IoInBridge
 
 ___________________________________________________________________________________________________*)
 
@@ -54,6 +55,19 @@ IF (NOT bolPlcStartupDone) THEN
 		
 	// init	
 	FUB_ICL_TEST.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.ICL_1); 
+
+	// New run Group 2 starts here!
+	FUB_ICL_TEST.AddRunGrpTime(2000); // Wait 2sec before change to next group
+	// New stop Group 2 starts here!
+	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
+	// New run Group 3 starts here!
+	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
+	// New stop Group 3 starts here!
+	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
+	// New run Group 4 starts here!
+	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
+	// New stop Group 4 starts here!
+	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
 		
 	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLC_2];
@@ -66,9 +80,6 @@ IF (NOT bolPlcStartupDone) THEN
 	// Add sequence group
 	FUB_ICL_TEST.AddSeqChild(stSequence);
 	
-	// New run Group starts here!	
-	FUB_ICL_TEST.AddRunGrpTime(5000); // Wait 5sec before change to next group
-	
 	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
 	stSequence.uinGroupRun:= 2;
@@ -79,12 +90,7 @@ IF (NOT bolPlcStartupDone) THEN
 	stSequence.intStatusSeqStop:= cSTA_OFF;
 	// Add sequence group
 	FUB_ICL_TEST.AddSeqChild(stSequence);
-	
-	// New run Group starts here!
-	FUB_ICL_TEST.AddRunGrpTime(2000); // Wait 2sec before change to next group
-	// New stop Group starts here!
-	FUB_ICL_TEST.AddRunGrpTime(6000); // Wait 6sec before change to next group
-	
+
 	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_5];
 	stSequence.uinGroupRun:= 3;
@@ -96,13 +102,8 @@ IF (NOT bolPlcStartupDone) THEN
 	// Add sequence group
 	FUB_ICL_TEST.AddSeqChild(stSequence);
 	
-	// New run Group starts here!
-	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
-	// New stop Group starts here!
-	FUB_ICL_TEST.AddRunGrpTime(6000); // Wait 6sec before change to next group
-	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_10];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLK_9];
 	stSequence.uinGroupRun:= 4;
 	stSequence.uinGroupStop:= 3;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;

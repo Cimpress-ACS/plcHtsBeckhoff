@@ -1,0 +1,8 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="Io" Id="{b9a7a763-3d86-4131-a391-a6dc6b5b6be9}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	In_bol_EmergencyOff AT %I* : BOOL; // Emergency Off Button
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

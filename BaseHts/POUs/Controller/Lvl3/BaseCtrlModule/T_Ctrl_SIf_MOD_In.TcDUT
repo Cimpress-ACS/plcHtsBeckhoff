@@ -7,6 +7,14 @@ STRUCT
 	bolEmergencyOffOk: T_Ctrl_IoBool;
 	/// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
 	bolNoGeneralError: T_Ctrl_IoBool;
+	
+	// In-Out Counter
+	bolCounterIn1: T_Ctrl_IoBool;
+	bolCounterIn2: T_Ctrl_IoBool;
+	bolCounterIn3: T_Ctrl_IoBool;
+	bolCounterOut1: T_Ctrl_IoBool;
+	bolCounterOut2: T_Ctrl_IoBool;
+	bolCounterOut3: T_Ctrl_IoBool; 
 END_STRUCT
 END_TYPE
 ]]></Declaration>

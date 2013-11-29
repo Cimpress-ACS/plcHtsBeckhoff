@@ -7,6 +7,14 @@ VAR_INPUT
 	In_bolEmergencyOffOk: BOOL;
 	/// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
 	In_bolNoGeneralError: BOOL;
+	/// Sensor Counter into the system
+	In_bolCounterIn1: BOOL;
+	In_bolCounterIn2: BOOL;
+	In_bolCounterIn3: BOOL;
+	/// Sensor Counter out of the system
+	In_bolCounterOut1: BOOL;
+	In_bolCounterOut2: BOOL;
+	In_bolCounterOut3: BOOL;
 END_VAR
 VAR
 	/// Timeout supervision of Keep alive Toggle Bit
@@ -33,6 +41,15 @@ VAR
 	usiNumOfIBufferChild: USINT;
 	/// Counter
 	ii: INT;
+	/// Rising Edge detection of Hanger Counter input
+	bolRECounterIn1: BOOL;
+	bolRECounterIn2: BOOL;
+	bolRECounterIn3: BOOL;
+	/// Rising Edge detection of Hanger Counter output
+	bolRECounterOut1: BOOL;
+	bolRECounterOut2: BOOL;
+	bolRECounterOut3: BOOL;
+
 END_VAR
 VAR CONSTANT
 	/// sub States for run and stop sequences
@@ -68,6 +85,7 @@ Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		06.11.2013		AVM/DSC		Start history
 0.00.2		14.11.2013		AVM/MRU		Changes in some methods
+0.00.3		29.11.2013		AVM/MRU		Changes in IoInBridge
 
 ___________________________________________________________________________________________________*)
 
@@ -320,6 +338,52 @@ IF (usiNumOfIBufferChild>0) THEN
 		SIf_mod.Cur.dinNumOfHangers:= SIf_mod.Cur.dinNumOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
 		SIf_mod.Cur.dinMaxCapacity:= SIf_mod.Cur.dinMaxCapacity +  + a_IBufferChildCtrl[ii].MaxCapacity;
 	END_FOR
+END_IF
+
+// Count the sum of all hangers int the system
+// Hanger In
+IF SIf_MOD.In.bolCounterIn1.intern = TRUE AND bolRECounterIn1 = FALSE THEN
+	bolRECounterIn1 := TRUE;
+	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
+ELSIF SIf_MOD.In.bolCounterIn1.intern = FALSE THEN
+	bolRECounterIn1 := FALSE;
+END_IF
+IF SIf_MOD.In.bolCounterIn2.intern = TRUE AND bolRECounterIn2 = FALSE THEN
+	bolRECounterIn2 := TRUE;
+	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
+ELSIF SIf_MOD.In.bolCounterIn2.intern = FALSE THEN
+	bolRECounterIn2 := FALSE;
+END_IF
+IF SIf_MOD.In.bolCounterIn3.intern = TRUE AND bolRECounterIn3 = FALSE THEN
+	bolRECounterIn3 := TRUE;
+	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
+ELSIF SIf_MOD.In.bolCounterIn3.intern = FALSE THEN
+	bolRECounterIn3 := FALSE;
+END_IF
+// Hanger Out
+IF SIf_MOD.In.bolCounterOut1.intern = TRUE AND bolRECounterOut1 = FALSE THEN
+	bolRECounterOut1 := TRUE;
+	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
+		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
+	END_IF
+ELSIF SIf_MOD.In.bolCounterOut1.intern = FALSE THEN
+	bolRECounterOut1 := FALSE;
+END_IF
+IF SIf_MOD.In.bolCounterOut2.intern = TRUE AND bolRECounterOut2 = FALSE THEN
+	bolRECounterOut2 := TRUE;
+	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
+		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
+	END_IF
+ELSIF SIf_MOD.In.bolCounterOut2.intern = FALSE THEN
+	bolRECounterOut2 := FALSE;
+END_IF
+IF SIf_MOD.In.bolCounterOut3.intern = TRUE AND bolRECounterOut3 = FALSE THEN
+	bolRECounterOut3 := TRUE;
+	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
+		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
+	END_IF
+ELSIF SIf_MOD.In.bolCounterOut3.intern = FALSE THEN
+	bolRECounterOut3 := FALSE;
 END_IF
 
 // ----------------------------------------------------------------------------------
@@ -589,9 +653,23 @@ END_IF]]></ST>
 SIf_MOD.In.bolEmergencyOffOk.map := THIS^.In_bolEmergencyOffOk;
 SIf_MOD.In.bolNoGeneralError.map := THIS^.In_bolNoGeneralError;
 
+SIf_MOD.In.bolCounterIn1.map := THIS^.In_bolCounterIn1;
+SIf_MOD.In.bolCounterIn2.map := THIS^.In_bolCounterIn2;
+SIf_MOD.In.bolCounterIn3.map := THIS^.In_bolCounterIn3;
+SIf_MOD.In.bolCounterOut1.map := THIS^.In_bolCounterOut1;
+SIf_MOD.In.bolCounterOut2.map := THIS^.In_bolCounterOut2;
+SIf_MOD.In.bolCounterOut3.map := THIS^.In_bolCounterOut3;
+
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolEmergencyOffOk));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolNoGeneralError));
+	
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn1));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn2));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn3));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut1));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut2));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut3));
 ELSE
 	//simulation of global IO
 END_IF

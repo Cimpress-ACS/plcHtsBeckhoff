@@ -394,6 +394,7 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	// SEP_8
 	fbSEP_8();
 
+	fbMER_8();
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
     </Implementation>
