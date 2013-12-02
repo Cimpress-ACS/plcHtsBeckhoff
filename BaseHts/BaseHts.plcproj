@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.2</ProjectVersion>
+    <ProjectVersion>0.0.0.3</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.2 - Changes after first use in simulation in ICL Module
+    <Description>0.0.0.3 - Remove CurrentItemCounter and his inputs
+
+0.0.0.2 - Changes after first use in simulation in ICL Module
 
 0.0.0.1 - First release</Description>
     <!--    <OutputType>Exe</OutputType>

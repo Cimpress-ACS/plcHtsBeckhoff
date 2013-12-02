@@ -7,7 +7,7 @@ VAR_INPUT
 	In_bolEmergencyOffOk: BOOL;
 	/// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
 	In_bolNoGeneralError: BOOL;
-	/// Sensor Counter into the system
+(*	/// Sensor Counter into the system
 	In_bolCounterIn1: BOOL;
 	In_bolCounterIn2: BOOL;
 	In_bolCounterIn3: BOOL;
@@ -15,7 +15,7 @@ VAR_INPUT
 	In_bolCounterOut1: BOOL;
 	In_bolCounterOut2: BOOL;
 	In_bolCounterOut3: BOOL;
-END_VAR
+*)END_VAR
 VAR
 	/// Timeout supervision of Keep alive Toggle Bit
 	udinTimeToggle_ms: UDINT;
@@ -41,7 +41,7 @@ VAR
 	usiNumOfIBufferChild: USINT;
 	/// Counter
 	ii: INT;
-	/// Rising Edge detection of Hanger Counter input
+(*	/// Rising Edge detection of Hanger Counter input
 	bolRECounterIn1: BOOL;
 	bolRECounterIn2: BOOL;
 	bolRECounterIn3: BOOL;
@@ -49,7 +49,7 @@ VAR
 	bolRECounterOut1: BOOL;
 	bolRECounterOut2: BOOL;
 	bolRECounterOut3: BOOL;
-
+*)
 END_VAR
 VAR CONSTANT
 	/// sub States for run and stop sequences
@@ -336,10 +336,11 @@ IF (usiNumOfIBufferChild>0) THEN
 	SIf_mod.Cur.dinMaxCapacity:= 0;
 	FOR ii:= 0 TO (usiNumOfIBufferChild-1) DO
 		SIf_mod.Cur.dinNumOfHangers:= SIf_mod.Cur.dinNumOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
-		SIf_mod.Cur.dinMaxCapacity:= SIf_mod.Cur.dinMaxCapacity +  + a_IBufferChildCtrl[ii].MaxCapacity;
+		SIf_mod.Cur.dinMaxCapacity:= SIf_mod.Cur.dinMaxCapacity + a_IBufferChildCtrl[ii].MaxCapacity;
 	END_FOR
 END_IF
 
+(*
 // Count the sum of all hangers int the system
 // Hanger In
 IF SIf_MOD.In.bolCounterIn1.intern = TRUE AND bolRECounterIn1 = FALSE THEN
@@ -385,7 +386,7 @@ IF SIf_MOD.In.bolCounterOut3.intern = TRUE AND bolRECounterOut3 = FALSE THEN
 ELSIF SIf_MOD.In.bolCounterOut3.intern = FALSE THEN
 	bolRECounterOut3 := FALSE;
 END_IF
-
+*)
 // ----------------------------------------------------------------------------------
 // Conditions Always
 
@@ -653,24 +654,24 @@ END_IF]]></ST>
 SIf_MOD.In.bolEmergencyOffOk.map := THIS^.In_bolEmergencyOffOk;
 SIf_MOD.In.bolNoGeneralError.map := THIS^.In_bolNoGeneralError;
 
-SIf_MOD.In.bolCounterIn1.map := THIS^.In_bolCounterIn1;
+(*SIf_MOD.In.bolCounterIn1.map := THIS^.In_bolCounterIn1;
 SIf_MOD.In.bolCounterIn2.map := THIS^.In_bolCounterIn2;
 SIf_MOD.In.bolCounterIn3.map := THIS^.In_bolCounterIn3;
 SIf_MOD.In.bolCounterOut1.map := THIS^.In_bolCounterOut1;
 SIf_MOD.In.bolCounterOut2.map := THIS^.In_bolCounterOut2;
 SIf_MOD.In.bolCounterOut3.map := THIS^.In_bolCounterOut3;
-
+*)
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolEmergencyOffOk));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolNoGeneralError));
 	
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn1));
+(*	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn1));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn2));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn3));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut1));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut2));
 	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut3));
-ELSE
+*)ELSE
 	//simulation of global IO
 END_IF
 ]]></ST>

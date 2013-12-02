@@ -44,13 +44,14 @@ Version		Date			Author		Comment
 0.00.1		06.09.2013		AVME/KVO	Start history
 0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
 0.00.3		29.11.2013		AVME/MRU	Some Bugs fixed in IoInBridge
+0.00.4		02.12.2013		AVME/MRU	Remove CurrentItemCounter and some Bugs fixed
 
 ___________________________________________________________________________________________________*)
 
 // -----------------------------------------------------------------------------------------------
 // Initialize the PLC Parameter and check the PLC health
 // -----------------------------------------------------------------------------------------------
-IF (NOT bolPlcStartupDone) THEN
+IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	bolPlcStartupDone := TRUE;	
 		
 	// init	
