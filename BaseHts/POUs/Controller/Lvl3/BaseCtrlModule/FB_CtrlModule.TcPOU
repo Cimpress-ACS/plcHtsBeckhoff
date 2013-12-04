@@ -86,7 +86,9 @@ Version		Date			Author		Comment
 0.00.1		06.11.2013		AVM/DSC		Start history
 0.00.2		14.11.2013		AVM/MRU		Changes in some methods
 0.00.3		29.11.2013		AVM/MRU		Changes in IoInBridge
-
+0.00.4		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy
+0.00.5		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy at GeneralError
+0.00.6		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy if not in sta_EOFF 
 ___________________________________________________________________________________________________*)
 
 
@@ -294,15 +296,17 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	//-------------------------------------------------------------------------------
 	
 	// Emergency Off
-	IF (SIf_MOD.In.bolEmergencyOffOk.intern = FALSE) THEN
+	IF ((SIf_MOD.In.bolEmergencyOffOk.intern = FALSE) AND (me.StateMachine.intState <> BASE_PLC.cSTA_EOFF)) THEN
 		// Needs no alarm. Alarm set in global module
-		me.StateMachine.intStateNext := cSTA_EOFF;				
+		//me.StateMachine.intStateNext := cSTA_EOFF;				
+		me.StateMachine.intStateNext := cSTA_EOFFBusy;				
 	END_IF
 	
 	// No general error
-	IF (SIf_MOD.In.bolNoGeneralError.intern = FALSE) THEN
+	IF ((SIf_MOD.In.bolNoGeneralError.intern = FALSE) AND (me.StateMachine.intState <> BASE_PLC.cSTA_EOFF)) THEN
 		// Needs no alarm. Alarm set in global module
-		me.StateMachine.intStateNext := cSTA_Error;				
+		//me.StateMachine.intStateNext := cSTA_Error;			
+		me.StateMachine.intStateNext := cSTA_EOFFBusy;		
 	END_IF
 
 END_IF
