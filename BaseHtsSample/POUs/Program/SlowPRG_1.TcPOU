@@ -11,20 +11,10 @@ VAR
 	bolSimulateAll: BOOL; // Switches all controllers in ICL to simulation with pos. edge
 	bolSimulationActive: BOOL;
 
-		
 	FUB_ICL_TEST : 	FB_ICL();
 	stSequence : T_Sequence;
-	pFB_Test: POINTER TO FB_STB;
-	pFB_Test1: POINTER TO FB_MER;
-	pFB_Test2: POINTER TO IBuffer;
-	//pFB_Test2: POINTER TO TestIBuffer;
-	pFB_Test3: POINTER TO FB_IBuffer;
-	IChildTypeIBuffer: IBuffer;
-	
 	fbAlm_Man: FB_Alm_Man; // alarm manager
-
-END_VAR
-]]></Declaration>
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	

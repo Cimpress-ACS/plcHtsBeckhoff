@@ -218,7 +218,7 @@
     <LibraryReference Include="Base_Elements,0.0.0.12,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.6,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.7,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
@@ -351,6 +351,10 @@
     <SubObject Include="FB_STB.sta_RELEASE_ALLBusy" />
     <SubObject Include="FB_STB.sta_STOP" />
     <SubObject Include="FB_STB.sta_STOPBusy" />
+    <SubObject Include="IBuffer.MaxCapacity" />
+    <SubObject Include="IBuffer.MaxCapacity.Get" />
+    <SubObject Include="IBuffer.NumOfHangers" />
+    <SubObject Include="IBuffer.NumOfHangers.Get" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="BaseHtsSample.tmc">

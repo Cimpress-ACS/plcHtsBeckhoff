@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.6</ProjectVersion>
+    <ProjectVersion>0.0.0.7</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.6 - Go to EOFFBusy if not in sta_EOFF
+    <Description>0.0.0.7- General revision of behaviour in case of emergency off (state EOFF) and general error (state ERROR). New handling for module specific interface.
+
+0.0.0.6 - Go to EOFFBusy if not in sta_EOFF
 
 0.0.0.5 - In Always: go to EOFFBusy at generalFault
 
@@ -28,6 +30,7 @@
 0.0.0.2 - Changes after first use in simulation in ICL Module
 
 0.0.0.1 - First release</Description>
+    <Author>AVME/DSC</Author>
     <!--    <OutputType>Exe</OutputType>
     <RootNamespace>MyApplication</RootNamespace>
     <AssemblyName>MyApplication</AssemblyName>-->
@@ -112,6 +115,39 @@
     </LibraryReference>
   </ItemGroup>
   <ItemGroup>
+    <SubObject Include="FB_CtrlModule.AddIBufferChilds" />
+    <SubObject Include="FB_CtrlModule.AddRunGrpTime" />
+    <SubObject Include="FB_CtrlModule.AddSeqChild" />
+    <SubObject Include="FB_CtrlModule.AddStopGrpTime" />
+    <SubObject Include="FB_CtrlModule.Always" />
+    <SubObject Include="FB_CtrlModule.checkChildAlmClass" />
+    <SubObject Include="FB_CtrlModule.checkValidPointer" />
+    <SubObject Include="FB_CtrlModule.CtrlInit" />
+    <SubObject Include="FB_CtrlModule.FB_init" />
+    <SubObject Include="FB_CtrlModule.getCmdState" />
+    <SubObject Include="FB_CtrlModule.IoInBridge" />
+    <SubObject Include="FB_CtrlModule.IoOutBridge" />
+    <SubObject Include="FB_CtrlModule.SIf_Cfg" />
+    <SubObject Include="FB_CtrlModule.SIf_Cfg.Get" />
+    <SubObject Include="FB_CtrlModule.SIf_Cfg.Set" />
+    <SubObject Include="FB_CtrlModule.SIf_Cur" />
+    <SubObject Include="FB_CtrlModule.SIf_Cur.Get" />
+    <SubObject Include="FB_CtrlModule.SIf_Cur.Set" />
+    <SubObject Include="FB_CtrlModule.SIf_In" />
+    <SubObject Include="FB_CtrlModule.SIf_In.Get" />
+    <SubObject Include="FB_CtrlModule.SIf_In.Set" />
+    <SubObject Include="FB_CtrlModule.SIf_Par" />
+    <SubObject Include="FB_CtrlModule.SIf_Par.Get" />
+    <SubObject Include="FB_CtrlModule.SIf_Par.Set" />
+    <SubObject Include="FB_CtrlModule.StateMachine" />
+    <SubObject Include="FB_CtrlModule.sta_EOFF" />
+    <SubObject Include="FB_CtrlModule.sta_EOFFBusy" />
+    <SubObject Include="FB_CtrlModule.sta_ERROR" />
+    <SubObject Include="FB_CtrlModule.sta_OFF" />
+    <SubObject Include="FB_CtrlModule.sta_RUN" />
+    <SubObject Include="FB_CtrlModule.sta_RUNBusy" />
+    <SubObject Include="FB_CtrlModule.sta_STOP" />
+    <SubObject Include="FB_CtrlModule.sta_STOPBusy" />
     <SubObject Include="FB_CYL_1.CtrlInit" />
     <SubObject Include="FB_CYL_1.FB_init" />
     <SubObject Include="FB_CYL_1.getCmdState" />
@@ -124,6 +160,10 @@
     <SubObject Include="FB_CYL_1.sta_OFF" />
     <SubObject Include="FB_CYL_1.sta_OFFBusy" />
     <SubObject Include="FB_CYL_1.sta_PON" />
+    <SubObject Include="FB_IBuffer.MaxCapacity" />
+    <SubObject Include="FB_IBuffer.MaxCapacity.Get" />
+    <SubObject Include="FB_IBuffer.NumOfHangers" />
+    <SubObject Include="FB_IBuffer.NumOfHangers.Get" />
     <SubObject Include="FB_LDS_1.Always" />
     <SubObject Include="FB_LDS_1.CtrlInit" />
     <SubObject Include="FB_LDS_1.FB_init" />
@@ -185,6 +225,10 @@
     <SubObject Include="FB_PTL.sta_OFFBusy" />
     <SubObject Include="FB_PTL.sta_PON" />
     <SubObject Include="FB_PTL.sta_PONBusy" />
+    <SubObject Include="IBuffer.MaxCapacity" />
+    <SubObject Include="IBuffer.MaxCapacity.Get" />
+    <SubObject Include="IBuffer.NumOfHangers" />
+    <SubObject Include="IBuffer.NumOfHangers.Get" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="BaseHts.tmc">

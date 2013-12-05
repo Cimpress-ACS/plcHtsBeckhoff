@@ -1,58 +1,44 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_CtrlModule" Id="{5299705f-e45b-4ebe-a1c2-db9471753ef2}">
+  <POU Name="FB_CtrlModule" Id="{cca8a16d-f5ca-42f4-b972-17fda3ab3e23}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_CtrlModule EXTENDS FB_CtrlBase
+
 VAR_INPUT
-	/// Inputs from global module for general supervision 
-	/// Emergency circuit ok
+	// Inputs from global module for general supervision 
+	// Emergency circuit ok
 	In_bolEmergencyOffOk: BOOL;
-	/// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
+	// No general error active, will be set to FALSE if there is an global error like e.g. over temperature in cabinet. 
 	In_bolNoGeneralError: BOOL;
-(*	/// Sensor Counter into the system
-	In_bolCounterIn1: BOOL;
-	In_bolCounterIn2: BOOL;
-	In_bolCounterIn3: BOOL;
-	/// Sensor Counter out of the system
-	In_bolCounterOut1: BOOL;
-	In_bolCounterOut2: BOOL;
-	In_bolCounterOut3: BOOL;
-*)END_VAR
+END_VAR
+
 VAR
-	/// Timeout supervision of Keep alive Toggle Bit
+	// Timeout supervision of Keep alive Toggle Bit
 	udinTimeToggle_ms: UDINT;
-	/// Specific interface struct
+	// Specific interface struct
 	SIf_MOD: T_Ctrl_SIf_MOD;
 	uinGroupIndex: UINT;
 	intCheckCounter: INT;
 	uinMaxNrOfGroups: UINT := Base_Const.cMaxNrOfChilds;
-	/// List of sequences
+	// List of sequences
 	aListOfSeq: ARRAY[0..Base_Const.cMaxNrOfChilds] OF T_Sequence;
 	usiNumOfSeq: USINT := 0;
 	usiNumOfValidPointerSeqChild: USINT := 0;
-	/// [ms] List of waiting times for run sequence until the next group will execute
-	/// If wait time is zero, next group will be directly executed after current group.  
+	// [ms] List of waiting times for run sequence until the next group will execute
+	// If wait time is zero, next group will be directly executed after current group.  
 	aListOfRunGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
 	usiNumOfRunGrpWaitTime: USINT := 0;
-	/// [ms] List of waiting times for stop sequence until the next group will execute
-	/// If wait time is zero, next group will be directly executed after current group. 
+	// [ms] List of waiting times for stop sequence until the next group will execute
+	// If wait time is zero, next group will be directly executed after current group. 
 	aListOfStopGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
 	usiNumOfStopGrpWaitTime: USINT := 0;
-	/// Array includes all registered childs of type IBuffer
+	// Array includes all registered childs of type IBuffer
 	a_IBufferChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF IBuffer;
 	usiNumOfIBufferChild: USINT;
-	/// Counter
-	ii: INT;
-(*	/// Rising Edge detection of Hanger Counter input
-	bolRECounterIn1: BOOL;
-	bolRECounterIn2: BOOL;
-	bolRECounterIn3: BOOL;
-	/// Rising Edge detection of Hanger Counter output
-	bolRECounterOut1: BOOL;
-	bolRECounterOut2: BOOL;
-	bolRECounterOut3: BOOL;
-*)
+	// Counter
+	ii: INT;	
 END_VAR
+
 VAR CONSTANT
-	/// sub States for run and stop sequences
+	// sub States for run and stop sequences
 	cSTA_SUB_INITIALIZED: INT := 500;
 	cSTA_SUB_SEND_GROUP_CMD: INT := 502;
 	cSTA_SUB_CHECK_GROUP_STATUS: INT := 504;
@@ -77,8 +63,7 @@ Controller handle following basic functions:
 --------------------------------------------
 - Monitoring of common signals from cabinet
 - Keep alive bit to line control
-- General child handling RUN_busy, STOP_busy sequences and error handling 
-- Remanent data handling for item "sum" counter of all childs
+- General child handling RUN_busy, STOP_busy sequences and error handling
 
 History:
 Version		Date			Author		Comment
@@ -89,16 +74,18 @@ Version		Date			Author		Comment
 0.00.4		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy
 0.00.5		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy at GeneralError
 0.00.6		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy if not in sta_EOFF 
+0.00.7		05.12.2013		AVM/DSC		General revision of behaviour in case of emergency off (state EOFF) and general error (state ERROR).
+										New handling for module specific interface.
 ___________________________________________________________________________________________________*)
 
 
-IF (me.bolActivate) THEN // cyclic call enabled
+IF (me.bolActivate) AND (SIf_MOD.Cur<>0) AND (SIf_MOD.Cfg<>0) AND (SIf_MOD.Par<>0) AND (SIf_MOD.In<>0) THEN // cyclic call enabled
 	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
 		CtrlInit();
 		CIf.Info.bolInitDone := TRUE;
 	ELSE
 		CycleStartDuty();
-	
+
 		Always();
 		
 		StateMachine();
@@ -108,7 +95,7 @@ IF (me.bolActivate) THEN // cyclic call enabled
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="sta_RUNBusy" Id="{7f3e7b04-e77a-4182-80ce-7fccf9dcb370}">
+    <Method Name="sta_RUNBusy" Id="{8e793960-d899-4403-a70f-dad72d52a320}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
 VAR
 	ii: INT;
@@ -221,7 +208,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CtrlInit" Id="{05aff3de-8f6a-4a4e-9910-4306b6f90e2e}">
+    <Method Name="CtrlInit" Id="{c52d5bac-2cda-43dd-8532-3cb71d2aa83f}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
 VAR
 	ii: INT;
@@ -237,7 +224,7 @@ FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
 END_FOR]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{d1fbdb92-98ab-4389-80a1-b3dec03ae065}">
+    <Method Name="sta_RUN" Id="{10e6062d-7819-4866-bdec-b3efbba611df}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
@@ -272,7 +259,7 @@ END_FOR]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Always" Id="{c46e8b91-857d-4fb5-beea-e5fb8b205486}">
+    <Method Name="Always" Id="{e8d1e197-ee23-4f77-975e-0c43010ac957}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -281,10 +268,10 @@ END_FOR]]></ST>
 // ---------------------------------------------------------------------------------
 // Simulation
 IF (CIf.SwCfg.bolSimulation) THEN
-	SIf_MOD.Cur.bolKeepAliveHost := NOT SIf_MOD.Cur.bolKeepAlivePlc;
+	SIf_Cur^.bolKeepAliveHost := NOT SIf_Cur^.bolKeepAlivePlc;
 	// Simulate inputs from global module for general supervision (no physical inputs)
-	SIf_MOD.In.bolEmergencyOffOK.intern := TRUE;
-	SIf_MOD.In.bolNoGeneralError.intern := TRUE;
+	SIf_In^.bolEmergencyOffOK.intern := TRUE;
+	SIf_In^.bolNoGeneralError.intern := TRUE;
 END_IF
 
 // ----------------------------------------------------------------------------------
@@ -295,20 +282,22 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	// Monitoring of inputs from global module (no physical inputs)
 	//-------------------------------------------------------------------------------
 	
+	// No general error
+	IF ((SIf_In^.bolNoGeneralError.intern = FALSE) AND (me.StateMachine.intState <> cSTA_ERROR) AND (me.StateMachine.intState <> cSTA_ERRORQuit) 
+		AND (me.StateMachine.intState <> cSTA_EOFF) AND (me.StateMachine.intState <> cSTA_EOFFBusy)) THEN
+		// Set Alarm: SIf_MOD.Alm[4].strText := 'General error active'; 
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
+		me.StateMachine.intStateNext := cSTA_Error;		
+	END_IF
+	
 	// Emergency Off
-	IF ((SIf_MOD.In.bolEmergencyOffOk.intern = FALSE) AND (me.StateMachine.intState <> BASE_PLC.cSTA_EOFF)) THEN
-		// Needs no alarm. Alarm set in global module
-		//me.StateMachine.intStateNext := cSTA_EOFF;				
+	IF ((SIf_In^.bolEmergencyOffOk.intern = FALSE) AND (me.StateMachine.intState <> cSTA_EOFF) AND (me.StateMachine.intState <> cSTA_EOFFBusy)
+		AND (me.StateMachine.intState <> cSTA_ERROR) AND (me.StateMachine.intState <> cSTA_ERRORQuit)) THEN
+		// Set Alarm: SIf_MOD.Alm[3].strText := 'Emergency off active'; 
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
 		me.StateMachine.intStateNext := cSTA_EOFFBusy;				
 	END_IF
 	
-	// No general error
-	IF ((SIf_MOD.In.bolNoGeneralError.intern = FALSE) AND (me.StateMachine.intState <> BASE_PLC.cSTA_EOFF)) THEN
-		// Needs no alarm. Alarm set in global module
-		//me.StateMachine.intStateNext := cSTA_Error;			
-		me.StateMachine.intStateNext := cSTA_EOFFBusy;		
-	END_IF
-
 END_IF
 
 //-------------------------------------------------------------------------------
@@ -316,81 +305,35 @@ END_IF
 //-------------------------------------------------------------------------------
 
 // Communication to line control enabled
-IF (SIf_MOD.Cfg.bolComToLineControlEnabled = TRUE) THEN
-	IF (SIf_MOD.Cur.bolKeepAliveHost <> SIf_MOD.Cur.bolKeepAlivePlc) THEN
+IF (SIf_Cfg^.bolComToLineControlEnabled = TRUE) THEN
+	IF (SIf_Cur^.bolKeepAliveHost <> SIf_Cur^.bolKeepAlivePlc) THEN
 		udinTimeToggle_ms := 0;
-		SIf_MOD.Cur.bolKeepAlivePlc := SIf_MOD.Cur.bolKeepAliveHost;
+		SIf_Cur^.bolKeepAlivePlc := SIf_Cur^.bolKeepAliveHost;
 	ELSE
-		IF (udinTimeToggle_ms >= SIf_MOD.Par.udiComTimeOutLineCtrl_ms) THEN
+		IF (udinTimeToggle_ms >= SIf_Par^.udiComTimeOutLineCtrl_ms) THEN
 			// Set Alarm: SIf_MOD.Alm[2].strText := 'Communication error to line control'; 
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,UDINT_TO_DINT(udinTimeToggle_ms),ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,UDINT_TO_DINT(udinTimeToggle_ms),ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			me.StateMachine.intStateNext := cSTA_Error;	
 		END_IF
 		udinTimeToggle_ms:= udinTimeToggle_ms + me.FUBInfo.udiSample_ms;
 	END_IF
 // Communication to line control disabled
 ELSE
-	SIf_MOD.Cur.bolKeepAliveHost:= NOT SIf_MOD.Cur.bolKeepAlivePlc;
+	SIf_Cur^.bolKeepAliveHost:= NOT SIf_Cur^.bolKeepAlivePlc;
 END_IF
 
 //-------------------------------------------------------------------------------
 // Calculate the sum of all hangers in the system and the capacity of the system
 //-------------------------------------------------------------------------------
 IF (usiNumOfIBufferChild>0) THEN 
-	SIf_mod.Cur.dinNumOfHangers:= 0;
-	SIf_mod.Cur.dinMaxCapacity:= 0;
+	SIf_Cur^.dinNumOfHangers:= 0;
+	SIf_Cur^.dinMaxCapacity:= 0;
 	FOR ii:= 0 TO (usiNumOfIBufferChild-1) DO
-		SIf_mod.Cur.dinNumOfHangers:= SIf_mod.Cur.dinNumOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
-		SIf_mod.Cur.dinMaxCapacity:= SIf_mod.Cur.dinMaxCapacity + a_IBufferChildCtrl[ii].MaxCapacity;
+		SIf_Cur^.dinNumOfHangers:= SIf_Cur^.dinNumOfHangers + a_IBufferChildCtrl[ii].NumOfHangers;
+		SIf_Cur^.dinMaxCapacity:= SIf_Cur^.dinMaxCapacity + a_IBufferChildCtrl[ii].MaxCapacity;
 	END_FOR
 END_IF
 
-(*
-// Count the sum of all hangers int the system
-// Hanger In
-IF SIf_MOD.In.bolCounterIn1.intern = TRUE AND bolRECounterIn1 = FALSE THEN
-	bolRECounterIn1 := TRUE;
-	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
-ELSIF SIf_MOD.In.bolCounterIn1.intern = FALSE THEN
-	bolRECounterIn1 := FALSE;
-END_IF
-IF SIf_MOD.In.bolCounterIn2.intern = TRUE AND bolRECounterIn2 = FALSE THEN
-	bolRECounterIn2 := TRUE;
-	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
-ELSIF SIf_MOD.In.bolCounterIn2.intern = FALSE THEN
-	bolRECounterIn2 := FALSE;
-END_IF
-IF SIf_MOD.In.bolCounterIn3.intern = TRUE AND bolRECounterIn3 = FALSE THEN
-	bolRECounterIn3 := TRUE;
-	SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount + 1;
-ELSIF SIf_MOD.In.bolCounterIn3.intern = FALSE THEN
-	bolRECounterIn3 := FALSE;
-END_IF
-// Hanger Out
-IF SIf_MOD.In.bolCounterOut1.intern = TRUE AND bolRECounterOut1 = FALSE THEN
-	bolRECounterOut1 := TRUE;
-	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
-		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
-	END_IF
-ELSIF SIf_MOD.In.bolCounterOut1.intern = FALSE THEN
-	bolRECounterOut1 := FALSE;
-END_IF
-IF SIf_MOD.In.bolCounterOut2.intern = TRUE AND bolRECounterOut2 = FALSE THEN
-	bolRECounterOut2 := TRUE;
-	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
-		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
-	END_IF
-ELSIF SIf_MOD.In.bolCounterOut2.intern = FALSE THEN
-	bolRECounterOut2 := FALSE;
-END_IF
-IF SIf_MOD.In.bolCounterOut3.intern = TRUE AND bolRECounterOut3 = FALSE THEN
-	bolRECounterOut3 := TRUE;
-	IF SIf_MOD.Cur.dinCurrentItemCount > 0 THEN
-		SIf_MOD.Cur.dinCurrentItemCount := SIf_MOD.Cur.dinCurrentItemCount - 1;
-	END_IF
-ELSIF SIf_MOD.In.bolCounterOut3.intern = FALSE THEN
-	bolRECounterOut3 := FALSE;
-END_IF
-*)
 // ----------------------------------------------------------------------------------
 // Conditions Always
 
@@ -412,7 +355,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{3bfecbdf-ed2b-47f5-9dcd-cff526c584fe}">
+    <Method Name="sta_STOPBusy" Id="{2d97cb84-93fd-4e69-a78f-6853c3b836ca}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
 VAR
 	ii: INT;
@@ -526,7 +469,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{22b4ab9b-d33d-46b0-8891-8e066415cf9f}">
+    <Method Name="sta_STOP" Id="{3b049153-b5a6-47b8-b8cb-cc470b6b00b8}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -559,7 +502,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{181afcb7-be85-4afd-a4e2-7117e2c3149e}">
+    <Method Name="FB_init" Id="{ae324315-115c-4a81-8772-9882bcb3036d}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -595,10 +538,13 @@ CIf.Info.strType := 'FB_CtrlModule';
 
 // set alarm class
 SIf_MOD.Alm[1].eAlmClass := E_AlmClass.STOP;
-SIf_MOD.Alm[1].strText := 'Invalid child pointer';
-SIf_MOD.Alm[2].eAlmClass := E_AlmClass.STOP;
+SIf_MOD.Alm[1].strText := 'Invalid pointer';
+SIf_MOD.Alm[2].eAlmClass := E_AlmClass.OFF;
 SIf_MOD.Alm[2].strText := 'Communication error to line control'; 
-
+SIf_MOD.Alm[3].eAlmClass := E_AlmClass.EOFF;
+SIf_MOD.Alm[3].strText := 'Emergency off active'; 
+SIf_MOD.Alm[4].eAlmClass := E_AlmClass.OFF;
+SIf_MOD.Alm[4].strText := 'General error active'; 
 
 //*******************************************************************************
 // initial values
@@ -608,16 +554,11 @@ udinTimeToggle_ms := 0;
 CIf.SwCfg.bolExist := TRUE;
 CIf.SwCfg.bolSimulation := FALSE;
 
-// Configuration
-SIf_MOD.Cfg.bolComToLineControlEnabled:= TRUE;
-
-// Parameter
-SIf_MOD.Par.udiComTimeOutLineCtrl_ms:= 5000;
-
-]]></ST>
+// No initialization for cfg and par in this base module!
+// Pointer address of the property is not defined at this time]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{fad52ed9-76e2-4347-ae21-6981a22aa4d5}">
+    <Method Name="getCmdState" Id="{d8d1de4b-01ee-4d9e-ae70-a782cc05d122}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -650,38 +591,23 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{306e6c22-0824-48bf-8779-ba9db5c291bd}">
+    <Method Name="IoInBridge" Id="{2c2fd893-974c-4d86-bfda-b8346aa22892}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// Inputs from global module for general supervision (no physical inputs)
-SIf_MOD.In.bolEmergencyOffOk.map := THIS^.In_bolEmergencyOffOk;
-SIf_MOD.In.bolNoGeneralError.map := THIS^.In_bolNoGeneralError;
+SIf_In^.bolEmergencyOffOk.map := THIS^.In_bolEmergencyOffOk;
+SIf_In^.bolNoGeneralError.map := THIS^.In_bolNoGeneralError;
 
-(*SIf_MOD.In.bolCounterIn1.map := THIS^.In_bolCounterIn1;
-SIf_MOD.In.bolCounterIn2.map := THIS^.In_bolCounterIn2;
-SIf_MOD.In.bolCounterIn3.map := THIS^.In_bolCounterIn3;
-SIf_MOD.In.bolCounterOut1.map := THIS^.In_bolCounterOut1;
-SIf_MOD.In.bolCounterOut2.map := THIS^.In_bolCounterOut2;
-SIf_MOD.In.bolCounterOut3.map := THIS^.In_bolCounterOut3;
-*)
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolEmergencyOffOk));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolNoGeneralError));
-	
-(*	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn1));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn2));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterIn3));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut1));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut2));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf_MOD.In.bolCounterOut3));
-*)ELSE
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_In^.bolEmergencyOffOk));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf_In^.bolNoGeneralError));
+ELSE
 	//simulation of global IO
-END_IF
-]]></ST>
+END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFF" Id="{4cc7810a-e1e4-4320-9766-fc06440f9973}">
+    <Method Name="sta_OFF" Id="{c0014833-d0ef-4032-98d6-fd0007c135d3}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -712,7 +638,7 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildAlmClass" Id="{7f527770-c2b6-4ffc-805a-fcd769acbda4}">
+    <Method Name="checkChildAlmClass" Id="{4a3d18b9-acae-420d-9743-86dc093ddb02}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
 ]]></Declaration>
       <Implementation>
@@ -749,7 +675,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{e93f4442-9cf0-4e12-a0eb-baa90a0ef00f}">
+    <Method Name="StateMachine" Id="{331bc12e-6503-403e-a3c0-832b30026903}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -768,7 +694,7 @@ CASE me.StateMachine.intState OF
 END_CASE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{443c3954-9a7d-401c-81fa-e3f1f05abf69}">
+    <Method Name="IoOutBridge" Id="{5f6ba1b2-8577-42d1-ba96-1c4e2a5a862b}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -781,7 +707,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFFBusy" Id="{1f56f4ac-822b-4d0e-a996-1c0078209af6}">
+    <Method Name="sta_EOFFBusy" Id="{45aba3ee-31ad-4b6d-b081-e67c4a74ddf2}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFFBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -790,6 +716,8 @@ END_IF]]></ST>
 // Entry action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		// Clear pending command to prevent automatic recovery!
+		CIf.Job.intACmd:=cSTA_DONE;
 		// In case on an emergency, set all childs to off
 		SetAllChildCmd(cCMD_OFF);
 	END_IF
@@ -811,7 +739,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFF" Id="{73f7f3d2-c75d-4ab4-b064-19d78f208e4c}">
+    <Method Name="sta_EOFF" Id="{b0421bbf-83d0-403a-bc5c-f85e4848f427}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -825,14 +753,10 @@ END_IF]]></ST>
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN		
-		;	
+		
 		// State Change Condition
 		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.intCmd<>cCMD_EOFF) AND (me.intCmd<>cCMD_DONE) THEN
-			IF (FALSE) THEN
-				;
-			ELSIF (TRUE) THEN
-				me.StateMachine.intStateNext := cSTA_OFF;
-			END_IF
+			me.StateMachine.intStateNext := cSTA_OFF;
 		END_IF
 	END_IF
 
@@ -843,7 +767,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddSeqChild" Id="{1a3d9b64-c04f-4dbe-ad58-d72797ddc05a}">
+    <Method Name="AddSeqChild" Id="{543da3ac-6a50-48e9-87e5-6f8a78a6859e}">
       <Declaration><![CDATA[METHOD AddSeqChild
 VAR_INPUT
 	stSequence: T_Sequence;
@@ -868,7 +792,7 @@ IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddRunGrpTime" Id="{d5d372bd-2ae3-4dda-ab91-694d6dcf3210}">
+    <Method Name="AddRunGrpTime" Id="{b8c22f31-2c20-46b4-8f42-7722292782f2}">
       <Declaration><![CDATA[METHOD AddRunGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
@@ -882,7 +806,7 @@ IF (usiNumOfRunGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddStopGrpTime" Id="{e77e8a4e-bd84-4724-b775-8dfe88eae5a3}">
+    <Method Name="AddStopGrpTime" Id="{9c546cfd-12a1-474d-80c9-f24a4f230e4f}">
       <Declaration><![CDATA[METHOD AddStopGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
@@ -896,23 +820,21 @@ IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildValid" Id="{04eec75d-e0ab-4528-a634-263b7b3260c7}">
-      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
+    <Method Name="checkValidPointer" Id="{ccd0fab0-c2c6-48eb-8513-ffa0d4ea4f7c}">
+      <Declaration><![CDATA[METHOD PROTECTED checkValidPointer : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[IF (usiNumOfSeq = usiNumOfValidPointerSeqChild) THEN
-	checkChildValid:= TRUE;
+        <ST><![CDATA[IF (usiNumOfSeq = usiNumOfValidPointerSeqChild) AND (SIf_Cfg<>0) AND (SIf_Par<>0) AND (SIf_Cur<>0) AND (SIf_In<>0) THEN
+	checkValidPointer:= TRUE;
 ELSE
-	checkChildValid:= FALSE;	
 	// Invalid child pointer
-	IF (usiNumOfSeq <> usiNumOfValidPointerSeqChild) THEN
-		// SIf.Alm[1].strText := 'Invalid child pointer'; 
-		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-	END_IF
+	checkValidPointer:= FALSE;	
+	// SIf.Alm[1].strText := 'Invalid pointer'; 
+	pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddIBufferChilds" Id="{1653482d-b7fc-4d4c-8652-970ddd7ed51d}">
+    <Method Name="AddIBufferChilds" Id="{ca70c08a-2ad8-4f57-9883-53b21990cefd}">
       <Declaration><![CDATA[METHOD AddIBufferChilds
 VAR_INPUT
 	pFB_ChildTypeIBuffer: POINTER TO FB_IBuffer;
@@ -930,36 +852,115 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="SIf_Cur" Id="{f21e5f4e-5e91-488f-9816-c03ebebc01e3}">
-      <Declaration><![CDATA[PROPERTY SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur
-]]></Declaration>
-      <Get Name="Get" Id="{d9c131bb-94ee-454a-96c6-9efe85dd58b1}">
+    <Method Name="sta_ERROR" Id="{6bb9de7c-ef80-4409-9aab-3765b30a1f7d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		// Clear pending command to prevent automatic recovery!
+		CIf.Job.intACmd:=cSTA_DONE;
+		// In case on an error, set all childs to off
+		SetAllChildCmd(cCMD_OFF);
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		// State Change Condition
+		IF ((CIf.Job.bolAlmReset = TRUE) AND (CheckAllChildState(cSTA_OFF))) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="SIf_Cur" Id="{4e7ccb3c-736e-4025-a79c-7e37eef79e0a}">
+      <Declaration><![CDATA[PROPERTY SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur]]></Declaration>
+      <Get Name="Get" Id="{4e3a18e8-723e-47d3-b005-2aa0f460b14a}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[SIf_Cur:= ADR(SIf_MOD.Cur);]]></ST>
+          <ST><![CDATA[SIf_Cur:= SIf_MOD.Cur; ]]></ST>
         </Implementation>
       </Get>
+      <Set Name="Set" Id="{91a263a5-51eb-41b5-a9f6-d6e05947fb9a}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SIf_MOD.Cur := SIf_Cur; ]]></ST>
+        </Implementation>
+      </Set>
     </Property>
-    <Property Name="SIf_Par" Id="{b495bbc3-8932-49eb-943f-54cf4c24bcd1}">
+    <Property Name="SIf_Par" Id="{9cf6f9c8-1b71-4f00-b0c6-15e188edefbc}">
       <Declaration><![CDATA[PROPERTY SIf_Par : POINTER TO T_Ctrl_SIf_MOD_Par
 ]]></Declaration>
-      <Set Name="Set" Id="{9f928969-9680-4125-81f2-f126f62cc354}">
+      <Get Name="Get" Id="{c803637c-d474-4e29-af7c-67ed7925f818}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[SIf_MOD.Par:= SIf_Par^;]]></ST>
+          <ST><![CDATA[SIf_Par:= SIf_MOD.Par; ]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{ae664cb4-750f-4390-95d4-8d818db996ee}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SIf_MOD.Par := SIf_Par; ]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SIf_Cfg" Id="{059aa02b-d233-40d4-9f8e-7c0f4fd8c05b}">
+    <Property Name="SIf_Cfg" Id="{1e87a95f-08d3-4500-a3ab-126890a10bf9}">
       <Declaration><![CDATA[PROPERTY SIf_Cfg : POINTER TO T_Ctrl_SIf_MOD_Cfg
 ]]></Declaration>
-      <Set Name="Set" Id="{9171c737-6f62-4db4-9582-572202199f51}">
+      <Get Name="Get" Id="{ef502ad9-b3fd-4971-84d0-a0b246ceb70b}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[SIf_MOD.Cfg:= SIf_Cfg^;]]></ST>
+          <ST><![CDATA[SIf_Cfg:= SIf_MOD.Cfg; ]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0e892710-83e8-4f0f-8694-452508272c40}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SIf_MOD.Cfg := SIf_Cfg;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <ObjectProperties />
+    <Property Name="SIf_In" Id="{2ac37c1f-ba34-4557-98b0-82f96a662392}">
+      <Declaration><![CDATA[PROPERTY SIf_In : POINTER TO T_Ctrl_SIf_MOD_In]]></Declaration>
+      <Get Name="Get" Id="{5ac45788-12a5-4ec6-86d9-42b1fe50abe3}">
+        <Declaration><![CDATA[
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SIf_In:= SIf_MOD.In; ]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{bf83a296-1a0e-426b-a219-fc3756225ed3}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[SIf_MOD.In := SIf_In;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <ObjectProperties>﻿<XmlArchive>
+  <Data>
+    <o xml:space="preserve" t="POUImageProperty">
+      <n n="ImageData" />
+      <v n="TransparencyColor">"White"</v>
+      <v n="MakeTransparent">false</v>
+    </o>
+  </Data>
+  <TypeList>
+    <Type n="Boolean">System.Boolean</Type>
+    <Type n="POUImageProperty">{bb741845-1ec5-4be9-bb0d-2cf7058af574}</Type>
+    <Type n="String">System.String</Type>
+  </TypeList>
+</XmlArchive></ObjectProperties>
   </POU>
 </TcPlcObject>

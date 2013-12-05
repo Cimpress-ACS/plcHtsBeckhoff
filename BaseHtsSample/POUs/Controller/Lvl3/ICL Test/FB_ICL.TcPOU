@@ -34,11 +34,12 @@ Version		Date			Author		Comment
 ___________________________________________________________________________________________________*)
 
 // Check about valid child of base module
-IF (me.bolActivate) AND (SUPER^.checkChildValid()) THEN // cyclic call enabled
+IF (me.bolActivate) AND (SUPER^.checkValidPointer()) THEN // cyclic call enabled
 	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
 		CtrlInit();
 		CIf.Info.bolInitDone := TRUE;
 	ELSE
+	
 		CycleStartDuty();
 	
 		Always();
@@ -46,9 +47,9 @@ IF (me.bolActivate) AND (SUPER^.checkChildValid()) THEN // cyclic call enabled
 		StateMachine();
 		
 		CycleEndDuty();	
+		
 	END_IF
-END_IF;
-]]></ST>
+END_IF;]]></ST>
     </Implementation>
     <Method Name="CtrlInit" Id="{1eca7444-37df-41cb-8316-dba5dadef52d}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -106,17 +107,6 @@ END_IF
 
 SUPER^.Always();
 
-// ---------------------------------------------
-// Handling for SIf between this and base module  
-// ---------------------------------------------
-
-// Read specific informations (SIf) from base module
-SIf.Cur.Module:= SUPER^.SIf_Cur^;
-SIf.In.Module:= SUPER^.SIf_MOD.In;
-// Write specific informations (SIf) to base module
-SUPER^.SIf_Par:= ADR(SIf.Par.Module);
-SUPER^.SIf_Cfg:= ADR(SIf.Cfg.Module);
-
 // ---------------------------------------------------------------------------------
 // Simulation
 IF (CIf.SwCfg.bolSimulation) THEN
@@ -128,30 +118,6 @@ END_IF
 IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 ;
 END_IF
-
-
-
-(*ToDo: DSC Lösung? Muss innerhalb ICL so beibehalten werden!!!
-
-// Variable mapping for Childs
-pDPJ_4_SIF^.Cur.dinTransportPosition_um := a_pMultiChildSIF[intTLP_4]^.Cur.dinPos_um;
-pDPJ_4_SIF^.Cur.dinTransportspeed_um_s := a_pMultiChildSIF[intTLP_4]^.Cur.dinSpeed_um_s;
-pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[0] := TRUE;
-pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
-
-pDPJ_9_SIF^.Cur.dinTransportPosition_um := a_pMultiChildSIF[intTLK_9]^.Cur.dinPos_um;
-pDPJ_9_SIF^.Cur.dinTransportspeed_um_s := a_pMultiChildSIF[intTLK_9]^.Cur.dinSpeed_um_s;
-pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[0] := a_pMultiChildcIF[intTLP_10]^.Job.intState = cSTA_RUN;
-pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
-
-// Speed to merger 8
-pMER_8_SIF^.Cur.dinTransportPosition_um := a_pMultiChildSIF[intTLK_9]^.Cur.dinPos_um;
-pMER_8_SIF^.Cur.dinTransportspeed_um_s := a_pMultiChildSIF[intTLK_9]^.Cur.dinSpeed_um_s;
-
-// Variable mapping for CHD
-pCHD_4_SIF^.Cur.dinTransportPosition_um := a_pMultiChildSIF[intTLP_4]^.Cur.dinPos_um;
-pCHD_4_SIF^.Cur.dinTransportspeed_um_s := a_pMultiChildSIF[intTLP_4]^.Cur.dinSpeed_um_s;
-*)
 
 
 // ----------------------------------------------------------------------------------
@@ -241,6 +207,14 @@ CIf.Info.strType := 'FB_ICL';
 
 // set alarm class
 
+// ---------------------------------------------
+// Handling for SIf between this and base module  
+// ---------------------------------------------
+// initialize pointer access 
+SUPER^.SIf_Cfg:= ADR(SIf.Cfg.Module);
+SUPER^.SIf_Par:= ADR(SIf.Par.Module);
+SUPER^.SIf_Cur:= ADR(SIf.Cur.Module);
+SUPER^.SIf_In:= ADR(SIf.In.Module);
 
 //*******************************************************************************
 // initial values
@@ -249,7 +223,15 @@ CIf.Info.strType := 'FB_ICL';
 CIf.SwCfg.bolExist := TRUE;
 CIf.SwCfg.bolSimulation := FALSE;
 
-]]></ST>
+
+//*******************************************************************************
+// initial values for base module
+//*******************************************************************************
+// Configuration
+SIf.Cfg.Module.bolComToLineControlEnabled:= TRUE;
+
+// Parameter
+SIf.Par.Module.udiComTimeOutLineCtrl_ms:= 5000;]]></ST>
       </Implementation>
     </Method>
     <Method Name="getCmdState" Id="{be80648f-491b-4aff-90f2-88ea05a7ca7e}">
