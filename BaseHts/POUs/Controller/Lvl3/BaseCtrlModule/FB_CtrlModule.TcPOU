@@ -76,6 +76,7 @@ Version		Date			Author		Comment
 0.00.6		04.12.2013		AVM/MRU		Changes in Always - EOFFBusy if not in sta_EOFF 
 0.00.7		05.12.2013		AVM/DSC		General revision of behaviour in case of emergency off (state EOFF) and general error (state ERROR).
 										New handling for module specific interface.
+0.00.8		06.12.2013		AVM/MRU		Add TSTOP in checkChildAlmClass
 ___________________________________________________________________________________________________*)
 
 
@@ -653,6 +654,9 @@ ELSIF CheckAllChildAlmClass(E_AlmClass.OFF) THEN
 	me.Alarm.bolfp := TRUE;
 ELSIF CheckAllChildAlmClass(E_AlmClass.STOP) THEN
 	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.TSTOP) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.TSTOP;
 	me.Alarm.bolfp := TRUE;
 ELSE
 	IF (me.Alarm.bolfp) THEN
