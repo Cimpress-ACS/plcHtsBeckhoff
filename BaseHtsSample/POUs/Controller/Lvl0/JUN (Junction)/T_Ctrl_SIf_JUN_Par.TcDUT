@@ -1,0 +1,24 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN_Par" Id="{758aa04b-b843-4f00-a32e-92b01addb802}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_Par :
+STRUCT
+	///[ms] until junction is open
+	udiOpenTime_ms: UDINT;
+	///[ms] until junction is closed
+	udiCloseTime_ms: UDINT;
+	///[ms] until failure timeout passing sensor is set?
+	udiPassTime_ms: UDINT;
+	///[ms] simulation time for passing the stopper or /2 of timeout time?
+	udiSimPassTime_ms: UDINT;
+	/// Position of the junction
+	dinPosition_um: DINT;
+	/// Distance from open to close position
+	dinOpenWay_um: DINT;
+	/// Pointer to Hashtable from Desicion
+	pTblDecision: POINTER TO ARRAY[0..cintMaxDecisions] OF T_DecisionElement;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

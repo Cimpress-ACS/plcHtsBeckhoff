@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_CtrlModule" Id="{cca8a16d-f5ca-42f4-b972-17fda3ab3e23}">
+  <POU Name="FB_CtrlModule" Id="{688741db-fc46-43a1-b0ea-4dfe62676523}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_CtrlModule EXTENDS FB_CtrlBase
 
 VAR_INPUT
@@ -77,6 +77,8 @@ Version		Date			Author		Comment
 0.00.7		05.12.2013		AVM/DSC		General revision of behaviour in case of emergency off (state EOFF) and general error (state ERROR).
 										New handling for module specific interface.
 0.00.8		06.12.2013		AVM/MRU		Add TSTOP in checkChildAlmClass
+0.00.9		09.12.2013		AVM/DSC		BugFix in sub state "cSTA_SUB_CHECK_GROUP_STATUS" from run and stop sequence. Insert new "bolChecked" flag
+						 				to detect if the sequence has been processed correctly.
 ___________________________________________________________________________________________________*)
 
 
@@ -96,7 +98,7 @@ IF (me.bolActivate) AND (SIf_MOD.Cur<>0) AND (SIf_MOD.Cfg<>0) AND (SIf_MOD.Par<>
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="sta_RUNBusy" Id="{8e793960-d899-4403-a70f-dad72d52a320}">
+    <Method Name="sta_RUNBusy" Id="{d6a4d666-a686-4bfe-8a83-0833c6ade5a5}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
 VAR
 	ii: INT;
@@ -129,6 +131,12 @@ END_VAR
 		CASE me.SubStateMachine.intState OF
 			//--------------------------------------------------------------------------------------
 			cSTA_SUB_INITIALIZED:
+			
+				// Loop over all registered childs
+				FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
+					// Clear checked flag		
+					aListOfSeq[ii].bolChecked:= FALSE;
+				END_FOR
 				uinGroupIndex:= 1;
 				me.SubStateMachine.intStateNext := cSTA_SUB_SEND_GROUP_CMD;
 				
@@ -154,8 +162,9 @@ END_VAR
 				FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
 					// If child is associated for the current group index		
 					IF (aListOfSeq[ii].uinGroupRun = uinGroupIndex) THEN
-						// Check defined status
-						IF (aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqRun) THEN
+						// Check defined status and if child not already checked
+						IF ((aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqRun) AND (aListOfSeq[ii].bolChecked = FALSE)) THEN
+							aListOfSeq[ii].bolChecked:= TRUE;
 							intCheckCounter:= intCheckCounter - 1;
 						END_IF				
 					END_IF			
@@ -209,7 +218,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CtrlInit" Id="{c52d5bac-2cda-43dd-8532-3cb71d2aa83f}">
+    <Method Name="CtrlInit" Id="{f3204552-2244-4621-90ab-c60992569af4}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
 VAR
 	ii: INT;
@@ -225,7 +234,7 @@ FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
 END_FOR]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{10e6062d-7819-4866-bdec-b3efbba611df}">
+    <Method Name="sta_RUN" Id="{41c55644-7a00-4d79-b266-125261b220bd}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
@@ -260,7 +269,7 @@ END_FOR]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Always" Id="{e8d1e197-ee23-4f77-975e-0c43010ac957}">
+    <Method Name="Always" Id="{00903eb6-c255-4379-babe-f7e45faa5e6c}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -356,7 +365,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{2d97cb84-93fd-4e69-a78f-6853c3b836ca}">
+    <Method Name="sta_STOPBusy" Id="{041bf862-019b-485c-80d1-fa913c8c8bc1}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
 VAR
 	ii: INT;
@@ -390,6 +399,12 @@ END_VAR
 		CASE me.SubStateMachine.intState OF
 			//--------------------------------------------------------------------------------------
 			cSTA_SUB_INITIALIZED:
+			
+				// Loop over all registered childs
+				FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
+					// Clear checked flag		
+					aListOfSeq[ii].bolChecked:= FALSE;
+				END_FOR
 				uinGroupIndex:= 1;
 				me.SubStateMachine.intStateNext := cSTA_SUB_SEND_GROUP_CMD;
 				
@@ -415,8 +430,9 @@ END_VAR
 				FOR ii:=0 TO usiNumOfSeq-1 BY 1 DO
 					// If child is associated for the current group index		
 					IF (aListOfSeq[ii].uinGroupStop = uinGroupIndex) THEN
-						// Check defined status
-						IF (aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqStop) THEN
+						// Check defined status and if child not already checked
+						IF ((aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqStop) AND (aListOfSeq[ii].bolChecked = FALSE)) THEN
+							aListOfSeq[ii].bolChecked:= TRUE;
 							intCheckCounter:= intCheckCounter - 1;
 						END_IF				
 					END_IF			
@@ -470,7 +486,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{3b049153-b5a6-47b8-b8cb-cc470b6b00b8}">
+    <Method Name="sta_STOP" Id="{fb63a740-8b51-43c2-a762-f4e7d2e8a825}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -489,7 +505,7 @@ END_VAR
 		
 		;	
 		// State Change Condition
-		IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP ) THEN
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP) THEN
 			IF (me.intCmd=cCMD_RUN) THEN
 				me.StateMachine.intStateNext :=  cSTA_RUNBusy;
 			END_IF
@@ -503,7 +519,7 @@ END_VAR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{ae324315-115c-4a81-8772-9882bcb3036d}">
+    <Method Name="FB_init" Id="{4e8d539c-d414-472e-a843-6fffe152d6df}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -559,7 +575,7 @@ CIf.SwCfg.bolSimulation := FALSE;
 // Pointer address of the property is not defined at this time]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{d8d1de4b-01ee-4d9e-ae70-a782cc05d122}">
+    <Method Name="getCmdState" Id="{a078c97a-5182-488f-8667-8079dd8856a0}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -592,7 +608,7 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{2c2fd893-974c-4d86-bfda-b8346aa22892}">
+    <Method Name="IoInBridge" Id="{d5e522c0-5c01-4e59-bbf1-ec4cea3e9421}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -608,7 +624,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFF" Id="{c0014833-d0ef-4032-98d6-fd0007c135d3}">
+    <Method Name="sta_OFF" Id="{78ed42c6-2949-4968-a527-66824914bda6}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -639,7 +655,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildAlmClass" Id="{4a3d18b9-acae-420d-9743-86dc093ddb02}">
+    <Method Name="checkChildAlmClass" Id="{f7f92540-ee73-43a3-801d-c3b5a079914f}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
 ]]></Declaration>
       <Implementation>
@@ -679,7 +695,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{331bc12e-6503-403e-a3c0-832b30026903}">
+    <Method Name="StateMachine" Id="{78ea7042-a10b-4680-b2bd-6635a7f59840}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -698,7 +714,7 @@ CASE me.StateMachine.intState OF
 END_CASE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{5f6ba1b2-8577-42d1-ba96-1c4e2a5a862b}">
+    <Method Name="IoOutBridge" Id="{a262f034-5c74-41ce-a298-1ca1a39b0a78}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -711,7 +727,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFFBusy" Id="{45aba3ee-31ad-4b6d-b081-e67c4a74ddf2}">
+    <Method Name="sta_EOFFBusy" Id="{48ff182a-3e28-4fcd-b00e-a593ec37e852}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFFBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -743,7 +759,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EOFF" Id="{b0421bbf-83d0-403a-bc5c-f85e4848f427}">
+    <Method Name="sta_EOFF" Id="{d74d2413-2f21-47d2-9117-778c21ee4812}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EOFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -771,7 +787,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddSeqChild" Id="{543da3ac-6a50-48e9-87e5-6f8a78a6859e}">
+    <Method Name="AddSeqChild" Id="{1b84a93c-c7a1-4f76-be20-3d0069bd1bd2}">
       <Declaration><![CDATA[METHOD AddSeqChild
 VAR_INPUT
 	stSequence: T_Sequence;
@@ -796,7 +812,7 @@ IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddRunGrpTime" Id="{b8c22f31-2c20-46b4-8f42-7722292782f2}">
+    <Method Name="AddRunGrpTime" Id="{d1f28383-a338-4507-ac1f-d30113f03da0}">
       <Declaration><![CDATA[METHOD AddRunGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
@@ -810,7 +826,7 @@ IF (usiNumOfRunGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddStopGrpTime" Id="{9c546cfd-12a1-474d-80c9-f24a4f230e4f}">
+    <Method Name="AddStopGrpTime" Id="{a3a8ef40-052c-454f-923e-e03a1edaa212}">
       <Declaration><![CDATA[METHOD AddStopGrpTime
 VAR_INPUT
 	udiGrpWaitTime_ms: UDINT;
@@ -824,7 +840,7 @@ IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkValidPointer" Id="{ccd0fab0-c2c6-48eb-8513-ffa0d4ea4f7c}">
+    <Method Name="checkValidPointer" Id="{fb94e00e-ae6c-439e-8879-444057e7c248}">
       <Declaration><![CDATA[METHOD PROTECTED checkValidPointer : BOOL
 ]]></Declaration>
       <Implementation>
@@ -838,7 +854,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddIBufferChilds" Id="{ca70c08a-2ad8-4f57-9883-53b21990cefd}">
+    <Method Name="AddIBufferChilds" Id="{6d3d3899-c556-4128-90d2-dcc730ca6b35}">
       <Declaration><![CDATA[METHOD AddIBufferChilds
 VAR_INPUT
 	pFB_ChildTypeIBuffer: POINTER TO FB_IBuffer;
@@ -856,7 +872,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_ERROR" Id="{6bb9de7c-ef80-4409-9aab-3765b30a1f7d}">
+    <Method Name="sta_ERROR" Id="{049b8bc0-659f-4fd3-987e-7aa5067c18bc}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -889,63 +905,63 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Property Name="SIf_Cur" Id="{4e7ccb3c-736e-4025-a79c-7e37eef79e0a}">
+    <Property Name="SIf_Cur" Id="{da09324d-d509-4c63-87a6-56489e58339e}">
       <Declaration><![CDATA[PROPERTY SIf_Cur : POINTER TO T_Ctrl_SIf_MOD_Cur]]></Declaration>
-      <Get Name="Get" Id="{4e3a18e8-723e-47d3-b005-2aa0f460b14a}">
+      <Get Name="Get" Id="{122ac4db-9666-4538-a1ba-0cded613e833}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_Cur:= SIf_MOD.Cur; ]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{91a263a5-51eb-41b5-a9f6-d6e05947fb9a}">
+      <Set Name="Set" Id="{6ac1c127-3ff7-4378-bd04-b450f061c24a}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.Cur := SIf_Cur; ]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SIf_Par" Id="{9cf6f9c8-1b71-4f00-b0c6-15e188edefbc}">
+    <Property Name="SIf_Par" Id="{b5c66939-c58e-45c9-89fc-5cfc53253a6d}">
       <Declaration><![CDATA[PROPERTY SIf_Par : POINTER TO T_Ctrl_SIf_MOD_Par
 ]]></Declaration>
-      <Get Name="Get" Id="{c803637c-d474-4e29-af7c-67ed7925f818}">
+      <Get Name="Get" Id="{65982a28-7c19-4d53-b6bc-21b03191247e}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_Par:= SIf_MOD.Par; ]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{ae664cb4-750f-4390-95d4-8d818db996ee}">
+      <Set Name="Set" Id="{69b18f07-6859-4618-97af-350fbaf7f176}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.Par := SIf_Par; ]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SIf_Cfg" Id="{1e87a95f-08d3-4500-a3ab-126890a10bf9}">
+    <Property Name="SIf_Cfg" Id="{8f5b6bf3-c398-4c4d-9ed0-11a81c7b0dc3}">
       <Declaration><![CDATA[PROPERTY SIf_Cfg : POINTER TO T_Ctrl_SIf_MOD_Cfg
 ]]></Declaration>
-      <Get Name="Get" Id="{ef502ad9-b3fd-4971-84d0-a0b246ceb70b}">
+      <Get Name="Get" Id="{64b93d81-accf-4579-a41d-a90868e6ef8e}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_Cfg:= SIf_MOD.Cfg; ]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{0e892710-83e8-4f0f-8694-452508272c40}">
+      <Set Name="Set" Id="{b1367432-8208-4440-bda8-d3258dfc31dd}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.Cfg := SIf_Cfg;]]></ST>
         </Implementation>
       </Set>
     </Property>
-    <Property Name="SIf_In" Id="{2ac37c1f-ba34-4557-98b0-82f96a662392}">
+    <Property Name="SIf_In" Id="{7bbca7b5-ade5-48f3-a3a1-d7dc7310183d}">
       <Declaration><![CDATA[PROPERTY SIf_In : POINTER TO T_Ctrl_SIf_MOD_In]]></Declaration>
-      <Get Name="Get" Id="{5ac45788-12a5-4ec6-86d9-42b1fe50abe3}">
+      <Get Name="Get" Id="{8d4dacfd-ad1a-4930-b902-02d093f97f43}">
         <Declaration><![CDATA[
 ]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_In:= SIf_MOD.In; ]]></ST>
         </Implementation>
       </Get>
-      <Set Name="Set" Id="{bf83a296-1a0e-426b-a219-fc3756225ed3}">
+      <Set Name="Set" Id="{83cf6edb-9722-486e-85ab-0184a27fa079}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[SIf_MOD.In := SIf_In;]]></ST>

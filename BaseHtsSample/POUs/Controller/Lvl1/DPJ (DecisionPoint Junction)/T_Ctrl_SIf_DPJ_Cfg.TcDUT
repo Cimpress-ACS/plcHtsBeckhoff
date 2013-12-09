@@ -1,0 +1,21 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DPJ_Cfg" Id="{ab5b999c-6669-4507-b30d-d7f1d953204f}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_Cfg :
+STRUCT
+	eTyp: E_Typ_JUN;
+	/// Maximale buffer capacity
+	dinMaxCapacity: DINT;
+	/// Number of junctions
+	intCountJunctions: INT;
+	/// Decisionpoint has a Hangerdetection sensor for exactly position reading
+	bolHangerDetectionExist: BOOL;
+	/// Send every Done Job to Line controller
+	bolDtChToLine_send: BOOL;
+	/// Simulation of the Speed internal, do not read Pos and speed from Transport
+	bolSimSpeedInternal: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,1486 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <POU Name="FB_DPJ" Id="{65d5abb9-c34f-446f-83c0-7b9c134647d9}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DPJ EXTENDS FB_CtrlBase
+VAR_INPUT
+	/// Sensor Counter into the system
+	In_bolCounterIn: BOOL;
+	/// Sensor Counter out of the system
+	In_bolCounterOut: BOOL;
+	/// Hanger exactly at RFID Position
+	In_bolHangerDetector: BOOL;
+	///pointer to function block RFID Reader
+	p_fbRFW: POINTER TO FB_RFW;
+END_VAR
+VAR
+	/// Specific interface struct for public access
+	SIf: T_Ctrl_SIf_DPJ;
+	/// Interface to Childs
+	pRFW_CIF: POINTER TO T_Ctrl_CIf;
+	pRFW_SIF: POINTER TO T_Ctrl_SIf_RFW;
+	/// Childs of Junctions
+	/// List of pointers to Childs
+	a_pMultiChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO FB_JUN;
+	/// List of childs common interface
+	a_pMultiChildCIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_CIf;
+	/// List of childs specific interface for additional parameters or cur
+	a_pMultiChildSIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_SIf_JUN;
+	usiNumOfMultiChild: USINT;
+	usiNumOfValidPointerMultiChild: USINT;
+	/// Hashtable
+	aTblDecision: ARRAY[0..cintMaxDecisions] OF T_DecisionElement;
+	/// Datachannel
+	/// Internal Variable Data Channel Variables
+	intStatemachine: INT;
+	/// Data not correct
+	bolDataBad: BOOL;
+	/// Data found
+	bolDataFound: BOOL;
+	/// Retry Counts for error message
+	intCountRetry: INT;
+	/// Data Channel Specific Variable
+	intIndexOldest: INT;
+	/// Date and time of the oldes imput
+	dtOldestTag: DT;
+	/// Datachannel to send done job
+	fbDtChnToLine_JobDone: FB_DtChnToLine_JobDone;
+	/// Error information from Job Done
+	intStateDtChnToLine_JobDone: INT;
+	/// Internal Variable
+	dtActualTime: DT;
+	/// Actual Time and date
+	dtDeleteTime: DT;
+	/// New RFID Tag ID Job found and actualisised in Hashtable
+	bolJobFound: BOOL;
+	/// Rising Edge detection of Hanger at RFID Position
+	bolREHangerDetection: BOOL;
+	/// Rising Edge detection of Hanger Counter input
+	bolRECounterIn: BOOL;
+	/// Rising Edge detection of Hanger Counter output
+	bolRECounterOut: BOOL;
+	/// No Job active
+	bolNoJobActive: BOOL;
+	/// Last RFID Tag ID
+	uliRFID_Tag_old: ULINT;
+	/// Loop variable for RFID check
+	uinLoopRFID: UINT;
+	/// Transportposition from last cycle
+	dinTransportPosition_old_um: DINT;
+	/// Driven Way from last to actual cycle
+	dinTransportDifferenz_um: DINT;
+	/// Actual position of the hanger at the RFID Reader
+	dinPositionRFID_um: DINT;
+	/// Index of the actual hanger at RFID Position 
+	intIndexActualHanger: INT;
+	/// Index of the RFID 
+	intIndexActualRFID: INT;
+	/// Loop Variable
+	intI: INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+Desictionpoint and Junction parent
+This controller communicate with a datachannel to the Linecontroller to get the hashtable
+With a RFID Child it reads every tag and controlls the junctions to open the correct one
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		23.08.2013		AVM/PRE		Start history
+0.00.2		02.10.2013		VP/RE		Skip zero entries in hash table. Fixed junction number count (was not set after init). Fixed data validation in DataChannel->cSTA_SUB_Data_CheckData.
+0.00.3		04.10.2013		AVM/DSC		Changed timestamp element in data channel structure from DT to String
+0.00.4		30.10.2013		AVM/DSC		Change request from REN (15.10.2013). Now it's possible to send a new job also if a hanger is on the way to a junction.
+										Add. modifications in method "DtChnToPLC_Decision" for states DELETE_ALL, DELETE_JUNCTION and DELETE_ID after tests together with line control.				
+0.00.5		09.12.2013		AVME/DSC	Modification in method "checkStateAllMultiChild".
+										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+										
+___________________________________________________________________________________________________*)
+
+
+IF (me.bolActivate)  AND (p_fbRFW<>0) AND (THIS^.checkChildPointer()) THEN // cyclic call enabled
+	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
+		CtrlInit();
+		CIf.Info.bolInitDone := TRUE;
+	ELSE
+		CycleStartDuty();
+	
+		Always();
+		
+		StateMachine();
+		
+		CycleEndDuty();
+	END_IF
+END_IF;
+]]></ST>
+    </Implementation>
+    <Method Name="sta_STOP" Id="{3577e432-ff5e-4939-bf86-20cabdef341e}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
+		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
+		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
+		IF dinPositionRFID_um > 0 THEN
+			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
+		END_IF
+		// Check in the same loop if any job is active
+		bolNoJobActive := TRUE;
+		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+		END_FOR	
+
+		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
+				
+		IF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+		END_IF;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{d21d78ab-d95a-4d34-812b-6ae6570c9d1f}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	udiTaskCnt: UDINT;
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+
+
+// set name of class/typ
+CIf.Info.strType := 'FB_DPJ'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[1].strText := 'Communication Error to Line Controller'; 
+SIf.Alm[2].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[2].strText := 'RFID allready in Hashtable, Job not possible';
+SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[3].strText := 'False Job Parameter';
+SIf.Alm[4].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[4].strText := 'Job Timeout, delete Job';
+SIf.Alm[5].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[5].strText := 'RFID Reader Tag not readed';
+SIf.Alm[6].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[6].strText := 'Hanger detection no hanger detected';
+SIf.Alm[7].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[7].strText := 'Hashtable full, no more input possible';
+SIf.Alm[8].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[8].strText := 'Data Channel Error Receive Data';
+SIf.Alm[9].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[9].strText := 'Data Channel Error Send Data';
+SIf.Alm[10].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[10].strText := 'RFID Not found';
+SIf.Alm[11].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[11].strText := 'Delete all cmd not possible because of invalid state';
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// parmeter
+SIf.Par.udiTimeMaxJob_s := 3600;
+SIf.Par.dinDistanceOffsetUntilDelJob_um:= 500000; // 500mm
+SIf.Cfg.bolHangerDetectionExist := TRUE;
+SIf.Cfg.dinMaxCapacity := 10;
+SIf.Cfg.bolSimSpeedInternal := FALSE;
+
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoOutBridge" Id="{b33ff625-8c43-4478-a9da-8d2ce0144845}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+	
+		;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_OFF" Id="{2903ed0b-14d4-4293-8583-a244cc788c80}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{9d0badab-64f7-46ba-be8c-2435ced8fb7b}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+    cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+END_CASE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildPointer" Id="{9578acdf-9705-484e-9b64-11a8484e0852}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (usiNumOfMultiChild = usiNumOfValidPointerMultiChild) THEN
+	checkChildPointer:= TRUE;
+ELSE
+	checkChildPointer:= FALSE;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_PON" Id="{a6c3b472-a1c8-466c-a5c9-9116c07df7ef}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_OFF) OR (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetAlmClassAllMultiChild" Id="{93873e60-5c85-463c-b9b6-5eb055aa744a}">
+      <Declaration><![CDATA[METHOD PROTECTED SetAlmClassAllMultiChild
+VAR_INPUT
+	In_AlmClass: E_AlmClass;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method set alarm class parent to all existing buffer zone child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildCIF[ii]^.Job.eParent_ActivAlmClass:= In_AlmClass;	
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{94f8aede-7a8b-40a8-b16f-c02afcb0ea73}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+
+		
+		fbSimulationTimer.IN := FALSE;
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiTimeOutRead_ms);
+		fbSimulationTimer(); // set time/reset timer
+		fbSimulationTimer.IN := TRUE; // start timer
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN
+				;
+			END_IF
+		END_IF
+		
+		// Cyclicle action
+		pRFW_CIF^.Job.intACmd := cCMD_RUN;
+
+		// State Change Condition
+		IF (pRFW_CIF^.Job.intState = cSTA_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;
+		ELSIF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUN" Id="{c4b7fbcb-72b9-44db-90ca-20cad51c15b9}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			IF SIf.Cfg.bolSimSpeedInternal THEN
+				SIf.Cur.dinTransportPosition_um := (SIf.Cur.dinTransportPosition_um + UDINT_TO_DINT(676 * me.FUBInfo.udiSample_ms)); // Speed TLPsort = 0.676 m/s = 676 um/ms
+				SIf.Cur.dinTransportspeed_um_s := (676 * 1000);
+			END_IF
+			IF pRFW_SIF^.Cur.stData.uliTagID <> uliRFID_Tag_old THEN
+				SIf.In.bolHangerDetector.intern := TRUE;
+				dinPositionRFID_um := 0;
+			ELSE
+				SIf.In.bolHangerDetector.intern := FALSE;
+			END_IF
+		END_IF
+		
+		// Start the junctions if the output feeding is ok
+		// Method send input command to all existing multi child controller.
+		FOR intI:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+			IF SIf.Cur.a_bolJunctionOutputOK[intI] = TRUE THEN
+				a_pMultiChildCIF[intI]^.Job.intACmd:= cCMD_RUN;
+			ELSE
+				a_pMultiChildCIF[intI]^.Job.intACmd:= cCMD_STOP;
+			END_IF
+		END_FOR
+
+
+		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
+		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
+		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
+		IF dinPositionRFID_um > 0 THEN
+			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
+		END_IF
+		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+		END_FOR	
+
+		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
+			
+	
+		//--------------------------------------------------------------------------------------
+		// Handle new RFID tags
+		//--------------------------------------------------------------------------------------
+		
+		// RFID Reader gives a new Tag ID AND the sensor "Hanger detection" gives a Signal
+		// Exactly position is from the sensor
+		// But if sensor is first or the Tag ID is First is not defined!
+		// If Sensor is first, write 1 into actual positon to increase
+		// If RFID is first, write -1 To wait until sensor is detected
+		
+		// Check hanger detector sensor signal
+		IF (SIf.In.bolHangerDetector.intern = TRUE) AND (bolREHangerDetection = FALSE) THEN
+			bolREHangerDetection := TRUE;
+			IF dinPositionRFID_um = 0 THEN //Sensor first
+				dinPositionRFID_um := 1;
+			ELSIF dinPositionRFID_um > 1 THEN	// Since last input no RFID Read
+				// Set Alarm: SIf.Alm[5].strText := 'RFID Reader Tag no readed';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,5,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			ELSE	// RFID Tag Reader first
+				aTblDecision[intIndexActualHanger].dinActPos_um := 1;
+				dinPositionRFID_um := 0;
+			END_IF
+		ELSIF (SIf.In.bolHangerDetector.intern = FALSE) THEN
+			bolREHangerDetection := FALSE;
+		END_IF		
+		
+		
+		// Check about new RFID Tag
+		IF pRFW_SIF^.Cur.stData.uliTagID <> uliRFID_Tag_old THEN
+			uliRFID_Tag_old := pRFW_SIF^.Cur.stData.uliTagID;
+			bolJobFound := FALSE;
+			// Loop through the hashtable to set new position
+			FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+				
+				// Check if RFID already exists in buffer
+				IF (aTblDecision[uinLoopRFID].stDecision.uliRFID = pRFW_SIF^.Cur.stData.uliTagID) THEN
+					// Safe actual index for correct input
+					intIndexActualHanger := UINT_TO_INT(uinLoopRFID);
+					// Change state
+					aTblDecision[uinLoopRFID].eState := E_DecisionState.WayToJunction;
+					// Change timestamp
+					aTblDecision[uinLoopRFID].dtTimeRFID := dtActualTime;
+					
+					// Check position, if RFID Reader first or Sensor first
+					IF SIf.Cfg.bolHangerDetectionExist = FALSE THEN		// No exactly position detection
+						dinPositionRFID_um := 0;
+						// Start actual position with 1 to increase it cyclical
+						aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;
+					ELSIF dinPositionRFID_um = 0 THEN // RFID Reader first
+						dinPositionRFID_um := -1;
+					ELSIF dinPositionRFID_um = -1 THEN // Hanger detection does not detected a hanger
+						// Set Alarm: SIf.Alm[6].strText := 'Hanger detection no hanger detected';
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,6,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+					ELSE		// Hanger detection first
+						// Start actual position
+						aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;	
+						dinPositionRFID_um := 0;
+					END_IF
+
+					bolJobFound := TRUE;
+					EXIT;
+				END_IF
+			END_FOR
+			
+			
+			// RFID not exists in buffer. Create a new entry and set state to "WayToJunction". The target is not yet determined at this time.
+			// Chance for line control to send a new job during the hanger is on the way to a junction.
+			IF (bolJobFound = FALSE) THEN		
+				// Search a free Element
+				FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+					
+					// NO RFID = Free element
+					IF (aTblDecision[uinLoopRFID].stDecision.uliRFID = 0) THEN					
+						// Safe actual index for correct input
+						intIndexActualHanger := UINT_TO_INT(uinLoopRFID);					
+						// Save new RFID
+						aTblDecision[uinLoopRFID].stDecision.uliRFID := pRFW_SIF^.Cur.stData.uliTagID;
+						// Target=0, will be defined on the way to junction from line control
+						aTblDecision[uinLoopRFID].stDecision.dinTarget := 0;				
+						// Change state
+						aTblDecision[uinLoopRFID].eState := E_DecisionState.WayToJunction;
+						// Change timestamp
+						aTblDecision[uinLoopRFID].dtTimeRFID := dtActualTime;
+						
+						// Check position, if RFID Reader first or Sensor first
+						IF SIf.Cfg.bolHangerDetectionExist = FALSE THEN		// No exactly position detection
+							dinPositionRFID_um := 0;
+							// Start actual position with 1 to increase it cyclical
+							aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;
+						ELSIF dinPositionRFID_um = 0 THEN // RFID Reader first
+							dinPositionRFID_um := -1;
+						ELSIF dinPositionRFID_um = -1 THEN // Hanger detection does not detected a hanger
+							// Set Alarm: SIf.Alm[6].strText := 'Hanger detection no hanger detected';
+							pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,6,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+						ELSE		// Hanger detection first
+							// Start actual position
+							aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;	
+							dinPositionRFID_um := 0;										
+						END_IF
+							
+						EXIT;
+					END_IF
+					
+				END_FOR	
+			END_IF
+			
+		END_IF		
+		
+		
+		// State Change Condition
+		// OFF done in always state
+		IF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		END_IF;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkAlmClassAllMultiChild" Id="{aaf4492f-0dbb-454e-b8ec-7997d4abc7b3}">
+      <Declaration><![CDATA[METHOD PROTECTED checkAlmClassAllMultiChild : BOOL
+VAR_INPUT
+	In_AlmClass: E_AlmClass;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method check the current alm class of all zones and give back 
+// TRUE if one of the childs corresponds the input "In_AlmClass" of this method 
+
+//Init
+checkAlmClassAllMultiChild:= FALSE;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
+	// Check about active alm class	
+	IF (a_pMultiChildCIF[ii]^.Job.eMe_ActivAlmClass = In_AlmClass) THEN
+		checkAlmClassAllMultiChild:= TRUE;
+	END_IF
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="DtChnToPLC_Decision" Id="{789b4142-593c-4a3a-a362-6c176f8b5374}">
+      <Declaration><![CDATA[METHOD DtChnToPLC_Decision : BOOL
+VAR
+	bolRFIDExist: BOOL;
+END_VAR
+VAR CONSTANT
+	cSTA_SUB_Data_Init: INT := 900;
+	cSTA_SUB_Data_WaitForJob: INT := 902;
+	cSTA_SUB_Data_CheckData: INT := 904;
+	cSTA_SUB_Data_Acknowledge: INT := 906;
+	cSTA_SUB_Data_Retry: INT := 908;
+	cSTA_SUB_Data_Error: INT := 910;
+	cDataState_DONE: INT := -1;
+	cDataState_Ready: INT := 1;
+	cDataState_Retry: INT := -99;
+	cDataState_Error: INT := -100;
+	cMAX_RETRY: INT := 10;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Data Channel to Receive Data from Line Controller
+// Startup check States
+IF intStatemachine < cSTA_SUB_Data_Init THEN
+	intStatemachine := cSTA_SUB_Data_Init;
+END_IF
+
+CASE intStatemachine OF
+	cSTA_SUB_Data_Init:
+		IF CIf.Job.intState > cSTA_PON THEN
+			intCountRetry := 0;
+			SIf.DtChnToPLC.stNewDecision.intDataState := cDataState_DONE;
+			intStatemachine := cSTA_SUB_Data_WaitForJob;
+		END_IF
+		
+	cSTA_SUB_Data_WaitForJob:
+		// New data arrived
+		IF SIf.DtChnToPLC.stNewDecision.intDataState = cDataState_Ready THEN
+			bolDataBad := FALSE;
+			dtOldestTag := dtActualTime;
+			intIndexOldest := -1;			// -1 = no Oldest free input found
+			intStatemachine := cSTA_SUB_Data_CheckData;
+		END_IF
+	
+	cSTA_SUB_Data_CheckData:	
+		// Check Data
+		IF SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID <= 0 THEN
+				bolDataBad := TRUE;
+				// Set Alarm: SIf.Alm[3].strText := 'False Job Parameter';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+		END_IF 
+		IF ((SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget <= 0) OR
+			 (SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget > SIf.Cfg.intCountJunctions)) THEN
+				bolDataBad := TRUE;
+				// Set Alarm: SIf.Alm[3].strText := 'False Job Parameter';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+		END_IF 
+		IF SIf.DtChnToPLC.stNewDecision.intJob <= E_Decision_Job.none AND SIf.DtChnToPLC.stNewDecision.intJob >= E_Decision_Job.MAX_E_Decision_Job THEN
+				bolDataBad := TRUE;
+				// Set Alarm: SIf.Alm[3].strText := 'False Job Parameter';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+		END_IF 
+		
+				
+		CASE SIf.DtChnToPLC.stNewDecision.intJob OF
+			/////////////////////////////////////////////////////
+			// Insert new decision item
+			/////////////////////////////////////////////////////							
+			E_Decision_Job.NEW:
+				
+				bolRFIDExist:= FALSE;
+				//---------------------------------------
+				// Loop through the hashtable
+				//---------------------------------------
+				FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+					
+					// Check if RFID already exist
+					IF ((aTblDecision[uinLoopRFID].stDecision.uliRFID = SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID) AND (bolRFIDExist=FALSE)) THEN
+						// Save actual index of found RFID
+						intIndexActualRFID := UINT_TO_INT(uinLoopRFID);				
+						bolRFIDExist:= TRUE;
+					END_IF	
+
+					// In the same loop, save the index of the oldest input
+					IF ((dtOldestTag > aTblDecision[uinLoopRFID].dtTimeJob) AND (aTblDecision[uinLoopRFID].eState = E_DecisionState.Finished)) THEN
+						dtOldestTag := aTblDecision[uinLoopRFID].dtTimeJob;
+						intIndexOldest := UINT_TO_INT(uinLoopRFID);
+					END_IF
+					
+				END_FOR
+				
+				//---------------------------------------
+				// Check bad data, retry handling
+				//---------------------------------------
+				IF bolDataBad = TRUE THEN
+					IF intCountRetry >= cMAX_RETRY THEN
+						intStatemachine := cSTA_SUB_Data_Error;
+					ELSE
+						intCountRetry := intCountRetry + 1;
+						intStatemachine := cSTA_SUB_Data_Retry;
+					END_IF
+					
+				//---------------------------------------
+				// RFID already exist
+				//---------------------------------------
+				ELSIF bolRFIDExist THEN
+					
+					// In this case, the hanger is already on the way to junction.
+					// Only now, the target is determined from line control!	
+					aTblDecision[intIndexActualRFID].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
+					aTblDecision[intIndexActualRFID].dtTimeJob := dtActualTime;
+					aTblDecision[intIndexActualRFID].eState := E_DecisionState.WayToJunction;
+					intStatemachine := cSTA_SUB_Data_Acknowledge;
+
+			
+				//---------------------------------------
+				// RFID not exist
+				//---------------------------------------
+				ELSIF NOT(bolRFIDExist) THEN
+					// Reset counter because right job
+					intCountRetry := 0;
+					// Search a free Element
+					FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+						// NO RFID = Free element
+						IF (aTblDecision[uinLoopRFID].stDecision.uliRFID = 0) THEN
+							aTblDecision[uinLoopRFID].stDecision.uliRFID := SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID;
+							aTblDecision[uinLoopRFID].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
+							aTblDecision[uinLoopRFID].dtTimeJob := dtActualTime;
+							aTblDecision[uinLoopRFID].eState := E_DecisionState.Wait;
+							intStatemachine := cSTA_SUB_Data_Acknowledge;
+							EXIT;
+						END_IF
+					END_FOR
+					// IF Loop was finished and no input done = No empty Hashtable line was there
+					// Overwrite the oldest one
+					IF ((UINT_TO_INT(uinLoopRFID) = cintMaxDecisions+1) AND (aTblDecision[uinLoopRFID].stDecision.uliRFID <> SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID)) THEN
+						// The oldest input was saved at a loop before
+						IF intIndexOldest >= 0 THEN		// A possible line to overwrite was found: -1 = initial value
+							aTblDecision[intIndexOldest].stDecision.uliRFID := SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID;
+							aTblDecision[intIndexOldest].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
+							aTblDecision[intIndexOldest].dtTimeJob := dtActualTime;
+							aTblDecision[intIndexOldest].eState := E_DecisionState.Wait;
+							aTblDecision[intIndexOldest].dinActPos_um := 0;
+							aTblDecision[intIndexOldest].dtTimeRFID := DINT_TO_DT(0);
+							intStatemachine := cSTA_SUB_Data_Acknowledge;
+						ELSE
+							intStatemachine := cDataState_Error;		// No other inputs are possible
+							// Set Alarm: SIf.Alm[7].strText := 'Hashtable full, no more input possible';
+							pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,7,cintMaxDecisions,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);										
+						END_IF
+					END_IF
+				END_IF
+				
+			/////////////////////////////////////////////////////
+			// Replace ID
+			/////////////////////////////////////////////////////			
+			E_Decision_Job.REPLACE_ID:
+				// Init value
+				bolDataFound := FALSE;
+				// Check if RF ID not allready exist
+				FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+					IF aTblDecision[uinLoopRFID].stDecision.uliRFID = SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID THEN
+						aTblDecision[uinLoopRFID].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
+						aTblDecision[uinLoopRFID].dtTimeJob := dtActualTime;	
+						bolDataFound := TRUE;					
+						intStatemachine := cSTA_SUB_Data_Acknowledge;
+						EXIT;
+					END_IF
+				END_FOR
+				
+				IF bolDataFound = FALSE THEN
+					//Set Alarm: SIf.Alm[10].strText := 'RFID Not found';
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,10,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+					IF intCountRetry >= cMAX_RETRY THEN
+						intStatemachine := cSTA_SUB_Data_Error;
+					ELSE
+						intCountRetry := intCountRetry + 1;
+						intStatemachine := cSTA_SUB_Data_Retry;
+					END_IF
+				END_IF
+
+			/////////////////////////////////////////////////////
+			// Delete ID
+			/////////////////////////////////////////////////////			
+			E_Decision_Job.DELETE_ID:
+				// Init value
+				bolDataFound := FALSE;
+				// Check if RF ID not allready exist
+				FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+					IF aTblDecision[uinLoopRFID].stDecision.uliRFID = SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID THEN
+						// Check DecisionState before delete
+						IF (aTblDecision[uinLoopRFID].eState = E_DecisionState.Wait) OR 
+							(aTblDecision[uinLoopRFID].eState = E_DecisionState.WayToJunction) OR
+							(aTblDecision[uinLoopRFID].eState = E_DecisionState.Finished) THEN
+ 
+							aTblDecision[uinLoopRFID].stDecision.uliRFID := 0;
+							aTblDecision[uinLoopRFID].stDecision.dinTarget := 0;
+							aTblDecision[uinLoopRFID].dtTimeJob := DINT_TO_DT(0);
+							aTblDecision[uinLoopRFID].eState := E_DecisionState.none;
+							aTblDecision[uinLoopRFID].dinActPos_um := 0;
+							aTblDecision[uinLoopRFID].dtTimeRFID := DINT_TO_DT(0);
+						
+							intStatemachine := cSTA_SUB_Data_Acknowledge;
+							bolDataFound := TRUE;					
+							EXIT;
+						END_IF
+					END_IF
+				END_FOR
+				
+				IF bolDataFound = FALSE THEN
+					//Set Alarm: SIf.Alm[10].strText := 'RFID Not found';
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,10,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+					IF intCountRetry >= cMAX_RETRY THEN
+						intStatemachine := cSTA_SUB_Data_Error;
+					ELSE
+						intCountRetry := intCountRetry + 1;
+						intStatemachine := cSTA_SUB_Data_Retry;
+					END_IF
+				END_IF
+				
+			/////////////////////////////////////////////////////
+			// Delete Junction
+			/////////////////////////////////////////////////////			
+			E_Decision_Job.DELETE_JUNCTION:
+				// Check if RF ID not allready exist
+				FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+					IF aTblDecision[uinLoopRFID].stDecision.dinTarget = SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget THEN
+						// Check DecisionState before delete junction
+						IF (aTblDecision[uinLoopRFID].eState = E_DecisionState.Wait) OR 
+							(aTblDecision[uinLoopRFID].eState = E_DecisionState.WayToJunction) OR
+							(aTblDecision[uinLoopRFID].eState = E_DecisionState.Finished) THEN
+							
+							aTblDecision[uinLoopRFID].stDecision.uliRFID := 0;
+							aTblDecision[uinLoopRFID].stDecision.dinTarget := 0;
+							aTblDecision[uinLoopRFID].dtTimeJob := DINT_TO_DT(0);
+							aTblDecision[uinLoopRFID].eState := E_DecisionState.none;
+							aTblDecision[uinLoopRFID].dinActPos_um := 0;
+							aTblDecision[uinLoopRFID].dtTimeRFID := DINT_TO_DT(0);
+						END_IF
+					END_IF
+				END_FOR
+				intStatemachine := cSTA_SUB_Data_Acknowledge;
+
+			/////////////////////////////////////////////////////
+			// Delete ALL (ONLY USED FOR RECOVERY AFTER OFF, ERROR OR STOP)
+			/////////////////////////////////////////////////////			
+			E_Decision_Job.DELETE_ALL:
+			
+				IF (me.StateMachine.intState = BASE_PLC.cSTA_OFF) OR (me.StateMachine.intState = BASE_PLC.cSTA_STOP) OR (me.StateMachine.intState = BASE_PLC.cSTA_ERROR) THEN				
+					// Check if RF ID not allready exist
+					FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO	
+						aTblDecision[uinLoopRFID].stDecision.uliRFID := 0;
+						aTblDecision[uinLoopRFID].stDecision.dinTarget := 0;
+						aTblDecision[uinLoopRFID].dtTimeJob := DINT_TO_DT(0);
+						aTblDecision[uinLoopRFID].eState := E_DecisionState.none;
+						aTblDecision[uinLoopRFID].dinActPos_um := 0;
+						aTblDecision[uinLoopRFID].dtTimeRFID := DINT_TO_DT(0);	
+					END_FOR	
+				ELSE
+					// Set Alarm: SIf.Alm[11].strText := 'Delete all cmd not possible because of invalid state';
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,11,SIf.DtChnToPLC.stNewDecision.intJob,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);						
+				END_IF
+				intStatemachine := cSTA_SUB_Data_Acknowledge;
+		ELSE
+			// Set Alarm: SIf.Alm[3].strText := 'False Job Parameter';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,SIf.DtChnToPLC.stNewDecision.intJob,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);					
+			IF intCountRetry >= cMAX_RETRY THEN
+				intStatemachine := cSTA_SUB_Data_Error;
+			ELSE
+				intCountRetry := intCountRetry + 1;
+				intStatemachine := cSTA_SUB_Data_Retry;
+			END_IF			
+		END_CASE
+		
+	cSTA_SUB_Data_Acknowledge:	
+		// Delete all values
+		SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget := 0;
+		SIf.DtChnToPLC.stNewDecision.stDecision.strID := '';
+		SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID := 0;
+		SIf.DtChnToPLC.stNewDecision.intJob := 0;
+		// Acknowledge communication
+		SIf.DtChnToPLC.stNewDecision.intDataState := cDataState_DONE;
+		intStatemachine := cSTA_SUB_Data_WaitForJob;
+		
+	cSTA_SUB_Data_Retry:
+		SIf.DtChnToPLC.stNewDecision.intDataState := cDataState_Retry;
+		intStatemachine := cSTA_SUB_Data_WaitForJob;
+
+	cSTA_SUB_Data_Error:
+		SIf.DtChnToPLC.stNewDecision.intDataState := cDataState_Error;
+		// Set Alarm: SIf.Alm[8].strText := 'Data Channel Error';
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,8,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);										
+		IF CIf.Job.bolAlmReset = TRUE THEN
+			intStatemachine := cSTA_SUB_Data_Init;
+		END_IF
+			
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_ERROR" Id="{ece592c1-7943-4822-a115-a9133a2f12ae}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CtrlInit" Id="{c0e6d158-9872-4a59-b050-5e1bb755c95e}">
+      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+VAR
+	ii: INT;
+	usiChildIndex: USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.CtrlInit();
+
+// get child common if
+pRFW_CIf := p_fbRFW^.CtrlCIf;
+
+// get specific interface for additional parmaeters or cur
+pRFW_SIf := p_fbRFW^.getCtrlSIf();
+
+//entry childs
+usiChildIndex := 0;
+THIS^.CIf.Info.p_aCIf[usiChildIndex] := THIS^.pRFW_CIf;
+usiChildIndex := usiChildIndex+1;
+
+// set parent id
+pRFW_CIf^.Info.intParentCtrlId := CIf.Info.intCtrlId;
+
+//initialize all multi Child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	// Get child common if
+	a_pMultiChildCIF[ii]:= a_pMultiChildCtrl[ii]^.CtrlCIf;	
+	// Get specific interface for additional parmaeters or cur
+	a_pMultiChildSIF[ii]:= a_pMultiChildCtrl[ii]^.getCtrlSIf();
+	// Entry child
+	THIS^.CIf.Info.p_aCIf[usiChildIndex]:= THIS^.a_pMultiChildCIF[ii];	
+	usiChildIndex := usiChildIndex+1;
+	// Set parent id
+	a_pMultiChildCIF[ii]^.Info.intParentCtrlId := CIf.Info.intCtrlId;
+	// Pointer to Hashtable
+	a_pMultiChildSIF[ii]^.Par.pTblDecision := ADR(aTblDecision[0]);
+	//*******************************************************************************
+	// initial values childes
+	//*******************************************************************************
+	a_pMultiChildSIF[ii]^.Cfg.dinTargetNr := ii+1;
+	//a_pMultiChildSIF[ii]^.Par.dinPosition_um := (ii+1) * 1000000;
+END_FOR
+
+// Determine the distance to the farthest (last) junction
+SIf.Cur.dinDistanceToFarthestJunction:= 0;
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
+	IF (a_pMultiChildSIF[ii]^.Par.dinPosition_um > SIf.Cur.dinDistanceToFarthestJunction) THEN
+		SIf.Cur.dinDistanceToFarthestJunction:= a_pMultiChildSIF[ii]^.Par.dinPosition_um;
+	END_IF
+END_FOR
+
+SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkStateAllMultiChild" Id="{97dcfaf7-84dd-4874-b8f0-1b49d00caac8}">
+      <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
+VAR_INPUT
+	cSTA: INT;
+END_VAR
+VAR
+	ii: INT;
+	usiNumOfCheckedChilds: USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method check input state of all zones
+
+//Init
+checkStateAllMultiChild:= FALSE;
+usiNumOfCheckedChilds:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
+	// Check state
+	// Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+	// Parent controller need state STOP that automatic stop sequence can work for all other childs.
+	IF (a_pMultiChildCIF[ii]^.Job.intState = cSTA) OR ((a_pMultiChildCIF[ii]^.Job.intState = cSTA_ERROR) AND (cSTA = cSTA_STOP)) THEN
+		usiNumOfCheckedChilds:= usiNumOfCheckedChilds+1;
+	END_IF
+
+END_FOR
+
+// All states equal the input state
+IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
+	checkStateAllMultiChild:= TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_OFFBusy" Id="{cd033a2b-50ed-48c9-958f-dfeb0618ca12}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		pRFW_CIF^.Job.intACmd := cCMD_OFF;
+		// send command OFF to all existing multi child controller. (Junctions)
+		THIS^.CmdToAllMultiChild(cCMD_OFF);
+	
+		// State Change Condition
+		IF (pRFW_CIF^.Job.intState = cSTA_OFF AND (THIS^.checkStateAllMultiChild(cSTA_OFF))) THEN
+			me.StateMachine.intStateNext := cSTA_OFF;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCtrlSIf" Id="{f280573e-a323-4cdb-934c-093c48001d9f}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_DPJ
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_STOPBusy" Id="{f8aecf7b-37e7-4bb9-8131-72aea7755c9a}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			IF SIf.Cfg.bolSimSpeedInternal THEN
+				SIf.Cur.dinTransportPosition_um := (SIf.Cur.dinTransportPosition_um + UDINT_TO_DINT(676 * me.FUBInfo.udiSample_ms)); // Speed TLPsort = 0.676 m/s = 676 um/ms
+				SIf.Cur.dinTransportspeed_um_s := (676 * 1000);
+			END_IF
+			IF pRFW_SIF^.Cur.stData.uliTagID <> uliRFID_Tag_old THEN
+				SIf.In.bolHangerDetector.intern := TRUE;
+				dinPositionRFID_um := 0;
+			ELSE
+				SIf.In.bolHangerDetector.intern := FALSE;
+			END_IF
+		END_IF
+		
+		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
+		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
+		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
+		IF dinPositionRFID_um > 0 THEN
+			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
+		END_IF
+		// Check in the same loop if any job is active
+		bolNoJobActive := TRUE;
+		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+		END_FOR	
+
+		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
+				
+		IF bolNoJobActive = TRUE THEN
+			// send command OFF to all existing multi child controller. (Junctions)
+			THIS^.CmdToAllMultiChild(cCMD_OFF);
+		END_IF		
+		
+		
+		// State Change Condition
+		// OFF done in always state
+		IF (THIS^.checkStateAllMultiChild(cSTA_OFF)) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOP;	
+		ELSIF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+		END_IF;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Always" Id="{4e54ce8f-b0cf-4c6a-9fc4-709644a3c089}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+VAR
+	fbGetSystemTime: GETSYSTEMTIME;
+	stfileTime: T_FILETIME;
+	intI: INT;
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
+	//me.StateMachine.intStateNext := cSTA_OFFBusy;
+	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
+END_IF
+
+SUPER^.Always();
+
+// ---------------------------------------------------------------------------------
+// check child me and set parent alarm class
+checkChildAlmClass();
+
+
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+fbGetSystemTime(timeLoDW=>stfileTime.dwLowDateTime, timeHiDW=>stfileTime.dwHighDateTime);
+dtActualTime := FILETIME_TO_DT( stfileTime );
+dtDeleteTime := DINT_TO_DT(DT_TO_DINT(dtActualTime) - UDINT_TO_DINT(SIf.Par.udiTimeMaxJob_s));	
+
+// Cyclicel Hashtable work
+FOR intI:=0 TO cintMaxDecisions DO
+
+	// Delete old jobs by time 	
+	IF  (aTblDecision[intI].dtTimeJob < dtDeleteTime) THEN
+		IF aTblDecision[intI].eState = E_DecisionState.Finished THEN			
+			// Delete done job
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';
+		ELSIF aTblDecision[intI].eState = E_DecisionState.Wait THEN
+			// Job not startet, set error
+			// Set Alarm: SIf.Alm[4].strText := 'Job Timeout, delete Job';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,intI,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			// Clear Job										
+			aTblDecision[intI].eState := E_DecisionState.none;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';				
+		END_IF
+	END_IF
+	
+	
+	// Delete jobs where the hanger crossed the last junction but did not get a target number assigned by line control.
+	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget <= 0)) THEN
+		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';	
+		END_IF
+	END_IF
+	
+	
+	// Check if a hanger passed the junction to send a message to line
+	IF (aTblDecision[intI].eState = E_DecisionState.DriveOut) THEN
+		IF (SIf.Cfg.bolDtChToLine_send = TRUE) THEN			
+			IF fbDtChnToLine_JobDone.Creat(In_strTimestamp:= DT_TO_STRING(dtActualTime),In_stDecision := aTblDecision[intI].stDecision,) = 1 THEN
+				IF SIf.Cur.dinCurrentItemCount > 0 THEN
+					SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+				END_IF
+				 aTblDecision[intI].eState := E_DecisionState.Finished;
+			ELSE		
+				// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
+		ELSE
+			IF SIf.Cur.dinCurrentItemCount > 0 THEN
+				SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+			END_IF
+			aTblDecision[intI].eState := E_DecisionState.Finished;
+		END_IF
+	END_IF	
+
+END_FOR
+
+// Count Hangers in Controller
+// Hanger In
+IF SIf.In.bolCounterIn.intern = TRUE AND bolRECounterIn = FALSE THEN
+	bolRECounterIn := TRUE;
+	SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount + 1;
+ELSIF SIf.In.bolCounterIn.intern = FALSE THEN
+	bolRECounterIn := FALSE;
+END_IF
+// Hanger Out
+IF SIf.In.bolCounterOut.intern = TRUE AND bolRECounterOut = FALSE THEN
+	bolRECounterOut := TRUE;
+	IF SIf.Cur.dinCurrentItemCount > 0 THEN
+		SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+	END_IF
+ELSIF SIf.In.bolCounterOut.intern = FALSE THEN
+	bolRECounterOut := FALSE;
+END_IF
+
+// Current Value Mapping internal
+SIf.Cur.dinMaxCapacity := SIf.Cfg.dinMaxCapacity;
+SIf.Cfg.intCountJunctions := usiNumOfMultiChild;
+
+// Current Value Mapping to Childs
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildSIF[ii]^.Cur.dinTransportPosition_um := SIf.Cur.dinTransportPosition_um;
+	a_pMultiChildSIF[ii]^.Cur.dinTransportspeed_um_s := SIf.Cur.dinTransportspeed_um_s;
+
+END_FOR
+
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	// Communication to the Line Controll over Data Channel
+	THIS^.DtChnToPLC_Decision();
+	fbDtChnToLine_JobDone.bolResetError := CIf.Job.bolAlmReset;
+	fbDtChnToLine_JobDone.pSIf := ADR(SIf);
+	fbDtChnToLine_JobDone();
+	IF fbDtChnToLine_JobDone.intError <> 0 THEN
+		// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,fbDtChnToLine_JobDone.intError,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+END_IF
+
+// ----------------------------------------------------------------------------------
+// Conditions Always
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoInBridge" Id="{37e5cd92-1257-47aa-bc7b-4b46008b5604}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+SIf.In.bolHangerDetector.map := THIS^.In_bolHangerDetector;
+SIf.In.bolCounterIn.map := THIS^.In_bolCounterIn;
+SIf.In.bolCounterOut.map := THIS^.In_bolCounterOut;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetector));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterIn));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterOut));
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_ERRORQuit" Id="{976bd543-9904-4f48-8908-468d64f2e9e8}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		// evtl. wait time if reset of device is necessary and then decide to go to states or ERROR state
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // reset feedback channel for parent
+			CIf.Job.bolAlmReset := FALSE;
+		END_IF
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = FALSE) THEN
+			IF (me.StateMachine.intStateHistory<=cSTA_PON) THEN
+				me.StateMachine.intStateNext := cSTA_PONBusy;
+			ELSIF (me.intCmd=cCMD_OFF) THEN
+				me.StateMachine.intStateNext := cSTA_OFFBusy;
+			ELSIF (me.intCmd=cCMD_RUN) THEN
+				me.StateMachine.intStateNext := cSTA_OFFBusy;
+			END_IF
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CmdToAllMultiChild" Id="{f0a63f96-19cf-4582-b440-3a06f78aa524}">
+      <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
+VAR_INPUT
+	cCMD: INT;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method send input command to all existing multi child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildCIF[ii]^.Job.intACmd:= cCMD;
+END_FOR
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddJunction" Id="{2f82eaef-528c-4331-8d21-4f227248b8b9}">
+      <Declaration><![CDATA[METHOD AddJunction
+VAR_INPUT
+	p_MultiChild: POINTER TO FB_JUN;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Method add the pointer address of the buffer zone child controller to the array list.
+IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add buffer zone child controller to list
+	a_pMultiChildCtrl[usiNumOfMultiChild] := p_MultiChild;
+	// Inc. number of buffer zones
+	usiNumOfMultiChild:= usiNumOfMultiChild+1;
+	// Check if the pointer is valid
+	IF (p_MultiChild<>0) THEN
+		usiNumOfValidPointerMultiChild:= usiNumOfValidPointerMultiChild+1;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildAlmClass" Id="{3929b9b4-afc0-4106-b421-6f751e171b6a}">
+      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
+// check child alarm classes
+IF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.EOFF)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.OFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.OFF)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.STOP) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.STOP)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
+ELSE
+	IF (me.Alarm.bolfp) THEN
+		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
+		me.Alarm.bolfp := FALSE;
+	END_IF
+END_IF
+
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs
+IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eParent_ActivAlmClass=E_AlmClass.OFF) THEN
+	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eParent_ActivAlmClass;
+	THIS^.SetAlmClassAllMultiChild(CIf.Job.eParent_ActivAlmClass);
+ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
+	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eMe_ActivAlmClass;
+	THIS^.SetAlmClassAllMultiChild(CIf.Job.eMe_ActivAlmClass);
+ELSE
+	// no important alarm for child active
+	pRFW_CIF^.Job.eParent_ActivAlmClass := E_AlmClass.NONE;
+	THIS^.SetAlmClassAllMultiChild(E_AlmClass.NONE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_MER_Par" Id="{6219ef58-54e9-4530-8175-beac5a8ead16}">
+  <DUT Name="T_Ctrl_SIf_MER_Par" Id="{a055d543-07f2-43db-9603-bb299014ac3d}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Par :
 STRUCT
 	/// Setpoint, line number to release all from parent in case if main mode "OnCommand" is selected. (1 -> X)
@@ -16,6 +16,8 @@ STRUCT
 	dinTrigEndOffset_um: DINT;
 	/// [um] Hanger Detection Sensor Position (measured from ZEROPOINT)
 	dinHangerSensorPosition_um: DINT;
+	/// [ms] Timeout jam sensor in RUN
+	udi_jamTimeout_ms: UDINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

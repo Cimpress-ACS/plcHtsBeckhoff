@@ -1,11 +1,13 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_MER_In" Id="{25f5cde9-724f-428e-90d8-8c42532ebb8c}">
+  <DUT Name="T_Ctrl_SIf_MER_In" Id="{4d776b0d-f05d-4559-acf1-e36682cb2ce4}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_In :
 STRUCT
 	/// Sensor hanger detected
 	bolHangerDetected: T_Ctrl_IoBool;
 	/// Sensor pin from new section is detected
 	bolPinDetected: T_Ctrl_IoBool;
+	/// Sensors for jam detection (option)
+	a_bolJamSensor: ARRAY[1..cMAX_JAM_SENSORS] OF BASE_PLC.T_Ctrl_IoBool;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

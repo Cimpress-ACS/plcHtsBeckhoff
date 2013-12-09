@@ -1,0 +1,17 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DPJ_Par" Id="{09b69a09-d084-480c-abe2-d59219dc46e7}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_Par :
+STRUCT
+	/// Timeout communication at Datachannel
+	udiTimeOutRead_ms: UDINT;
+	/// Maximal time until delete a Job
+	udiTimeMaxJob_s: UDINT;
+	/// [um] Offset to distance of the farthest junction. 
+	/// Defines the point, where a job will be automatically deleted from the buffer, if destination junction was not defined.  
+	dinDistanceOffsetUntilDelJob_um: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_STB_Ilk" Id="{5ffd0090-57cd-4c80-b7de-ed4a64ff4abb}">
+  <DUT Name="T_Ctrl_SIf_STB_Ilk" Id="{55c0d111-6fa2-402a-b6fa-6f5dc17a917c}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Ilk :
 STRUCT
 	/// interlock retraction of cylinder

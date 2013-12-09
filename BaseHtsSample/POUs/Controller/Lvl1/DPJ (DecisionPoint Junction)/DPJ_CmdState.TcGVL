@@ -1,0 +1,10 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="DPJ_CmdState" Id="{f837c0d1-165f-40d8-81bb-b78472e1eafe}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	///ctrl commands definitions
+	///specific commands >200 - every command has to be a even number
+	cCMD_CLEAR: INT := 202;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

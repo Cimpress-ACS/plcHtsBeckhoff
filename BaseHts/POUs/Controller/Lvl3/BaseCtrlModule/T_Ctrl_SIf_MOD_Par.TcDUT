@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_MOD_Par" Id="{90a8b0f9-d275-420b-ae75-cbf544409601}">
+  <DUT Name="T_Ctrl_SIf_MOD_Par" Id="{087b8b05-4700-4e40-8203-4731e54e69a1}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MOD_Par :
 STRUCT
 	// [ms] Communication timeout to line control

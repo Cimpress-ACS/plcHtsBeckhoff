@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0">
-	<Project ProjectGUID="{7AC7810E-5EB2-44B2-A988-AEFBFFF013A2}" ModifiedGUID="{46BC2951-5040-4C5C-9A56-6DD34F9FBE6D}">
+	<Project ProjectGUID="{7AC7810E-5EB2-44B2-A988-AEFBFFF013A2}" ModifiedGUID="{21C9110E-517F-433B-A2C3-E00AEF38FB74}">
 		<System>
 			<Tasks>
 				<Task Id="1" Priority="3" CycleTime="20000" AmsPort="350">
@@ -21,7 +21,7 @@
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 				</Instance>
 			</Project>
-			<Project GUID="{62BBD5FB-17F2-4E98-9143-D240A873429A}" Name="BaseHts" PrjFilePath="BaseHts\BaseHts.plcproj" TmcFilePath="BaseHts\BaseHts.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e">
+			<Project Disabled="true" GUID="{62BBD5FB-17F2-4E98-9143-D240A873429A}" Name="BaseHts" PrjFilePath="BaseHts\BaseHts.plcproj" TmcFilePath="BaseHts\BaseHts.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e">
 				<Instance Id="#x01010020" TcSmClass="TComPlcObjDef">
 					<Name>BaseHts Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>

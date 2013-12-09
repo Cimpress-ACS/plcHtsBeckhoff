@@ -1,6 +1,6 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_ICL" Id="{181a255c-5a7e-4292-b63e-ecfb6a6273b5}">
-    <Declaration><![CDATA[TYPE T_Ctrl_SIf_ICL:
+  <DUT Name="T_Ctrl_SIf_ICL" Id="{9967b90c-d64b-496b-b364-92b073b4403a}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_ICL :
 STRUCT
 	///configuration
 	Cfg: T_Ctrl_SIf_ICL_Cfg;
@@ -10,9 +10,6 @@ STRUCT
 	Cur: T_Ctrl_SIf_ICL_Cur;
 	///io input
 	In: T_Ctrl_SIf_ICL_In;
-	///io output
-	///alarm number used in this controller
-	Alm: ARRAY[1..5] OF T_Ctrl_Alm;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

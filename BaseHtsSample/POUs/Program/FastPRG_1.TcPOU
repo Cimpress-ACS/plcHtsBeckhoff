@@ -2,9 +2,30 @@
   <POU Name="FastPRG_1" Id="{b624d175-54f8-4f4a-ae3e-53272a249758}">
     <Declaration><![CDATA[PROGRAM FastPRG_1
 VAR
+	
 	bolPlcStartupDone: BOOL := FALSE;
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
+	strInstance: STRING;
+	pCtrl_CIf: POINTER TO T_Ctrl_CIf;
+	pTmpSIf_JUN: POINTER TO T_Ctrl_SIf_JUN;
+	intState: INT;
+	bolSetCmd: BOOL;
+	jj:INT;
+	bolCtrlRst: BOOL;
+
+	// Decision Point Heat Presses
+	fbRFD_4: FB_RFR;
+	fbJUN_4a: FB_JUN;
+	fbJUN_4b: FB_JUN;
+
+	// Decision Point TLK
+	fbRFD_9: FB_RFR;
+	fbJUN_9a: FB_JUN;
+	fbJUN_9b: FB_JUN;
+	fbCHD_4: FB_CHD;
+	pTmpSIf_CHD: POINTER TO T_Ctrl_SIf_CHD;
+	
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -17,13 +38,17 @@ END_VAR
 ¦___________________________________________________________________________________________________
 
 Function desription:
-call of all controller (FUB) for the fast task class.
+call of all controller (FUB) for the slow task class.
+
 
 History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
-0.00.1		25.09.2013		AVME/KVO	Start history
-0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
+0.00.1		16.09.2013		AVME/PRE	Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		08.10.2013		VP/RE		Optimizations FAT Bürglistrasse version
+0.00.4		24.10.2013		AVME/MRU	CHD added, New BASE_PLC 0.3.3.0
+0.00.5		18.11.2013		AVME/MRU	CHD Parameter changed
 
 ___________________________________________________________________________________________________*)
 
@@ -32,7 +57,53 @@ ________________________________________________________________________________
 // -----------------------------------------------------------------------------------------------
 IF (NOT bolPlcStartupDone) THEN
 	bolPlcStartupDone := TRUE;	
-	g_uinStartProzess:=1; // For StartUp order	
+	
+	// init	
+	// Decision Point Heat Presses
+	g_a_pFunRFD[1] := ADR(fbRFD_4);
+
+	fbJUN_4a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_4a);                   // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_4a.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;
+	pTmpSIf_JUN^.Par.dinPosition_um := 2355000;
+	
+	fbJUN_4b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_4b);                  // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_4b.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;
+	pTmpSIf_JUN^.Par.dinPosition_um := 3055000;
+
+	// Decision Point TLK
+	g_a_pFunRFD[2] := ADR(fbRFD_9);
+
+	fbJUN_9a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_9a);  // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_9a.getCtrlSIf();
+	pTmpSIf_JUN^.Par.dinPosition_um := 6140000;   									// 4.10.2013 Measured
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;
+	fbJUN_9b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_9b); // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_9b.getCtrlSIf();
+	pTmpSIf_JUN^.Par.dinPosition_um := 7240000;   									// 4.10.2013 Measured
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;
+	
+	// ----------
+	// CHD_4
+	// ----------	
+	fbCHD_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.CHD_4);     	// init and entry fb_instance in global fb pointer array
+	pTmpSIf_CHD := fbCHD_4.getCtrlSIf();
+	// CHD_4 - configuration
+	pTmpSIf_CHD^.Cfg.bolHasInconsistentHangerSensor := FALSE;
+	pTmpSIf_CHD^.Cfg.bolHasEmptyHangerSensor := TRUE;
+	pTmpSIf_CHD^.Cfg.bolStopAtRejact := FALSE;
+	// CHD_4 - parameter
+	pTmpSIf_CHD^.Par.dinPosition_um := 190000-110000; // Position - open befor there // 200000;
+	pTmpSIf_CHD^.Par.dinOpenWay_um := 200000; // 200000;
+	pTmpSIf_CHD^.Par.dinDistanceBetweenSensors_um := 200000; // not used, only 1 Sensor
+	pTmpSIf_CHD^.Par.dinPinDistance_um := 305000;
+	pTmpSIf_CHD^.Par.udinTimeUntilJam_ms := 1000;
+	pTmpSIf_CHD^.Par.udiPulseLengthBlowValve_ms := 200;
+	pTmpSIf_CHD^.Par.udiIntervalLengthBlowValve_ms := 60000;
+
+	g_uinStartProzess:=1; // For StartUp order
+
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -65,6 +136,35 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	//****************************************************************************************************
 	// cyclic controller calls
 	//****************************************************************************************************
+	// Decision Point Heat Presses
+	fbRFD_4();
+	fbJUN_4a.In_bolPassed := In_bol_4_0_B12_Load_acknowledge;
+	fbJUN_4a();
+	Out_bol_4_0_Q11_Junction := fbJUN_4a.Out_bolOpen;
+	
+	fbJUN_4b.In_bolPassed := In_bol_4_0_B15_Load_acknowledge;
+	fbJUN_4b();
+	Out_bol_4_0_Q14_Junction := fbJUN_4b.Out_bolOpen;
+
+	// Decision Point TLK
+	fbRFD_9();
+	fbJUN_9a.In_bolPassed := In_bol_10_0_B17_Leave_acknowledge;
+	fbJUN_9a();
+	Out_bol_9_0_Q3_Junction := fbJUN_9a.Out_bolOpen;
+	
+	fbJUN_9b.In_bolPassed := In_bol_11_0_B1_Doublestopper_full;
+	fbJUN_9b();
+	Out_bol_9_0_Q4_Junction := fbJUN_9b.Out_bolOpen;
+
+	// Inputs
+	fbCHD_4.In_bolDoubleHanger := In_bol_4_0_B4_Double_Hanger_Control;
+	fbCHD_4.In_bolPassed := In_bol_4_0_B16_Slide_full;
+	fbCHD_4.In_bolEmptyHanger := In_bol_4_0_B3_Empty_Hanger_Control;
+	// Function call
+	fbCHD_4();
+	// Outputs
+	Out_bol_4_0_Q6_Junction := fbCHD_4.Out_bolOpen;
+	Out_bol_4_0_Q5_Blow_Valve_light_sensor := fbCHD_4.Out_bolBlow;
 
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>

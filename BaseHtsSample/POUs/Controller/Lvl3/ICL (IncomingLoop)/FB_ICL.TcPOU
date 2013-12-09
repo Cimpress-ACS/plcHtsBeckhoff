@@ -1,17 +1,33 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_ICL" Id="{4cec0750-5814-4b0d-8aaa-bf486fb0f6df}">
+  <POU Name="FB_ICL" Id="{02a250b4-4676-41ca-9fdd-76c07d8e8914}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_ICL EXTENDS FB_CtrlModule
-VAR_INPUT
-END_VAR
-
 VAR
-	// Specific interface struct for public access
+	/// Specific interface struct for public access
 	SIf: T_Ctrl_SIf_ICL;
-	
+	/// List of childs specific interface for additional parameters or cur	
+	pDPJ_4_SIF: POINTER TO T_Ctrl_SIf_DPJ;
+	pDPJ_9_SIF: POINTER TO T_Ctrl_SIf_DPJ;
+	pMER_8_SIF: POINTER TO T_Ctrl_SIf_MER;
+	pCHD_4_SIF: POINTER TO T_Ctrl_SIf_CHD;
+	pTLP_4_SIF: POINTER TO T_Ctrl_SIf_DRV;
+	pTLK_9_SIF: POINTER TO T_Ctrl_SIf_DRV;
+	/// List of child interface	
+	pTLP_10_CIf: POINTER TO T_Ctrl_CIf;
 END_VAR
-
-VAR CONSTANT
-END_VAR]]></Declaration>
+VAR_INPUT
+	///pointer to function block Junctions Decision Point
+	p_fbDPJ_4: POINTER TO FB_DPJ;
+	p_fbDPJ_9: POINTER TO FB_DPJ;
+	///pointer to function block Merger
+	p_fbMER_8: POINTER TO FB_MER;
+	///pointer to function block Cross Hanger Detection
+	p_fbCHD_4: POINTER TO FB_CHD;
+	///pointer to function block Drive
+	p_fbTLP_4: POINTER TO FB_DRV;
+	p_fbTLP_10: POINTER TO FB_DRV;
+	p_fbTLK_9: POINTER TO FB_DRV;
+END_VAR
+]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	
@@ -22,46 +38,60 @@ END_VAR]]></Declaration>
 ¦___________________________________________________________________________________________________
 
 Function desription:
-In Incomming Loop Module Controller
-The whole module from Incomming Loop  is controlled, commandos over Common Interface from Line Controller
+In Cell Binning Module Controller
+The whole module from In Cell binning is controlled, commandos over Common Interface from Line Controller
 controll and check childs
+
 
 History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
-0.00.1		06.11.2013		AVM/DSC		Start history
+0.00.1		30.08.2013		AVM/PRE		Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		28.09.2013		VP/RE		Removed temperature, fuse and airPressure handling, its handled by SFT now
+0.00.4		03.10.2013		AVME/PRE	Give speed and position from TLK9 to MER8
+0.00.5		24.10.2013		AVME/MRU	CHD added
+0.00.6		21.11.2013		AVME/MRU	New BaseHts added
+0.00.7		06.12.2013		AVME/DSC	New BaseHts V0.0.0.8 added.
+0.00.8		09.12.2013		AVME/DSC	New BaseHts V0.0.0.9 added. Change in state STOP. Clear pending command to prevent automatic recovery!
 
 ___________________________________________________________________________________________________*)
 
-// Check about valid child of base module
-IF (me.bolActivate) AND (SUPER^.checkValidPointer()) THEN // cyclic call enabled
+
+IF (me.bolActivate) AND (SUPER^.checkValidPointer() AND (p_fbDPJ_4<>0) AND (p_fbDPJ_9<>0) AND (p_fbMER_8<>0) AND (p_fbCHD_4<>0) AND (p_fbTLP_4<>0) AND (p_fbTLP_10<>0) AND (p_fbTLK_9<>0)) THEN // cyclic call enabled
 	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
 		CtrlInit();
 		CIf.Info.bolInitDone := TRUE;
 	ELSE
-	
 		CycleStartDuty();
 	
 		Always();
 		
 		StateMachine();
 		
-		CycleEndDuty();	
-		
+		CycleEndDuty();
 	END_IF
-END_IF;]]></ST>
+END_IF;
+]]></ST>
     </Implementation>
-    <Method Name="CtrlInit" Id="{1eca7444-37df-41cb-8316-dba5dadef52d}">
+    <Method Name="CtrlInit" Id="{3492776b-3f49-40a6-ac0f-02e7683c14ba}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
-VAR
-	ii: INT;
-END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.CtrlInit();]]></ST>
+        <ST><![CDATA[SUPER^.CtrlInit();
+
+//initialize DRV
+pTLP_4_SIF := p_fbTLP_4^.getCtrlSIf();
+pTLK_9_SIF := p_fbTLK_9^.getCtrlSIf();
+pTLP_10_CIf := p_fbTLP_10^.CtrlCIf;
+//initialize all other Child controller.
+pDPJ_4_SIF := p_fbDPJ_4^.getCtrlSIf();
+pDPJ_9_SIF := p_fbDPJ_9^.getCtrlSIf();
+pMER_8_SIF := p_fbMER_8^.getCtrlSIf();
+pCHD_4_SIF := p_fbCHD_4^.getCtrlSIf();]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{2682f1b1-8bb5-4f47-a0f9-35f99b2e7590}">
+    <Method Name="sta_RUN" Id="{808e6c7f-401c-4798-81e9-d749bc0c2149}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
@@ -93,10 +123,12 @@ END_VAR
 // Exit action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
 		;
-	END_IF]]></ST>
+	END_IF
+
+]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Always" Id="{2119e999-bc23-4f87-b271-fcba738e2754}">
+    <Method Name="Always" Id="{f383c623-6310-4d82-b373-93c3dbe56a8f}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -110,15 +142,33 @@ SUPER^.Always();
 // ---------------------------------------------------------------------------------
 // Simulation
 IF (CIf.SwCfg.bolSimulation) THEN
-;
+	;
 END_IF
 	
 // ----------------------------------------------------------------------------------
 // cyclic actions outside of statemachine
 IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
-;
+	;
 END_IF
 
+// Variable mapping for Childs
+pDPJ_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
+pDPJ_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
+pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[0] := TRUE;
+pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
+
+pDPJ_9_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
+pDPJ_9_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
+pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[0] := pTLP_10_CIf^.Job.intState = cSTA_RUN;
+pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
+
+// Speed to merger 8
+pMER_8_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
+pMER_8_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
+
+// Variable mapping for CHD
+pCHD_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
+pCHD_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
 
 // ----------------------------------------------------------------------------------
 // Conditions Always
@@ -141,7 +191,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{618e3e43-ca36-43ed-aac8-525966c31447}">
+    <Method Name="sta_STOP" Id="{e0fcc967-bb3c-4fb6-b767-1df9d0caa10a}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -159,12 +209,16 @@ END_IF
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
 		
 		;
-				
+		
+		
 		// State Change Condition
 		IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP ) THEN
 			IF (me.intCmd=cCMD_RUN) THEN
 				me.StateMachine.intStateNext :=  cSTA_RUNBusy;
 			END_IF
+		ELSE
+			// Clear pending command to prevent automatic recovery!
+			CIf.Job.intACmd:=cSTA_DONE;
 		END_IF
 	END_IF
 
@@ -175,7 +229,7 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{dca12d75-4d06-48cc-a062-241c8eb43e1b}">
+    <Method Name="FB_init" Id="{77eeca91-af8b-4a92-b2db-b61c47d7b920}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -184,10 +238,8 @@ VAR_INPUT
 	bInCopyCode: BOOL;
 END_VAR
 VAR
-	udiTaskCnt: UDINT;
 	ii: UINT;
 END_VAR
-
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[
@@ -205,11 +257,10 @@ END_FOR
 // set name of class/typ
 CIf.Info.strType := 'FB_ICL'; 
 
-// set alarm class
 
-// ---------------------------------------------
+//*******************************************************************************
 // Handling for SIf between this and base module  
-// ---------------------------------------------
+//*******************************************************************************
 // initialize pointer access 
 SUPER^.SIf_Cfg:= ADR(SIf.Cfg.Module);
 SUPER^.SIf_Par:= ADR(SIf.Par.Module);
@@ -223,18 +274,20 @@ SUPER^.SIf_In:= ADR(SIf.In.Module);
 CIf.SwCfg.bolExist := TRUE;
 CIf.SwCfg.bolSimulation := FALSE;
 
+// parmeter
+SIf.Par.udiTimeDriveStart_ms := 4000;
+SIf.Par.udiTimeDriveStop_ms := 2000;
 
 //*******************************************************************************
 // initial values for base module
 //*******************************************************************************
 // Configuration
-SIf.Cfg.Module.bolComToLineControlEnabled:= TRUE;
-
+SIf.Cfg.Module.bolComToLineControlEnabled:= FALSE;
 // Parameter
-SIf.Par.Module.udiComTimeOutLineCtrl_ms:= 5000;]]></ST>
+SIf.Par.Module.udiComTimeOutLineCtrl_ms:= 10000;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{be80648f-491b-4aff-90f2-88ea05a7ca7e}">
+    <Method Name="getCmdState" Id="{56732ee2-bf16-496a-ba6f-e89bdde02a52}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -258,7 +311,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{a44c143e-4c6f-4f0b-9e56-5977c40b349f}">
+    <Method Name="IoInBridge" Id="{6f37f59f-c9ef-42df-8c69-af6978e78f8f}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -273,14 +326,14 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCtrlSIf" Id="{6d2134ab-1966-4e94-898f-5a92d2c6d2d8}">
+    <Method Name="getCtrlSIf" Id="{e0645c96-129d-4e27-bee9-56f0e4f35ff0}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_ICL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{e8a93b19-a520-4570-bdac-c5b03baf9fbf}">
+    <Method Name="StateMachine" Id="{b3a5b6f1-4248-4779-8017-4c41a94f29a4}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -292,10 +345,11 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUN();
     cSTA_STOP: 
         THIS^.sta_STOP();	
-END_CASE;]]></ST>
+END_CASE;
+]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{71a4493f-4bea-45cd-9f4c-36cefcb65abd}">
+    <Method Name="IoOutBridge" Id="{4dab2c97-99b0-4c22-a400-9afddc21a41a}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -304,24 +358,12 @@ END_CASE;]]></ST>
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	// check interlocks to prevent damages
 	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+	
 		;
 	END_IF
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties>﻿<XmlArchive>
-  <Data>
-    <o xml:space="preserve" t="POUImageProperty">
-      <n n="ImageData" />
-      <v n="TransparencyColor">"White"</v>
-      <v n="MakeTransparent">false</v>
-    </o>
-  </Data>
-  <TypeList>
-    <Type n="Boolean">System.Boolean</Type>
-    <Type n="POUImageProperty">{bb741845-1ec5-4be9-bb0d-2cf7058af574}</Type>
-    <Type n="String">System.String</Type>
-  </TypeList>
-</XmlArchive></ObjectProperties>
+    <ObjectProperties />
   </POU>
 </TcPlcObject>

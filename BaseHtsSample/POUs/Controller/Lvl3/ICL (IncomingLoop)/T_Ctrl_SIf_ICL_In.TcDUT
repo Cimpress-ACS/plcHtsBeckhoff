@@ -1,8 +1,8 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_ICL_Cur" Id="{4b83f133-fd57-437a-ae5d-152d43a855c5}">
-    <Declaration><![CDATA[TYPE T_Ctrl_SIf_ICL_Cur:
+  <DUT Name="T_Ctrl_SIf_ICL_In" Id="{99517368-6fda-497b-a561-18a29e36ceea}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_ICL_In :
 STRUCT
-	Module: T_Ctrl_SIf_MOD_Cur;
+	Module: T_Ctrl_SIf_MOD_In;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

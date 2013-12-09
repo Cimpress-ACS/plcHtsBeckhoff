@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_SLB_Par" Id="{e7909300-593b-4f1b-8987-1863dcec7ea9}">
+  <DUT Name="T_Ctrl_SIf_SLB_Par" Id="{85143ded-ba0a-448f-ac96-6e5a7a4d9517}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB_Par :
 STRUCT
 	/// [ms] Interval buffer emptying

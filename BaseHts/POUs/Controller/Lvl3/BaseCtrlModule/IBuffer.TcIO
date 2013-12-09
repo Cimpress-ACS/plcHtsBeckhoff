@@ -1,18 +1,18 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <Itf Name="IBuffer" Id="{706e66a4-403a-4be7-9cbf-08bf5eb114ef}">
+  <Itf Name="IBuffer" Id="{e591ae54-d9f0-4f65-b11b-05581e5f542b}">
     <Declaration><![CDATA[INTERFACE IBuffer
 ]]></Declaration>
-    <Property Name="MaxCapacity" Id="{fd088299-129f-49fa-97a9-c358e2cd49cf}">
+    <Property Name="MaxCapacity" Id="{49d840af-b0e8-4a09-80da-22636e6f97dd}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{b584634c-186e-439f-9118-65b5c3342cdc}">
+      <Get Name="Get" Id="{8223a01a-0fce-439d-8f69-5425d332808e}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
-    <Property Name="NumOfHangers" Id="{c848c800-ae51-41e7-9a41-5e3f556306fb}">
+    <Property Name="NumOfHangers" Id="{65722092-c7ce-4593-82e8-e597d2694eb9}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{0fd66151-97a4-4606-8d8c-281ae3ff83c8}">
+      <Get Name="Get" Id="{c845a7f9-704f-4167-9062-a2c876fc9f42}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>

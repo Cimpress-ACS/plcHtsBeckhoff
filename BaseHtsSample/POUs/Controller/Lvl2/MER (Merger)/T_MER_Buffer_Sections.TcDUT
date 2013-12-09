@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_MER_Buffer_Sections" Id="{87be11c6-549d-40f4-964a-eb6cff320382}">
+  <DUT Name="T_MER_Buffer_Sections" Id="{772c7450-cc6e-4430-9a35-b3e75844d072}">
     <Declaration><![CDATA[TYPE T_MER_Buffer_Sections :
 STRUCT
 	/// Start position of the section (triggered by pin sensor)

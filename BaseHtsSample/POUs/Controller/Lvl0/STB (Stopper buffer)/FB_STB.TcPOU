@@ -1,11 +1,13 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_STB" Id="{e199e027-b0cf-4fc5-a632-a2489daf38ec}">
+  <POU Name="FB_STB" Id="{64ef7640-1311-4c1a-97ac-7e92188f5259}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_STB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
 	/// Sensor hanger detected
 	In_bolHangerDetected: BOOL;
 	/// Buffer full sensor
 	In_bolBufferFull: BOOL;
+	/// DecrementCounter Sensor (option)
+	In_bolDecrementCounter: BOOL;
 END_VAR
 VAR_OUTPUT
 	/// if bolRetract2 is not used  = 1 -> second pin up first pin (inlet) down
@@ -24,6 +26,8 @@ VAR
 	bolSensorHangerDetected: BOOL;
 	bolBufferFullOld: BOOL;
 	bolBufferFullSigCountOld: BOOL;
+	/// Shadow copy of SIf.In.bolDecrementCounter.intern
+	bolDecrementCountOld: BOOL;
 	bolSignalForPosLostMonitoring: BOOL;
 	bolSignalForPosLostMonitoringOld: BOOL;
 	uinPosEdgeCounter: UINT;
@@ -83,7 +87,8 @@ Version		Date			Author		Comment
 0.00.9		02.10.2013		AVME/DSC	Modification set number of hangers in buffer to max. capacity if buffer full signal detected.
 0.00.10		07.10.2013		AVME/DSC    Modification in always action. If buffer full detected, number of hangers in buffer must be always set to max. capacity.
 0.00.11		09.10.2013		VP/RE		Only decrease dinNumOfHangersInBuffer when is NOT full (but only if full sensor is available)
-0.00.12		07.11.2013		AVME/DSC    Implement IBuffer. Changed data type of dinMaxCapacity and dinMaxNumOfHangers_PosMonitoring.
+0.00.12		07.11.2013		AVME/MRU	Add debounced inputs and configuration with bolHasDecrementSensor
+0.00.13		03.12.2013		AVME/MRU	Add MaxCapacity / NumOfHangers properties
 ___________________________________________________________________________________________*)
 
 
@@ -103,7 +108,7 @@ IF (me.bolActivate) THEN // cyclic call enabled
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="sta_ERROR" Id="{d9114c39-4881-4506-b9b5-55326f896b6a}">
+    <Method Name="sta_ERROR" Id="{aa41fb49-3952-42f4-a2ee-d105880e2fb8}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
 ]]></Declaration>
       <Implementation>
@@ -137,7 +142,7 @@ END_IF;
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{067520ef-d7af-4f5e-be35-7fdfa680e81c}">
+    <Method Name="getCmdState" Id="{290923a3-597d-4438-9daa-575bc1902468}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -183,7 +188,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASE_ALLBusy" Id="{e7dadc70-07b6-43ad-8187-1a260f291d89}">
+    <Method Name="sta_RELEASE_ALLBusy" Id="{b8ff780e-b100-42ba-8dc1-1b36b9f21c08}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -295,8 +300,10 @@ END_IF
 							// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
 							// For all other units like e.g. double stopper it's only an approximate number.
 						
-							// Calculate number of hangers in buffer dependent number of hangers per pulse
-							SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+							IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
+								// Calculate number of hangers in buffer dependent number of hangers per pulse
+								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+							END_IF
 							// Calculate total counter dependent number of hangers per pulse
 							SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
 							// Calculate package counter dependent number of hangers per pulse				
@@ -380,7 +387,7 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="Always" Id="{fd8edd42-1566-403c-bc08-8fcb0a460fb4}">
+    <Method Name="Always" Id="{673b0321-3183-48b7-8a43-e5e0111a7b32}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -510,6 +517,22 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 			
 		END_IF
 	END_IF
+
+	// Dec. number of hangers in buffer with every edge of sensor
+	// Has decrement sensor ?
+	IF (SIf.Cfg.bolHasDecrementSensor = TRUE) THEN
+			
+		// Detection positive edge from decrement sensor
+		IF ((SIf.In.bolDecrementCounter.intern <> bolDecrementCountOld) AND (SIf.In.bolDecrementCounter.intern = TRUE)) THEN			
+			// Dec. number of hangers in buffer by one!
+			// Note: With the given sensors it's not possible to count exactly one hanger per sensor pulse.
+			// e.g. On a slide, normally they pass more than one hanger the sensor position at the same time.		
+			SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - 1;
+		END_IF
+		bolDecrementCountOld:= SIf.In.bolDecrementCounter.intern;
+			
+	END_IF
+
 	
 	IF (SIf.Cfg.bolHasHangerDetection = TRUE) THEN
 		// With Sensor Hanger delete hanger counter if no hanger is detected
@@ -545,7 +568,6 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	ELSE
 		dinNumOfHangersToRelease := SIf.Cfg.uinNumOfHangersPerPulse;
 	END_IF
-	
 END_IF
 
 
@@ -570,7 +592,7 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASE" Id="{f579ff53-53a1-4377-acaa-125238094396}">
+    <Method Name="sta_RELEASE" Id="{72d9cb6a-b9b4-46fb-9802-568952fef802}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
 ]]></Declaration>
       <Implementation>
@@ -607,7 +629,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFFBusy" Id="{1cd7205a-49b1-49da-a22f-3c1f51debead}">
+    <Method Name="sta_OFFBusy" Id="{9a173271-51c4-44bb-89ef-86a1391b5410}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -643,7 +665,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{a894c515-da66-4281-a742-0f29e96b3276}">
+    <Method Name="IoOutBridge" Id="{93e59b24-6896-424b-b38d-07739505d02c}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -684,7 +706,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASE_ALL" Id="{d821b193-0663-4ca5-bd7d-fe9b1baff0fa}">
+    <Method Name="sta_RELEASE_ALL" Id="{f20159d2-a72b-43b2-a675-653ad363e3be}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
 ]]></Declaration>
       <Implementation>
@@ -714,7 +736,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{4a1f8612-00dc-47c9-bd20-6eec249fbeb7}">
+    <Method Name="sta_STOPBusy" Id="{062acdac-86ba-41f6-bd2a-9e653cf089fe}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -749,7 +771,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{ba8f95fb-a5cd-41dc-a112-e8f814372aeb}">
+    <Method Name="sta_STOP" Id="{b6d2c822-cb1b-4a11-b5e3-2ac92a90be82}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -830,7 +852,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASEBusy" Id="{dbad0b5c-4abf-4bc9-bcbc-f1a9939a26d3}">
+    <Method Name="sta_RELEASEBusy" Id="{4d9f79b4-5e3e-445a-8949-8a35365571b8}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -868,14 +890,16 @@ END_IF]]></ST>
 				// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
 				// For all other units like e.g. double stopper it's only an approximate number.
 			
-				IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
-					// Calculate number of hangers in buffer dependent number of hangers per pulse
-					SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
-				ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
-					// Calculate number of hangers in buffer dependent number of hangers per pulse
-					SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
+				IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
+					IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
+						// Calculate number of hangers in buffer dependent number of hangers per pulse
+						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+					ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
+						// Calculate number of hangers in buffer dependent number of hangers per pulse
+						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
+					END_IF
 				END_IF
-				
+					
 				// Calculate total counter dependent number of hangers per pulse
 				SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
 				
@@ -893,14 +917,14 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCtrlSIf" Id="{4eaceae8-f272-477c-91a1-d8d66568f620}">
+    <Method Name="getCtrlSIf" Id="{b1b88175-3ba7-4006-83f2-af7222841cad}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_STB
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{7b7b02ab-436e-4d31-a8d2-b641856617b5}">
+    <Method Name="StateMachine" Id="{780903fa-e57c-4fad-a965-e01eb6bbae34}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -926,7 +950,7 @@ END_CASE;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{d26536bf-32f3-4de8-a83a-90153cbbf964}">
+    <Method Name="IoInBridge" Id="{08cb22a2-dd33-4f42-9d01-c5ed5e492f15}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -934,10 +958,12 @@ END_CASE;
 
 SIf.In.bolHangerDetected.map := THIS^.In_bolHangerDetected;
 SIf.In.bolBufferFull.map := THIS^.In_bolBufferFull;
+SIf.In.bolDecrementCounter.map := THIS^.In_bolDecrementCounter;
 
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetected));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolBufferFull));
+	getInBolDebounced(CIf.Job.bolIoForce, me.FUBInfo.udiSample_ms, Sif.par.udiDebounceTime_ms, ADR(SIf.In.bolHangerDetected));
+	getInBolDebounced(CIf.Job.bolIoForce, me.FUBInfo.udiSample_ms, Sif.par.udiDebounceTime_ms, ADR(SIf.In.bolBufferFull));
+	getInBolDebounced(CIf.Job.bolIoForce, me.FUBInfo.udiSample_ms, Sif.par.udiDebounceTime_ms, ADR(SIf.In.bolDecrementCounter));
 	//ctrl.In.bol_PosSwitchBasicDefTyp.intern := getInBol(ctrl.ifc.Job.bol_Force ,ADR(ctrl.In.bol_PosSwitchBasicDefTyp);
 ELSE
 	//simulation of global IO
@@ -945,7 +971,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFF" Id="{2861a6e2-efd1-4f62-b5f3-47a4d1e1def1}">
+    <Method Name="sta_OFF" Id="{8a9862ff-1926-4548-905b-b82fc701edc4}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -988,7 +1014,7 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{5e9e2b6b-bef6-46cc-86a8-e57e8b117d27}">
+    <Method Name="FB_init" Id="{3f8177e7-f18a-4888-9ffa-4363f1331b6a}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -1049,10 +1075,12 @@ SIf.Par.udiSensorTime_ms := 3000;
 SIf.Par.udiTimeoutBufferEmptying_ms := 120000; // 2 min
 SIf.Par.usiBuffermode := 1;
 SIf.Par.udiReleaseAllTime_ms := 4000;
+Sif.par.udiDebounceTime_ms:= 20;
 
 // configuration
 SIf.Cfg.bolHasBufferFullSensor := FALSE;
 SIf.Cfg.bolHasHangerDetection:= TRUE;
+SIf.Cfg.bolHasDecrementSensor:= FALSE;
 SIf.Cfg.dinMaxCapacity:= 20;
 SIf.Cfg.dinMaxNumOfHangers_PosMonitoring := 2;
 SIf.Cfg.uinNumOfHangersPerPulse:= 1;
@@ -1060,43 +1088,26 @@ SIF.Cfg.bolCylPosLostMonitoring:= FALSE;
 SIF.Cfg.bolReleaseAllNonPulse:= FALSE;]]></ST>
       </Implementation>
     </Method>
-    <Property Name="MaxCapacity" Id="{c830a565-75fa-42b6-945c-3cd30fc3db6e}">
+    <Property Name="MaxCapacity" Id="{7b280b25-583f-4a5f-9bce-dec6f79f6baf}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{97fd3164-11e6-4ccc-9bae-4bec99573707}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
+      <Get Name="Get" Id="{eec7ebcd-c112-4761-a099-63e6060cdc97}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cfg.dinMaxCapacity;]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Property Name="NumOfHangers" Id="{0defe05d-ad9f-4931-bc09-69b8787eac5e}">
+    <Property Name="NumOfHangers" Id="{872fffa1-ab6b-46d0-9cde-0144a5e53f8b}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{7abd2509-b5d9-4d07-a2bc-b1d1c49ec05d}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
+      <Get Name="Get" Id="{5752e7c7-8dd9-4282-b802-a6e1bcd174ec}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <ObjectProperties>﻿<XmlArchive>
-  <Data>
-    <o xml:space="preserve" t="POUImageProperty">
-      <n n="ImageData" />
-      <v n="TransparencyColor">"White"</v>
-      <v n="MakeTransparent">false</v>
-    </o>
-  </Data>
-  <TypeList>
-    <Type n="Boolean">System.Boolean</Type>
-    <Type n="POUImageProperty">{bb741845-1ec5-4be9-bb0d-2cf7058af574}</Type>
-    <Type n="String">System.String</Type>
-  </TypeList>
-</XmlArchive></ObjectProperties>
+    <ObjectProperties />
   </POU>
 </TcPlcObject>

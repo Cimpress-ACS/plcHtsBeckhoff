@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_DRV_Out" Id="{cd29b1d9-4f9b-4c36-aff9-2a1c44e60a8b}">
+  <DUT Name="T_Ctrl_SIf_DRV_Out" Id="{b76ebf2c-cf41-4f0d-8fdf-a3faccfa82d9}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_DRV_Out :
 STRUCT
 	/// bolSpeed_1 = slow

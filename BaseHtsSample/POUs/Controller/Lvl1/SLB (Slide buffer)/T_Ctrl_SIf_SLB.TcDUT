@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_SLB" Id="{89d45234-a941-492a-b2ea-34c8ba037614}">
+  <DUT Name="T_Ctrl_SIf_SLB" Id="{4ee8991b-39d7-41bc-8cbb-82c176c4d83e}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB :
 STRUCT
 	/// configuration

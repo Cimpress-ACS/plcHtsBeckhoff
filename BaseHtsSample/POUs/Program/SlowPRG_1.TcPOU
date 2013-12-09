@@ -6,14 +6,24 @@ VAR
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
 	uinTaskNbr : UINT := 3; // SlowTask is Task Nr 3
+	pTmpSIf_RFW: POINTER TO T_Ctrl_SIf_RFW;
+	pTmpSIf_MER: POINTER TO T_Ctrl_SIf_MER;
 	jj:INT;
 	bolCtrlRst: BOOL;		// Global alarm reset for ICL
 	bolSimulateAll: BOOL; // Switches all controllers in ICL to simulation with pos. edge
 	bolSimulationActive: BOOL;
+	fbDPJ_4: FB_DPJ;
+	fbDPJ_9: FB_DPJ;
+	fbRFW_4: FB_RFW;
+	fbRFW_9: FB_RFW;
+	fbICL_1: FB_ICL;
+	fbMER_2: FB_MER;
+	fbMER_3: FB_MER;
 
-	FUB_ICL_TEST : 	FB_ICL();
 	stSequence : T_Sequence;
+		
 	fbAlm_Man: FB_Alm_Man; // alarm manager
+
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
@@ -31,10 +41,19 @@ call of all controller (FUB) for the slow task class.
 History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
-0.00.1		06.09.2013		AVME/KVO	Start history
-0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
-0.00.3		29.11.2013		AVME/MRU	Some Bugs fixed in IoInBridge
-0.00.4		02.12.2013		AVME/MRU	Remove CurrentItemCounter and some Bugs fixed
+0.00.1		24.05.2013		AVME/KVO	Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		26.09.2013		AVME/DSC	Definition of "par" and "cfg"
+0.00.4		03.10.2013		AVME/PRE	MERGER 8 changed to merge into transport
+0.00.5		08.10.2013		VP/RE		Optimizations FAT Bürglistrasse version
+0.00.6		18.10.2013		AVME/DSC	Insert loop to switch all controllers to simulation 
+0.00.7		24.10.2013		AVME/MRU	CHD added
+0.00.8		29.10.2013		AVME/MRU	New BASE_PLC 0.3.3.0
+0.00.9		30.10.2013		AVME/DSC	Moved MER_8 to MiddlePRG 
+0.00.10		11.11.2013		AVME/MRU	New alarm manager, Base_PLC, Base_elements
+0.00.11		18.11.2013		AVME/MRU	Jam Sensor 5.0-B18 for MER3 added
+0.00.12		02.12.2013		AVME/MRU	BaseHts added, StartUp improved
+0.00.13		04.12.2013		AVME/MRU	BaseHts updated, GeneralError connected
 
 ___________________________________________________________________________________________________*)
 
@@ -42,79 +61,312 @@ ________________________________________________________________________________
 // Initialize the PLC Parameter and check the PLC health
 // -----------------------------------------------------------------------------------------------
 IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
+
 	bolPlcStartupDone := TRUE;	
-		
+	
 	// init	
-	FUB_ICL_TEST.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.ICL_1); 
+	// ----------------------------------------------------------------------------------------------------------------------
+	// Incomming Loop
+	// ----------------------------------------------------------------------------------------------------------------------
+	// Decision Point 4; To Heat Press
+	fbDPJ_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_4);     	// init and entry fb_instance in global fb pointer array
+	// RFID Reader, element Controller in this Task, Drive in fastest Task class
+	fbRFW_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_4); // init and entry fb_instance in global fb pointer array
+	fbRFW_4.pRFD_SIf := g_a_pFunRFD[1]^.getSIf();
+	pTmpSIf_RFW := fbRFW_4.getCtrlSIf();
+	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
+	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
+	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
+	
+	// ADD Childs
+	// RFW
+	fbDPJ_4.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_4];
+	// Junctions are in the Fast task; Pointer from Global Array
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4a]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4b]);
+	
+	// Decision Point 9; To CONTROLSTATION OR 4X4 LOOP
+	// Decision Point
+	fbDPJ_9.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_9);     	// init and entry fb_instance in global fb pointer array
+	// RFID Reader, element Controller in this Task, Drive in fastest Task class
+	fbRFW_9.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_9); // init and entry fb_instance in global fb pointer array
+	fbRFW_9.pRFD_SIf := g_a_pFunRFD[2]^.getSIf();
+	pTmpSIf_RFW := fbRFW_9.getCtrlSIf();
+	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
+	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
+	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
+	
+	// ADD Childs
+	// RFW
+	fbDPJ_9.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_9];
+	// Junctions are in the Fast task; Pointer from Global Array
+	fbDPJ_9.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_9a]);
+	fbDPJ_9.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_9b]);
+			
+	// ----------------------------------
+	// MERGERS
+	// ----------------------------------
+	
+	// ----------
+	// MER_2
+	// ----------
+	fbMER_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_2);     // init and entry fb_instance in global fb pointer array	
+	pTmpSIf_MER:= fbMER_2.getCtrlSIf();
+	// Add Childs as Lines
+	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_5]);
+	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_2]);
+	
+	// MER_2 - configuration fix	
+	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;
+	
+  	// MER_2 - parameters fix	
+	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 4000;
+	pTmpSIf_MER^.Par.a_LinePar[1].udiWaitTimeLineFree_ms:= 4000;
+	
+	// MER_2 - init parameters for line control	
+	pTmpSIf_MER^.Par.a_LinePar[0].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeOverTime;
+	pTmpSIf_MER^.Par.a_LinePar[0].udiMergingTime_ms:= 10000;
+	pTmpSIf_MER^.Par.a_LinePar[0].uinNumOfHangersToMerge:= 0;
+	pTmpSIf_MER^.Par.a_LinePar[1].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeOverTime;
+	pTmpSIf_MER^.Par.a_LinePar[1].udiMergingTime_ms:= 10000;
+	pTmpSIf_MER^.Par.a_LinePar[1].uinNumOfHangersToMerge:= 0;
+	
+	// ----------
+	// MER_3
+	// ----------
+	fbMER_3.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_3);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_MER:= fbMER_3.getCtrlSIf();
+	// ADD Childs
+	fbMER_3.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_3]);
+	fbMER_3.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_10]);
 
+	// MER_3 - configuration fix	
+	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;
+	pTmpSIf_MER^.Cfg.usiCountJamSensors:= 1;	// Add Jam Sensor 5.0-B18
+	
+  	// MER_3 - parameters fix	
+	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 6000;
+	pTmpSIf_MER^.Par.a_LinePar[1].udiWaitTimeLineFree_ms:= 6000;
+	
+	// MER_3 - init parameters for line control	
+	pTmpSIf_MER^.Par.a_LinePar[0].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeOverTime;
+	pTmpSIf_MER^.Par.a_LinePar[0].udiMergingTime_ms:= 10000;
+	pTmpSIf_MER^.Par.a_LinePar[0].uinNumOfHangersToMerge:= 0;
+	pTmpSIf_MER^.Par.a_LinePar[1].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeOverTime;
+	pTmpSIf_MER^.Par.a_LinePar[1].udiMergingTime_ms:= 10000;
+	pTmpSIf_MER^.Par.a_LinePar[1].uinNumOfHangersToMerge:= 0;
+	
+	// ----------------------------------
+	// Module Controller
+	// ----------------------------------
+	fbICL_1.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.ICL_1);     // init and entry fb_instance in global fb pointer array
+	
+	// Add Childs
+	
+	// Run Group 1 need no parameters
+	// Members are: CHD_4, TLK_9
 	// New run Group 2 starts here!
-	FUB_ICL_TEST.AddRunGrpTime(2000); // Wait 2sec before change to next group
-	// New stop Group 2 starts here!
-	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
+	// Members are: TLP_5
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
 	// New run Group 3 starts here!
-	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
-	// New stop Group 3 starts here!
-	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
+	// Members are: TLP_4
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
 	// New run Group 4 starts here!
-	FUB_ICL_TEST.AddRunGrpTime(8000); // Wait 8sec before change to next group
+	// Members are: TLP_3
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	// New run Group 5 starts here!
+	// Members are: TLC_2
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	// New run Group 6 starts here!
+	// Members are: TLP_10
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	// New run Group 7 starts here!
+	// Members are: DPJ_4, DPJ_9
+	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	// New run Group 8 starts here!
+	// Members are: MER_3, MER_8
+	fbICL_1.AddRunGrpTime(100); 
+	// New run Group 9 starts here!
+	// Members are: MER_2
+	fbICL_1.AddRunGrpTime(100);	
+	 
+	
+	// Stop Group 1 need no parameters
+	// Members are: MER_2, MER_8, MER_3 
+	// New stop Group 2 starts here!
+	// Members are: DPJ_4, DPJ_9
+	fbICL_1.AddStopGrpTime(100); 
+	// New stop Group 3 starts here!
+	// Members are: TLP_10
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
 	// New stop Group 4 starts here!
-	FUB_ICL_TEST.AddStopGrpTime(6000); // Wait 6sec before change to next group
-		
-	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLC_2];
-	stSequence.uinGroupRun:= 1;
-	stSequence.uinGroupStop:= 1;	
-	stSequence.intCmdSeqRun:= cCMD_RUN;
-	stSequence.intStatusSeqRun:= cSTA_RUN;
-	stSequence.intCmdSeqStop:= cCMD_OFF;
-	stSequence.intStatusSeqStop:= cSTA_OFF;
-	// Add sequence group
-	FUB_ICL_TEST.AddSeqChild(stSequence);
+	// Members are: TLC_2
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	// New stop Group 5 starts here!
+	// Members are: TLP_3
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	// New stop Group 6 starts here!
+	// Members are: TLP_4
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	// New stop Group 7 starts here!
+	// Members are: TLP_5
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	// New stop Group 8 starts here!
+	// Members are: TLK_9
+	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	// New stop Group 9 starts here!
+	// Members are: CHD_4
+	fbICL_1.AddStopGrpTime(100); 
+	
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
-	stSequence.uinGroupRun:= 2;
-	stSequence.uinGroupStop:= 1;	
-	stSequence.intCmdSeqRun:= cCMD_RUN;
-	stSequence.intStatusSeqRun:= cSTA_RUN;
-	stSequence.intCmdSeqStop:= cCMD_OFF;
-	stSequence.intStatusSeqStop:= cSTA_OFF;
-	// Add sequence group
-	FUB_ICL_TEST.AddSeqChild(stSequence);
-
-	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_5];
-	stSequence.uinGroupRun:= 3;
-	stSequence.uinGroupStop:= 2;	
-	stSequence.intCmdSeqRun:= cCMD_RUN;
-	stSequence.intStatusSeqRun:= cSTA_RUN;
-	stSequence.intCmdSeqStop:= cCMD_OFF;
-	stSequence.intStatusSeqStop:= cSTA_OFF;
-	// Add sequence group
-	FUB_ICL_TEST.AddSeqChild(stSequence);
-	
-	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLK_9];
-	stSequence.uinGroupRun:= 4;
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_10];
+	stSequence.uinGroupRun:= 6;
 	stSequence.uinGroupStop:= 3;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
 	stSequence.intStatusSeqRun:= cSTA_RUN;
 	stSequence.intCmdSeqStop:= cCMD_OFF;
 	stSequence.intStatusSeqStop:= cSTA_OFF;
 	// Add sequence group
-	FUB_ICL_TEST.AddSeqChild(stSequence);
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLC_2];
+	stSequence.uinGroupRun:= 5;
+	stSequence.uinGroupStop:= 4;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
 
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_3];
+	stSequence.uinGroupRun:= 4;
+	stSequence.uinGroupStop:= 5;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
+	stSequence.uinGroupRun:= 3;
+	stSequence.uinGroupStop:= 6;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_5];
+	stSequence.uinGroupRun:= 2;
+	stSequence.uinGroupStop:= 7;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLK_9];
+	stSequence.uinGroupRun:= 1;
+	stSequence.uinGroupStop:= 8;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_OFF;
+	stSequence.intStatusSeqStop:= cSTA_OFF;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.DPJ_4];
+	stSequence.uinGroupRun:= 7;
+	stSequence.uinGroupStop:= 2;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.DPJ_9];
+	stSequence.uinGroupRun:= 7;
+	stSequence.uinGroupStop:= 2;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_2];
+	stSequence.uinGroupRun:= 9;
+	stSequence.uinGroupStop:= 1;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_3];
+	stSequence.uinGroupRun:= 8;
+	stSequence.uinGroupStop:= 1;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_8];
+	stSequence.uinGroupRun:= 8;
+	stSequence.uinGroupStop:= 1;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
+	// Define sequence parameter
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.CHD_4];
+	stSequence.uinGroupRun:= 1;
+	stSequence.uinGroupStop:= 9;	
+	stSequence.intCmdSeqRun:= cCMD_RUN;
+	stSequence.intStatusSeqRun:= cSTA_RUN;
+	stSequence.intCmdSeqStop:= cCMD_STOP;
+	stSequence.intStatusSeqStop:= cSTA_STOP;
+	// Add sequence group
+	fbICL_1.AddSeqChild(stSequence);
+	
 	// Add buffer elements
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SEP_2]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.DSB_2]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SBI_5]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.DBO_5]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SBI_3]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.BUF_10]); 
-	FUB_ICL_TEST.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.SLB_8]); 
+	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_2]); 
+	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_3]); 
+	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_8]); 
+
+	// Add pointers
+	fbICL_1.p_fbDPJ_4 := g_a_pCtrlInst[E_CtrlId.DPJ_4];
+	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_9];
+	fbICL_1.p_fbMER_8 := g_a_pCtrlInst[E_CtrlId.MER_8];
+	fbICL_1.p_fbCHD_4 := g_a_pCtrlInst[E_CtrlId.CHD_4];
+	fbICL_1.p_fbTLP_4 := g_a_pCtrlInst[E_CtrlId.TLP_4];
+	fbICL_1.p_fbTLP_10 := g_a_pCtrlInst[E_CtrlId.TLP_10];
+	fbICL_1.p_fbTLK_9 := g_a_pCtrlInst[E_CtrlId.TLK_9];
 
 	g_uinStartProzess := g_uinStartProzess + 1;	// For StartUp order
-	
+
 END_IF
 // -----------------------------------------------------------------------------------------------
 
@@ -149,7 +401,6 @@ END_IF
 // -----------------------------------------------------------------------------------------------
 IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess>=(20+c_uinCntTaskClass))) THEN
 	
-
 	//****************************************************************************************************
 	// SIMULATE all controller
 	//****************************************************************************************************
@@ -189,13 +440,29 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 		bolCtrlRst := FALSE;
 	END_IF
 
+	//****************************************************************************************************
+	// cyclic controller calls
+	//****************************************************************************************************
+	
+	fbICL_1.In_bolEmergencyOffOk := In_bol_X_S1_Emergency_Stop;
+	fbICL_1.In_bolNoGeneralError := In_bol_X_S1_Emergency_Stop;
+	(* ToDO: DSC   fbICL_1.In_bolNoGeneralError :=;   *)
+	fbICL_1();
+	
+	fbDPJ_4.In_bolHangerDetector := In_bol_4_0_B7_Hanger_in_station;
+	fbDPJ_4();
+	fbDPJ_9.In_bolHangerDetector := In_bol_9_0_B1_Hanger_in_TLK_Reader;
+	fbDPJ_9();
+	fbRFW_4();
+	fbRFW_9();
 
-
-	//FB_Test();
-	FUB_ICL_TEST();
-
+	fbMER_2();
+	fbMER_3.In_a_bolJamSensor[1] := In_bol_5_0_B18_TLP_full;	// Add Jam Sensor 5.0-B18
+	fbMER_3();
+	
 END_IF
-// -----------------------------------------------------------------------------------------------]]></ST>
+// -----------------------------------------------------------------------------------------------
+]]></ST>
     </Implementation>
     <ObjectProperties />
   </POU>

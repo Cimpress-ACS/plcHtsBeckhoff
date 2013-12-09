@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_SLB_Cur" Id="{4b81c92d-f8c4-4c5f-8e69-e97fd2bf95af}">
+  <DUT Name="T_Ctrl_SIf_SLB_Cur" Id="{b207f1cd-1588-4cca-b159-8737c24c489b}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB_Cur :
 STRUCT
 	/// Number of buffer zones, depends on how many times the method "AddBufferZone" was called at init

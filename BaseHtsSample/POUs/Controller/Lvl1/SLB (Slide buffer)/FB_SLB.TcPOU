@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_SLB" Id="{f504f458-3984-47bc-9f9d-df526d18e3a8}">
+  <POU Name="FB_SLB" Id="{39d7f9d4-1763-4d4a-8a51-e05d98f9076a}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_SLB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR
 	/// Specific interface struct for public access
@@ -60,7 +60,11 @@ Version		Date			Author		Comment
 0.00.6		19.09.2013		AVME/PRE	Implement new Base Concept
 0.00.7		28.10.2013		VP/RE		SLB is full is last zone is full. Otherwise it leads to overflow problems.
 0.00.8 		04.11.2013		AVME/DSC    Modified ".cur" interface. Newly distinction is made ​​between: "bolInputBufferFull" and  "bolAllBuffersFull"
-0.00.9		07.11.2013		AVME/DSC    Implement IBuffer.
+0.00.9		03.12.2013		AVME/MRU	Add MaxCapacity / NumOfHangers properties
+0.00.10		09.12.2013		AVME/DSC	Modification in method "checkStateAllZones".
+										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+										
 __________________________________________________________________________________________________*)
 
 
@@ -81,7 +85,7 @@ END_IF;
 
 ]]></ST>
     </Implementation>
-    <Method Name="Always" Id="{25ef604c-ebcc-40d2-a051-361a25b5c56c}">
+    <Method Name="Always" Id="{5dbb0894-dc7b-4f87-825c-3731a29d17b8}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -138,7 +142,7 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{064d2b8f-1d4e-411e-b0d2-efb25b6513df}">
+    <Method Name="StateMachine" Id="{6ab1f4c5-1e6f-41c6-9449-7f5bb05934f9}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
@@ -161,7 +165,7 @@ CASE me.StateMachine.intState OF
 END_CASE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{fbdeb249-4a71-492b-9419-95642d1749b0}">
+    <Method Name="IoOutBridge" Id="{b4bfe804-c479-4333-bc59-7ddc277a1cd3}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -177,7 +181,7 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASE_ALLBusy" Id="{daf8f478-e2a6-4f1c-86e1-f6c455211a71}">
+    <Method Name="sta_RELEASE_ALLBusy" Id="{d4d40952-6e7e-448d-9ca5-7a91ed83b866}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -293,7 +297,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{5020b7f9-fc74-4027-ad56-ac46e69fe052}">
+    <Method Name="sta_STOPBusy" Id="{e5e065c0-cc3b-41af-955d-06bbacbd2e71}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -327,7 +331,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{8afb30f0-8ac1-4f1b-b1a2-5a6a3b29a679}">
+    <Method Name="sta_STOP" Id="{2937b5a8-64ee-4e2b-bd1d-445fb9fae823}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
@@ -359,14 +363,14 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCtrlSIf" Id="{6c50a082-5662-47d0-af7a-dde8c506c573}">
+    <Method Name="getCtrlSIf" Id="{3418f239-48c5-4b1a-a84c-bde51a56bbe4}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_SLB
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CalcSumNumOfHangers" Id="{fcf40f00-9229-4023-a361-fbaaedb3af54}">
+    <Method Name="CalcSumNumOfHangers" Id="{49b08086-a262-407f-b5b9-95cddb381419}">
       <Declaration><![CDATA[METHOD PROTECTED CalcSumNumOfHangers : DINT
 VAR
 	ii: INT;
@@ -390,7 +394,7 @@ END_FOR
 CalcSumNumOfHangers:= dinSumNumOfHangers;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddBufferZone" Id="{c919d9a3-ed5c-4949-a7e3-00bddca08e51}">
+    <Method Name="AddBufferZone" Id="{aa9328a0-9b56-4cee-8001-70cbd12777d9}">
       <Declaration><![CDATA[METHOD AddBufferZone
 VAR_INPUT
 	p_BufferZone: POINTER TO FB_STB;
@@ -411,7 +415,7 @@ IF (usiNumOfBufferZones <= (Base_Const.cMaxNrOfChilds-1)) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkStateAllZones" Id="{a50276a2-bc4d-413c-9627-cf806cc490fa}">
+    <Method Name="checkStateAllZones" Id="{fc1d42da-760a-472c-a64e-996195d1d01b}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllZones : BOOL
 VAR_INPUT
 	cSTA: INT;
@@ -431,10 +435,11 @@ usiNumOfCheckedChilds:= 0;
 // Loop over all childs
 FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
 	// Check state	
-	IF (a_pBufferZoneChildCIF[ii]^.Job.intState = cSTA) THEN
+	// Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+	// Parent controller need state STOP that automatic stop sequence can work for all other childs.
+	IF (a_pBufferZoneChildCIF[ii]^.Job.intState = cSTA) OR ((a_pBufferZoneChildCIF[ii]^.Job.intState = cSTA_ERROR) AND (cSTA = cSTA_STOP)) THEN
 		usiNumOfCheckedChilds:= usiNumOfCheckedChilds+1;
 	END_IF
-
 END_FOR
 
 // All states equal the input state
@@ -443,7 +448,7 @@ IF (usiNumOfCheckedChilds = usiNumOfBufferZones) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkAllZonesFull" Id="{61ca53fd-ac86-4707-88dc-db1b96791ce3}">
+    <Method Name="checkAllZonesFull" Id="{14e413a0-4372-4cb9-ad6c-104e8c2ca389}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesFull : BOOL
 VAR
 	ii: INT;
@@ -471,7 +476,7 @@ IF (usiNumOfFullZones = usiNumOfBufferZones) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{46a14c4f-907b-4869-9bee-6d1bed692005}">
+    <Method Name="sta_RUN" Id="{13658d91-14a6-492e-af7e-4a6ddeeefe77}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
@@ -562,7 +567,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkAllZonesEmpty" Id="{60d77361-fbff-49d5-be54-03769bf526df}">
+    <Method Name="checkAllZonesEmpty" Id="{03e65528-19c4-4bfa-b1b9-422929f3d927}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesEmpty : BOOL
 VAR
 	ii: INT;
@@ -590,7 +595,7 @@ IF (usiNumOfEmptyZones = usiNumOfBufferZones) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFF" Id="{602d17ba-3d4f-47bf-82a1-5a0fde8b2254}">
+    <Method Name="sta_OFF" Id="{f39299b2-3014-4cfb-b87b-c945f570bbc1}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
@@ -629,7 +634,7 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CalcMaxCapacity" Id="{3ecc436e-ef6a-4f3b-a3ce-2236398cd41e}">
+    <Method Name="CalcMaxCapacity" Id="{31be9583-3302-4d99-aed2-2e65ec87ef93}">
       <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
 VAR
 	ii: INT;
@@ -653,7 +658,7 @@ END_FOR
 CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CtrlInit" Id="{75a8833b-1e78-4b83-93cd-fe613005ca30}">
+    <Method Name="CtrlInit" Id="{90c18ea3-5793-46e2-b9ef-075c9e173f37}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
 VAR
 	ii: INT;
@@ -671,7 +676,7 @@ END_FOR
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkChildValid" Id="{08aa2e75-a9cf-456a-a610-27f040014ec6}">
+    <Method Name="checkChildValid" Id="{84be17df-5b66-4fb8-b426-825c3f0c34b6}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
 ]]></Declaration>
       <Implementation>
@@ -695,7 +700,7 @@ ELSE
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CmdToAllZones" Id="{92233b0d-d3e0-4136-9b44-c842a1d29265}">
+    <Method Name="CmdToAllZones" Id="{23a6ac4f-07b2-432d-b4fb-6cde8d40869e}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllZones
 VAR_INPUT
 	cCMD: INT;
@@ -714,7 +719,7 @@ END_FOR
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RELEASE_ALL" Id="{76fd16b6-1173-493e-9689-73825cadb893}">
+    <Method Name="sta_RELEASE_ALL" Id="{5d4db9d8-972d-47c1-b48c-18af85a2f185}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
 ]]></Declaration>
       <Implementation>
@@ -744,7 +749,7 @@ END_FOR
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoInBridge" Id="{fa80132e-6ca7-4445-9920-cf6588c1b4e8}">
+    <Method Name="IoInBridge" Id="{41f9b0a5-ed93-418e-a19c-6dbd58c2b787}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -760,7 +765,7 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="RefillZones" Id="{3b46ab61-4d07-4059-9528-cc82275d5183}">
+    <Method Name="RefillZones" Id="{fc033fad-d9b3-49da-92f5-581cca1a3db7}">
       <Declaration><![CDATA[METHOD RefillZones
 VAR
 	/// Loop variable
@@ -865,7 +870,7 @@ CASE SubStateMachineRefill OF
 END_CASE]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{cd79588d-e8ba-445a-b153-878bc34a9981}">
+    <Method Name="FB_init" Id="{8358f63b-d38f-46b4-833f-8a5a3c9f6fdf}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -931,7 +936,7 @@ SIf.Par.udiSimIncomingTime_ms := 20000;
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUNBusy" Id="{e648cd96-a75a-4c46-af0c-f8e156659dce}">
+    <Method Name="sta_RUNBusy" Id="{0641a4f7-de0c-4a5d-a10c-2a274431bcb4}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -970,7 +975,7 @@ SIf.Par.udiSimIncomingTime_ms := 20000;
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{72571d0b-5a63-4f3c-bc0f-d55940738591}">
+    <Method Name="getCmdState" Id="{f60977b5-1a01-4fbc-931b-8484dc538d33}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
 VAR_INPUT
 	intCmdState: INT;
@@ -1012,25 +1017,58 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="MaxCapacity" Id="{ee5e74fd-0140-4eeb-b69b-45f048ca4a04}">
+    <Method Name="checkChildAlmClass" Id="{3faf9e60-2a31-4af0-87f2-5c9e991a3e7b}">
+      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
+// check child alarm classes
+// set me alarm class active if at least one child has an EOFF
+IF CheckAllChildAlmClass(E_AlmClass.EOFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.OFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.STOP) THEN // FB_SLB needs alarm class STOP
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
+ELSE
+	IF (me.Alarm.bolfp) THEN
+		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
+		me.Alarm.bolfp := FALSE;
+	END_IF
+END_IF
+
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs in the case of a parent EOFF or me=OFF or EOFF
+IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) THEN
+	SetAllChildAlmClass(CIf.Job.eParent_ActivAlmClass);
+ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
+	SetAllChildAlmClass(CIf.Job.eMe_ActivAlmClass);
+ELSE
+	// no important alarm for child active
+	SetAllChildAlmClass(E_AlmClass.NONE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="MaxCapacity" Id="{2821e69a-02e0-4111-b59a-4a75d3017261}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{12eba740-6266-4ba2-93b8-95ad4fda7d96}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
+      <Get Name="Get" Id="{a0cdc276-72a6-4a19-bc39-a474c9018b17}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
         </Implementation>
       </Get>
     </Property>
-    <Property Name="NumOfHangers" Id="{16f196cd-d1b3-45cd-9a57-a98753807966}">
+    <Property Name="NumOfHangers" Id="{2317e6b2-4bdb-4cc6-bf2d-c939731f7ba7}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
 ]]></Declaration>
-      <Get Name="Get" Id="{c05e5da0-2754-48b7-a5ee-2abb92f4ee1a}">
-        <Declaration><![CDATA[VAR
-END_VAR
-]]></Declaration>
+      <Get Name="Get" Id="{7595a39a-d6bc-4fc6-9298-bc0a931eb075}">
+        <Declaration><![CDATA[]]></Declaration>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>

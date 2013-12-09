@@ -1,0 +1,17 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="E_Decision_Job" Id="{1a90d303-4a4c-4ffe-a2c9-92fb38176cf1}">
+    <Declaration><![CDATA[TYPE E_Decision_Job :
+(
+	none := 0,
+	NEW := 1,
+	REPLACE_ID := 2,
+	DELETE_ID := 3,
+	DELETE_JUNCTION := 4,
+	DELETE_ALL := 5,
+	MAX_E_Decision_Job
+);
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

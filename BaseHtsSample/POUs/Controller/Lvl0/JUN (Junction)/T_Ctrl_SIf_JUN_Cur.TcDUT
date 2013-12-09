@@ -1,0 +1,20 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN_Cur" Id="{c2e07c09-0c9d-44d1-b8a9-2879a0024c7d}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_Cur :
+STRUCT
+	///[um] actual position from the transport written from Parent
+	dinTransportPosition_um: DINT;
+	///[um] actual speed from the transport written from Parent
+	dinTransportspeed_um_s: DINT;
+	///[um] actual calculated position
+	dinTransportPositionCalc_um: DINT;
+	/// junction is open
+	bolOpen: BOOL;
+	///sensor hanger passed
+	bolPassed: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

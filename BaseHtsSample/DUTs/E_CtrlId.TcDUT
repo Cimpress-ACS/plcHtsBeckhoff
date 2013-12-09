@@ -2,7 +2,7 @@
   <DUT Name="E_CtrlId" Id="{fbb9f2d2-c911-4ba8-bff4-7e84f684cb30}">
     <Declaration><![CDATA[TYPE E_CtrlId :
 (
-	//not defined after startup...
+	///not defined after startup...
 	NONE,
 	ICL_1 := 200,
 	MER_2 := 201,
@@ -41,6 +41,9 @@
 	TLP_5 := 295,
 	CHD_4 := 296,
 	TLK_9 := 298,
+	
+	// Dummy Controllers, not needed now
+	JUN_Dummy,
 	E_CtrlIdMax
 );
 END_TYPE

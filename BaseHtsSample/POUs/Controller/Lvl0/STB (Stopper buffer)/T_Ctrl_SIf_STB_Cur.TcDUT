@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_STB_Cur" Id="{bd25db49-f5e4-46b1-b4cd-f16d0575f4e1}">
+  <DUT Name="T_Ctrl_SIf_STB_Cur" Id="{31d9788b-af4e-4154-b282-f4a1ef5d912d}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Cur :
 STRUCT
 	/// Hangers passed total counter (reset in state OFF)

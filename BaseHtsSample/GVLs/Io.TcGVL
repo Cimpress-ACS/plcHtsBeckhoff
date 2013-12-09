@@ -1,7 +1,80 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
   <GVL Name="Io" Id="{b9a7a763-3d86-4131-a391-a6dc6b5b6be9}">
     <Declaration><![CDATA[VAR_GLOBAL
-	In_bol_EmergencyOff AT %I* : BOOL; // Emergency Off Button
+	In_bol_2_0_B1_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
+	Out_bol_2_0_Q2_Doublestopper AT %Q* : BOOL; //DOPPELSTOPPER
+	In_bol_2_0_B3_Hanger_in_Seperator AT %I* : BOOL; //BUEGEL IN VEREINZELUNG
+	Out_bol_2_0_Q4_Seperator AT %Q* : BOOL; //VEREINZELUNG
+	In_bol_2_0_B5_Seperator_full AT %I* : BOOL; //VOLLMELDUNG VEREINZELUNG
+	In_bol_2_0_B6_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_2_0_B7_Hanger_in_TLC AT %I* : BOOL; //BUEGEL IN TLC FOERDERER
+	Out_bol_2_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_2_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_2_0_B13_Blocking_monitoring AT %I* : BOOL; //BLOCKIERUEBERWACHUNG
+	In_bol_2_0_B15_Charging_impulse_TLC_TLT AT %I* : BOOL; //LADEIMPULS TLC/TLT FEINTAKT A
+	In_bol_2_0_B16_Blocking_monitoring AT %I* : BOOL; //BLOCKIERUEBERWACHUNG
+	In_bol_3_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_3_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
+	Out_bol_3_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_3_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_3_0_B3_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
+	Out_bol_3_0_Q4_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
+	In_bol_3_0_B5_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
+	In_bol_3_0_B7_Charging_impulse_TLK_TLP AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_4_0_B1_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_4_0_B2_Inconsistent_Hanger AT %I* : BOOL; //SCHIEFE BUEGEL
+	In_bol_4_0_B3_Empty_Hanger_Control AT %I* : BOOL; //LEERBUEGELERKENNUNG
+	In_bol_4_0_B4_Double_Hanger_Control AT %I* : BOOL; //DOPPELBUEGELERKENNUNG
+	Out_bol_4_0_Q5_Blow_Valve_light_sensor AT %Q* : BOOL; //BLASLUFTVENTIL FUER LICHTSCHRANKE
+	Out_bol_4_0_Q6_Junction AT %Q* : BOOL; //WEICHE
+	In_bol_4_0_B7_Hanger_in_station AT %I* : BOOL; //BUEGEL IM FACH
+	In_bol_4_0_B8_Cam_TLP_in_position AT %I* : BOOL; //MITNEHMER TLP IN POSITION
+	Out_bol_4_0_Q11_Junction AT %Q* : BOOL; //WEICHE
+	In_bol_4_0_B12_Load_acknowledge AT %I* : BOOL; //EINLAUFQUITTUNG
+	Out_bol_4_0_Q14_Junction AT %Q* : BOOL; //WEICHE
+	In_bol_4_0_B15_Load_acknowledge AT %I* : BOOL; //EINLAUFQUITTUNG
+	In_bol_4_0_B16_Slide_full AT %I* : BOOL; //VOLLMELDUNG GLEITSCHIENE
+	In_bol_4_0_B17_Adjustment_sensor AT %I* : BOOL; //JUSTAGESENSOR
+	Out_bol_4_0_K1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	Out_bol_4_0_K2_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_4_0_T1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_4_0_B23_Charging_impulse_TLK_TLP AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT
+	In_bol_5_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_5_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
+	Out_bol_5_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_5_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_5_0_B3_Blocking_done AT %I* : BOOL; //BLOCKBILDUNG IST ERREICHT
+	In_bol_5_0_B4_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
+	Out_bol_5_0_Q5_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
+	In_bol_5_0_B6_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
+	Out_bol_5_0_Q7_Doublestopper AT %Q* : BOOL; //DOPPELSTOPPER
+	In_bol_8_0_B4_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_8_0_B6_Seperator_full AT %I* : BOOL; //VOLLMELDUNG VEREINZELUNG
+	In_bol_8_0_B1_Hanger_in_Seperator AT %I* : BOOL; //BUEGEL IN VEREINZELUNG
+	Out_bol_8_0_Q7_Seperator AT %Q* : BOOL; //VEREINZELUNG
+	In_bol_9_0_B1_Hanger_in_TLK_Reader AT %I* : BOOL; //BUEGEL IN TLK LESETOR
+	In_bol_9_0_B2_Hanger_in_TLK AT %I* : BOOL; //BUEGEL IN TLK
+	Out_bol_9_0_Q3_Junction AT %Q* : BOOL; //WEICHE
+	Out_bol_9_0_Q4_Junction AT %Q* : BOOL; //WEICHE
+	Out_bol_9_0_K1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	Out_bol_9_0_K2_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_9_0_T1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_9_0_B13_Charging_impulse_TLK_TLP_A AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_9_0_B14_Charging_impulse_TLK_TLP_B AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT B
+	In_bol_9_0_B15_Charging_impulse AT %I* : BOOL; //LADEIMPULS
+	In_bol_9_0_B16_Hanger_in_station AT %I* : BOOL; //BUEGEL IM FACH
+	In_bol_10_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
+	In_bol_10_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
+	Out_bol_10_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
+	In_bol_10_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
+	In_bol_10_0_B3_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
+	Out_bol_10_0_Q4_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
+	In_bol_10_0_B5_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
+	In_bol_10_0_B7_Charging_impulse_TLK_TLP_A AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_10_0_B8_TLP_50percent_full AT %I* : BOOL; //VOLLMELDUNG 50% TLP
+	In_bol_11_0_B1_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
+	In_bol_X_S1_Emergency_Stop AT %I* : BOOL; //Emergency stop from safety PLC
+
 END_VAR]]></Declaration>
     <ObjectProperties />
   </GVL>

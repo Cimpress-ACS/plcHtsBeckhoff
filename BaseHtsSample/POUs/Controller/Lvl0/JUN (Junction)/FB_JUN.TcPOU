@@ -1,0 +1,1235 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <POU Name="FB_JUN" Id="{07235075-3377-43c0-90bd-614983e352be}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_JUN EXTENDS FB_CtrlBase
+VAR_INPUT
+	In_bolPassed: BOOL;
+END_VAR
+VAR_OUTPUT
+	Out_bolOpen: BOOL;
+END_VAR
+VAR
+	/// Specific interface struct for public access
+	SIf: T_Ctrl_SIf_JUN;
+	/// Function specific variables
+	bolfpRelease: BOOL;
+	/// Job for checking the sensor
+	bolCheckPass: BOOL;
+	/// standard Loop variable
+	uinI: UINT;
+	/// Loop Variable for Hashtable
+	intLoopHashtable: INT;
+	/// Index to next job in Hashtable
+	intNextHastableIdx: INT;
+	/// Index to next job in Hashtable
+	intActHastableIdx: INT;
+	/// Calculated position to open junction
+	dinNextOpenPosition_um: DINT;
+	/// Calculated position to close junction
+	dinNextClosePosition_um: DINT;
+	///Last new position value from parent
+	dinTransportPositionOld_um: DINT;
+	///Position correction in faster Task cycletime
+	dinPositionCorrection_um: DINT;
+	///Position of the tag
+	dinTagPosition_um: DINT;
+	///Difference from actual Tag Position to junction
+	dinPositionDifference_um: DINT;
+	/// Rising edge of passed sensor
+	bolFpPassed: BOOL;
+	/// Array to check every hanger passed the sensor
+	aCheckPassingTime: ARRAY[0..9] OF T_JUN_OutfeedCheck;
+	/// Size of Array Check Passing
+	intSizeCheckPassing: INT;
+	/// Index for the check passing array
+	intIndexCheckPassing: INT;
+	/// Temporary Value
+	udiValue: UDINT;
+	/// Temporary Value
+	uinValue: UINT;
+END_VAR
+VAR CONSTANT
+	///sub States for RELEASE Function
+	cSTA_SUB_INITIALIZED: INT := 500;
+	cSTA_SUB_WAIT_FOR_JOB: INT := 501;
+	cSTA_SUB_OPEN: INT := 502;
+	cSTA_SUB_CLOSE: INT := 506;
+	cSTA_SUB_ERROR: INT := 598;
+	cSTA_SUB_FINISHED: INT := 600;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+Junction to release hanges out of the transport belt 
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		22.08.2013		AVME/PRE	Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		02.10.2013		VP/MK,RE	Fixed multiplication issues (cast INT to REAL before division)
+
+___________________________________________________________________________________________________*)
+
+
+IF (me.bolActivate) THEN // cyclic call enabled
+	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
+		CtrlInit();
+		CIf.Info.bolInitDone := TRUE;
+	ELSE
+		CycleStartDuty();
+	
+		Always();
+		
+		StateMachine();
+		
+		CycleEndDuty();
+	END_IF
+END_IF;
+]]></ST>
+    </Implementation>
+    <Method Name="sta_RUN" Id="{8e6d0c93-9967-4606-8b93-d93c4fc4680c}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+			
+		me.SubStateMachine.intState := cSTA_SUB_WAIT_FOR_JOB; // init sub state machine
+		me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_JOB; // init sub state machine
+		bolfpRelease := TRUE;		// Only start once the release if cmd is still the same
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiSimPassTime_ms);
+		fbSimulationTimer(); // set time/reset timer
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // set time/reset timer
+			IF SIf.Out.bolOpen.intern = TRUE THEN 
+				fbSimulationTimer.IN := TRUE;
+			ELSIF (SIf.Out.bolOpen.intern = FALSE) AND (fbSimulationTimer.Q = TRUE) THEN
+				fbSimulationTimer.IN := FALSE;				
+			END_IF
+			IF fbSimulationTimer.Q = TRUE THEN
+				SIf.In.bolPassed.intern := TRUE;
+			ELSE
+				SIf.In.bolPassed.intern := FALSE;
+			END_IF
+		END_IF
+		
+		//--------------------------------------------------------------------------------------
+		// Always RUN actions
+		
+		// If this task is in faster cycle then the parent, calculate internal position more exactly during the taskcycle
+		IF dinTransportPositionOld_um <> SIf.Cur.dinTransportPosition_um THEN
+			SIf.Cur.dinTransportPositionCalc_um := SIf.Cur.dinTransportPosition_um;
+			dinTransportPositionOld_um := SIf.Cur.dinTransportPosition_um;
+			dinPositionCorrection_um := 0;
+		ELSE
+			dinPositionCorrection_um := dinPositionCorrection_um + LREAL_TO_DINT(DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s) * UDINT_TO_LREAL(me.FUBInfo.udiSample_ms) / 1000.0 );
+			SIf.Cur.dinTransportPositionCalc_um := dinTransportPositionOld_um + dinPositionCorrection_um;
+		END_IF
+		
+		// Check hashtable if there is a job
+		dinPositionDifference_um := SIf.Par.dinPosition_um; // Set maximal value to search the smalles one
+		// Loop through the hashtable
+		FOR intLoopHashtable := 0 TO cintMaxDecisions DO
+			// Check if the hashtable entry is for this target
+			IF SIf.par.pTblDecision^[intLoopHashtable].stDecision.dinTarget = SIf.Cfg.dinTargetNr THEN
+				// Check if this job is on the way to the junction
+				IF SIf.par.pTblDecision^[intLoopHashtable].eState = E_DecisionState.WayToJunction THEN
+					// Check if Tag is not already driven too much
+					IF SIf.par.pTblDecision^[intLoopHashtable].dinActPos_um > (SIf.Par.dinPosition_um + SIf.Par.dinOpenWay_um) THEN
+						// If driven to much, wait for next passing
+						SIf.par.pTblDecision^[intLoopHashtable].eState := E_DecisionState.Wait;
+					ELSE
+						// Chech if it is the nearest tag
+						IF 	dinPositionDifference_um > SIf.Par.dinPosition_um - SIf.par.pTblDecision^[intLoopHashtable].dinActPos_um THEN
+							dinPositionDifference_um := SIf.Par.dinPosition_um - SIf.par.pTblDecision^[intLoopHashtable].dinActPos_um;
+							intNextHastableIdx := intLoopHashtable;
+						END_IF
+					END_IF
+				END_IF
+			END_IF
+		END_FOR
+		
+		// Calculate the exactly position of the next Tag to Work with
+		IF SIf.par.pTblDecision^[intNextHastableIdx].stDecision.dinTarget = SIf.Cfg.dinTargetNr 
+			AND SIf.par.pTblDecision^[intNextHastableIdx].eState = E_DecisionState.WayToJunction THEN
+			// Only calculate next position if a new job for this junction is ready
+			dinPositionDifference_um := SIf.Par.dinPosition_um - SIf.par.pTblDecision^[intNextHastableIdx].dinActPos_um - dinPositionCorrection_um;
+		ELSE	
+			dinPositionDifference_um := SIf.Par.dinPosition_um;
+		END_IF
+		
+		// Check the sensor for Timeout Error 
+		// Array for more than one hanger check, if a hanger pass the junction, the value is set to 1
+		// Every Value in the array > 0 would be cyclicle increased
+		// If a value is higher than the maximum time, error occures
+		// A rising edge of the sensor would cleare the oldest value
+		
+		// Delete old values
+		IF ((SIf.In.bolPassed.intern = TRUE) AND (bolFpPassed = FALSE)) THEN
+			bolFpPassed := TRUE;
+			// Delete Check time from sensor from oldest value
+			udiValue := 0;
+			FOR uinI := 0 TO (SIZEOF(aCheckPassingTime)/(SIZEOF(aCheckPassingTime[0]))-1) DO
+				IF aCheckPassingTime[uinI].udiTime_ms > udiValue THEN
+					udiValue := aCheckPassingTime[uinI].udiTime_ms;
+					uinValue := uinI;
+				END_IF
+			END_FOR
+			// Reset oldest Value
+			aCheckPassingTime[uinValue].udiTime_ms := 0;
+			// Change state in hashtable from this value
+			SIf.par.pTblDecision^[aCheckPassingTime[uinValue].intHTIndex].eState := E_DecisionState.DriveOut;
+			SIf.par.pTblDecision^[aCheckPassingTime[uinValue].intHTIndex].dinActPos_um := -2;
+			// Reset Index
+			aCheckPassingTime[uinValue].intHTIndex := 0;		
+			
+		ELSIF (SIf.In.bolPassed.intern = FALSE) THEN
+			bolFpPassed := FALSE;
+		END_IF
+		
+		// Check every value
+		FOR uinI := 0 TO (SIZEOF(aCheckPassingTime)/(SIZEOF(aCheckPassingTime[0]))-1) DO
+			IF aCheckPassingTime[uinI].udiTime_ms > SIf.Par.udiPassTime_ms THEN
+				// Set Alarm: SIf.Alm[1].strText := 'timeout passed sensor does not detect the hanger';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			ELSIF aCheckPassingTime[uinI].udiTime_ms > 0 THEN
+				aCheckPassingTime[uinI].udiTime_ms := aCheckPassingTime[uinI].udiTime_ms + me.FUBInfo.udiSample_ms;
+			END_IF
+		END_FOR
+			
+		
+		//--------------------------------------------------------------------------------------
+		// sub state machine for sequence
+		CASE me.SubStateMachine.intState OF
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_WAIT_FOR_JOB:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+				END_IF
+				// State Change Condition
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+						SIf.In.bolPassed.intern := FALSE;
+				END_IF
+				
+				// If reaction way (time*speed) is bigger then the rest of the way to the junction, open
+				IF dinPositionDifference_um <= LREAL_TO_DINT( UDINT_TO_LREAL(SIf.Par.udiOpenTime_ms) * DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s) ) / 1000.0 THEN
+					// only release one tray if no jam is at the stopper
+					IF (SIf.In.bolPassed.intern = FALSE) THEN
+						// Save actual index
+						me.SubStateMachine.intStateNext := cSTA_SUB_OPEN;
+					ELSE
+						// SIf.Alm[3].strText := 'Open not possible, destination is full';
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+					END_IF
+				END_IF	
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_OPEN:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+
+					intActHastableIdx := intNextHastableIdx;
+					SIf.par.pTblDecision^[intNextHastableIdx].eState := E_DecisionState.OnJunction;
+					
+					// Start the Sensor timeout check with write 1 into the checking Array to inrease the time
+					IF aCheckPassingTime[intIndexCheckPassing].udiTime_ms = 0 THEN
+						aCheckPassingTime[intIndexCheckPassing].udiTime_ms := 1;
+						aCheckPassingTime[intIndexCheckPassing].intHTIndex := intActHastableIdx;
+					END_IF
+					
+					// Increment the checking position 
+					IF intIndexCheckPassing >= (SIZEOF(aCheckPassingTime)/SIZEOF(aCheckPassingTime[0]) - 1) THEN
+						intIndexCheckPassing := 0;
+					ELSE
+						intIndexCheckPassing := intIndexCheckPassing + 1;
+					END_IF
+
+				END_IF
+					
+				SIf.Out.bolOpen.intern := TRUE;
+					
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+					;
+				END_IF
+					
+				// Check position
+				IF (SIf.Par.dinPosition_um + SIf.Par.dinOpenWay_um <= SIf.par.pTblDecision^[intActHastableIdx].dinActPos_um + dinPositionCorrection_um) THEN
+					IF SIf.par.pTblDecision^[intActHastableIdx].eState < E_DecisionState.Processed THEN
+						// Only set to processe if not allready driven out
+						SIf.par.pTblDecision^[intActHastableIdx].eState := E_DecisionState.Processed;
+					END_IF					
+					SIf.par.pTblDecision^[intActHastableIdx].dinActPos_um := -2;
+				END_IF
+					
+				// State Change Condition
+				// Check error if tray never reach the output
+				IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiPassTime_ms) THEN
+					// Set Alarm: SIf.Alm[1].strText := 'timeout passed sensor does not detect the hanger'; 
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+					me.SubStateMachine.intStateNext := cSTA_ERROR;
+				// Check if tray allready passed
+				ELSIF (SIf.par.pTblDecision^[intActHastableIdx].eState > E_DecisionState.OnJunction) AND (dinPositionDifference_um < LREAL_TO_DINT ( UDINT_TO_LREAL(SIf.Par.udiOpenTime_ms) * DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s) / 1000.0 ) ) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_OPEN;
+				ELSIF (SIf.par.pTblDecision^[intActHastableIdx].eState > E_DecisionState.OnJunction) THEN	
+					me.SubStateMachine.intStateNext := cSTA_SUB_CLOSE;
+				END_IF
+
+					
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_CLOSE:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+				END_IF
+				
+				SIf.Out.bolOpen.intern := FALSE;
+					
+				// Simulation
+					
+					
+				// State Change Condition
+				// Check error if retracted position not reached
+				IF (TRUE) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_JOB;
+					// Simulation
+					IF (CIf.SwCfg.bolSimulation) THEN
+							SIf.In.bolPassed.intern := FALSE;
+					END_IF
+				END_IF
+				
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_ERROR:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+				END_IF
+				
+				SIf.Out.bolOpen.intern := FALSE;
+				
+				// State Change Condition
+				// No change, going over an other main state
+					
+		END_CASE
+		
+		
+		// State Change Condition
+		// Check error if retracted position not reached
+		IF me.SubStateMachine.intState = cSTA_SUB_ERROR THEN
+			me.StateMachine.intStateNext :=  cSTA_ERROR;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;		
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCmdState" Id="{ae488e03-addb-4f80-a55a-f1ef0edfaa89}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+			JUN_CmdState.cCMD_RELEASE_ALL: 
+				getCmdState := 'cCMD_RELEASE_ALL';
+			JUN_CmdState.cCMD_RELEASE: 
+				getCmdState := 'cCMD_RELEASE';
+		END_CASE;
+	ELSE
+	
+	// cmd's
+		CASE intCmdState OF
+			cSTA_RUNBusy: 
+				THIS^.sta_RUNBusy();
+			cSTA_RUN: 
+				THIS^.sta_RUN();
+			cSTA_STOPBusy: 
+				THIS^.sta_STOPBusy();
+			cSTA_STOP: 
+				THIS^.sta_STOP();
+			JUN_CmdState.cSTA_RELEASE_ALLBusy: 
+				THIS^.sta_RELEASE_ALLBusy();
+			JUN_CmdState.cSTA_RELEASE_ALL: 
+				THIS^.sta_RELEASE_ALL();
+			JUN_CmdState.cSTA_RELEASEBusy: 
+				THIS^.sta_RELEASEBusy();
+			JUN_CmdState.cSTA_RELEASE: 
+				THIS^.sta_RELEASE();
+				
+			// SUB States
+			cSTA_SUB_INITIALIZED:
+				getCmdState := 'cSTA_SUB_INITIALIZED';
+			cSTA_SUB_WAIT_FOR_JOB:
+				getCmdState := 'cSTA_SUB_WAIT_FOR_JOB';
+			cSTA_SUB_OPEN:
+				getCmdState := 'cSTA_SUB_OPEN';
+			cSTA_SUB_CLOSE:
+				getCmdState := 'cSTA_SUB_CLOSE';
+			cSTA_SUB_ERROR:
+				getCmdState := 'cSTA_SUB_ERROR';
+			cSTA_SUB_FINISHED:
+				getCmdState := 'cSTA_SUB_FINISHED';
+		END_CASE;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_PON" Id="{1b64c71c-ac28-4932-9342-a70cf22195e7}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_OFF) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+		ELSIF (me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="FB_init" Id="{aaa73fe3-32bb-4a7a-b3a9-815d2abc3f2a}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := JUN_CmdState.cCMD_RELEASE_ALL;
+CIf.Job.aCmdList[ii].strName := 'Release All';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := JUN_CmdState.cCMD_RELEASE; // for test simulation single answer
+CIf.Job.aCmdList[ii].strName := 'Release';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+
+// set name of class/typ
+CIf.Info.strType := 'FB_JUN'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[1].strText := 'timeout passed sensor does not detect the hanger'; 
+SIf.Alm[2].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[2].strText := 'RUN not possible, no Hashtable';
+SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[3].strText := 'Open not possible, destination is full';
+SIf.Alm[4].eAlmClass := E_AlmClass.TSTOP;
+SIf.Alm[4].strText := 'interlock open - movement stopped';
+
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// parmeter
+SIf.Par.udiOpenTime_ms := 20;
+SIf.Par.udiCloseTime_ms := 10;
+SIf.Par.udiPassTime_ms := 6000;
+
+SIf.Par.udiSimPassTime_ms := SIf.Par.udiPassTime_ms/2;
+
+SIf.Par.dinPosition_um := 10000000;
+SIf.Par.dinOpenWay_um := 300000;
+
+//*******************************************************************************
+// initial values childes
+//*******************************************************************************
+
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoInBridge" Id="{eb645377-05f4-483e-b0ee-8cd2d73ae917}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+
+SIf.In.bolPassed.map := THIS^.In_bolPassed;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolPassed));
+	//ctrl.In.bol_PosSwitchBasicDefTyp.intern := getInBol(ctrl.ifc.Job.bol_Force ,ADR(ctrl.In.bol_PosSwitchBasicDefTyp);
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="Always" Id="{944ecbce-8077-428b-b980-fdea1311d8b5}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
+	//me.StateMachine.intStateNext := cSTA_OFFBusy;
+	me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
+END_IF
+
+SUPER^.Always();
+
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	SIf.Cur.bolPassed := SIf.In.bolPassed.intern;
+	SIf.Cur.bolOpen := SIf.Out.bolOpen.intern;
+
+	; // always error supervision
+	
+END_IF
+
+// Always change actions in Base Library
+// ----------------------------------------------------------------------------------
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASEBusy" Id="{da847999-c68f-4e77-9eb9-dcd59ec329a6}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+					
+		me.SubStateMachine.intState := cSTA_SUB_INITIALIZED; // init sub state machine
+		me.SubStateMachine.intStateNext := cSTA_SUB_INITIALIZED; // init sub state machine
+		bolfpRelease := TRUE;		// Only start once the release if cmd is still the same
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+	
+
+		//--------------------------------------------------------------------------------------
+		// sub state machine for sequence
+		CASE me.SubStateMachine.intState OF
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_INITIALIZED:
+					// State Change Condition
+					// Simulation
+					IF (CIf.SwCfg.bolSimulation) THEN
+							SIf.In.bolPassed.intern := FALSE;
+					END_IF
+
+					// only release one tray if no jam is at the stopper
+					IF (SIf.In.bolPassed.intern = FALSE) THEN
+						me.SubStateMachine.intStateNext := cSTA_SUB_OPEN;
+						// Start Timer
+						fbSimulationTimer.IN := FALSE;
+						fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiSimPassTime_ms);
+						fbSimulationTimer(); // set time/reset timer
+						fbSimulationTimer.IN := TRUE; // start timer
+	
+					ELSE
+						// SIf.Alm[3].strText := 'Open not possible, destination is full';
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+					END_IF
+					
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_OPEN:
+					SIf.Out.bolOpen.intern := TRUE;
+					
+					// Simulation
+					IF (CIf.SwCfg.bolSimulation) THEN
+						fbSimulationTimer(); // simulation time
+						IF (fbSimulationTimer.Q) THEN
+							SIf.In.bolPassed.intern := TRUE;						
+						END_IF
+					END_IF
+					
+					
+				// State Change Condition
+					// Check error if tray never reach the output
+					IF (me.SubStateMachine.udiTimeInState_ms>SIf.Par.udiPassTime_ms) THEN
+						// Set Alarm: SIf.Alm[1].strText := 'timeout passed sensor does not detect the hanger'; 
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+						me.SubStateMachine.intStateNext := cSTA_ERROR;
+					// Check if tray allready passed
+					ELSIF (SIf.In.bolPassed.intern = TRUE) THEN
+						me.SubStateMachine.intStateNext := cSTA_SUB_CLOSE;
+					END_IF
+
+					
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_CLOSE:
+					SIf.Out.bolOpen.intern := FALSE;
+					
+					// Simulation
+					
+					
+					// State Change Condition
+					// Check error if retracted position not reached
+					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiCloseTime_ms) THEN
+						me.SubStateMachine.intStateNext := cSTA_SUB_FINISHED;
+						// Simulation
+						IF (CIf.SwCfg.bolSimulation) THEN
+								SIf.In.bolPassed.intern := FALSE;
+						END_IF
+					END_IF
+				
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_ERROR:
+					SIf.Out.bolOpen.intern := FALSE;
+					
+					// State Change Condition
+					// No change, going over an other main state
+					
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_FINISHED:
+					;
+					
+		END_CASE
+		
+		// State Change Condition
+		// Check error if retracted position not reached
+		IF me.SubStateMachine.intState = cSTA_SUB_ERROR THEN
+			me.StateMachine.intStateNext :=  cSTA_ERROR;
+		ELSIF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;			
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_ERRORQuit" Id="{39788afa-0a62-47dc-9ad9-884dc657b3e1}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+			FOR uinI := 0 TO (SIZEOF(aCheckPassingTime)/(SIZEOF(aCheckPassingTime[0]))-1) DO
+				aCheckPassingTime[uinI].udiTime_ms := 0;
+				aCheckPassingTime[uinI].intHTIndex := 0;
+			END_FOR
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		// evtl. wait time if reset of device is necessary and then decide to go to states or ERROR state
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // reset feedback channel for parent
+			CIf.Job.bolAlmReset := FALSE;
+		END_IF
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = FALSE) THEN
+			IF (me.StateMachine.intStateHistory<=cSTA_PON) THEN
+				me.StateMachine.intStateNext := cSTA_PONBusy;
+			ELSIF(me.intCmd=cCMD_OFF) THEN
+				me.StateMachine.intStateNext := cSTA_OFFBusy;
+			ELSIF(me.intCmd=cCMD_RUN) OR (me.StateMachine.intStateHistory=cSTA_RUN) THEN
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			ELSIF(me.intCmd=cCMD_STOP) THEN
+				me.StateMachine.intStateNext := cSTA_STOPBusy;
+			ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+				me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+			ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN
+				me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+			END_IF
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFFBusy" Id="{b1c6826a-b36b-4ef6-9094-25718527b094}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// switch VALVE off
+		SIf.Out.bolOpen.intern := FALSE;
+		
+		
+		
+		// State Change Condition
+		IF (FALSE) THEN
+			;
+		ELSIF (TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_OFF;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoOutBridge" Id="{eaf5796a-1fa6-4982-99ff-bd9a7de4fc64}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolOpen));
+	
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		IF (SIf.Ilk.bolOpen=TRUE) THEN
+			// switch off?
+			IF (SIf.Out.bolOpen.map = TRUE) THEN
+				// Set alarm: SIf.Alm[4].strText := 'interlock open - movement stopped';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
+			SIf.Out.bolOpen.map := FALSE;
+		END_IF	
+	END_IF
+	THIS^.Out_bolOpen := SIf.Out.bolOpen.map;
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_STOP" Id="{321523cd-32a7-43b5-b3ec-333156667619}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+	
+		
+		// State Change Condition
+		IF (me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN 
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+		ELSIF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="StateMachine" Id="{90ebedb7-6851-4168-80a4-a33b01d375e5}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+     cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+    JUN_CmdState.cSTA_RELEASE_ALLBusy: 
+        THIS^.sta_RELEASE_ALLBusy();
+    JUN_CmdState.cSTA_RELEASE_ALL: 
+        THIS^.sta_RELEASE_ALL();
+    JUN_CmdState.cSTA_RELEASEBusy: 
+        THIS^.sta_RELEASEBusy();
+    JUN_CmdState.cSTA_RELEASE: 
+        THIS^.sta_RELEASE();
+END_CASE;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASE" Id="{0f6bbbb3-f4d9-4af3-ac9c-4b4cfdf87110}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		// Check the CMD change for next release
+		IF (me.intCmd<>JUN_CmdState.cCMD_RELEASE) THEN
+			bolfpRelease := FALSE;		// Only start once the release if cmd is still the same
+		END_IF
+	
+	
+		// Simulation
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+		ELSIF((me.intCmd=JUN_CmdState.cCMD_RELEASE) AND (bolfpRelease = FALSE)) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;			
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;			
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		bolfpRelease := FALSE;		// Only start once the release if cmd is still the same
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCtrlSIf" Id="{b3bffa54-5b6d-4cbc-a301-3422b903efd8}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_JUN
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFF" Id="{863dd963-d002-4f05-9e99-35c7a7947ca4}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF (me.intCmd=cCMD_STOP) THEN
+				// sensor retract always on cylinder
+				me.StateMachine.intStateNext :=  cSTA_STOPBusy;
+			ELSIF (me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN 
+				me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+			ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE_ALL) THEN
+				me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALLBusy;
+			ELSIF(me.intCmd=cCMD_RUN) THEN
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			END_IF
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_ERROR" Id="{18958166-02da-47be-a4c2-4b4d7547e2d9}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		SIf.Out.bolOpen.intern := 0;
+		
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASE_ALL" Id="{0b73f2d3-00f7-4f97-a0ec-c8fae75c6b6b}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		fbSimulationTimer.IN := FALSE;
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiSimPassTime_ms);
+		fbSimulationTimer(); // set time/reset timer
+		fbSimulationTimer.IN := TRUE; // start timer
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN
+				fbSimulationTimer.IN := FALSE;
+				IF SIf.In.bolPassed.intern = FALSE THEN
+					SIf.In.bolPassed.intern := TRUE;
+				ELSE
+					SIf.In.bolPassed.intern := FALSE;
+				END_IF
+			ELSE
+				fbSimulationTimer.IN := TRUE; // start timer
+			END_IF
+		END_IF
+
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASE_ALLBusy" Id="{9c1ca426-0670-489f-bd9e-8dbbdac3fd31}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		SIf.Out.bolOpen.intern := TRUE;
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+
+		
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiOpenTime_ms) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASE_ALL;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=JUN_CmdState.cCMD_RELEASE) THEN
+			me.StateMachine.intStateNext := JUN_CmdState.cSTA_RELEASEBusy;
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_STOPBusy" Id="{7f4609f9-bb0b-4fa9-aa17-1b2bdd065e22}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		
+		//no change action
+		SIf.Out.bolOpen.intern := FALSE;
+		
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiCloseTime_ms) THEN
+			me.StateMachine.intStateNext := cSTA_STOP;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{bcfcfd32-38d2-45f1-a9d7-22de7fe9727d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+					
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+	
+
+		
+		
+		// State Change Condition
+		IF SIf.par.pTblDecision = 0 THEN
+			// SIf.Alm[2].strText := 'RUN not possible, no Hashtable';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		ELSE
+			me.StateMachine.intStateNext := cSTA_RUN;		
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

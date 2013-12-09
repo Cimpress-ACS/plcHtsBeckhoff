@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DPJ_DtChnToLine" Id="{2d29b850-a9f0-4296-8ba9-1e083c811b44}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_DtChnToLine :
+STRUCT
+	stJobDone: T_JobDone_DtChn;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

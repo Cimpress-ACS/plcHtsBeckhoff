@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_DRV_Par" Id="{1c44fea0-6975-4b08-bb1c-b0d900413b02}">
+  <DUT Name="T_Ctrl_SIf_DRV_Par" Id="{c1a80b26-8fb2-4f88-b106-e6120ad6338d}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_DRV_Par :
 STRUCT
 	/// [ms] Timeout supervision of pulse in RUN

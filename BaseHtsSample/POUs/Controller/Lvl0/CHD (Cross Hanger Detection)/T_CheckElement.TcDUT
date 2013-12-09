@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_CheckElement" Id="{b3d3b526-00a1-45db-9b02-d40349249db3}">
+    <Declaration><![CDATA[TYPE T_CheckElement :
+STRUCT
+	eState: E_DecisionState;
+	dinActPos_um: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

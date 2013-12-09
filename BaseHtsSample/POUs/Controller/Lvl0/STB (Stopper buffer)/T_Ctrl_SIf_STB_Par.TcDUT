@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_STB_Par" Id="{422cd0f6-8eb2-4111-a3ba-2f988ca2ec29}">
+  <DUT Name="T_Ctrl_SIf_STB_Par" Id="{26a9dd58-e2d2-4ce8-9699-644679bfbcad}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Par :
 STRUCT
 	/// [ms] Pulse length valve (clocking)
@@ -15,6 +15,8 @@ STRUCT
 	usiBuffermode: USINT;
 	/// [ms] Time for release all hangers
 	udiReleaseAllTime_ms: UDINT;
+	/// [ms] Debounce time for inputs
+	udiDebounceTime_ms: UDINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

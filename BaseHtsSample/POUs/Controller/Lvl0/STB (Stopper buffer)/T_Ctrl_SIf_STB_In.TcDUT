@@ -1,11 +1,13 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_STB_In" Id="{22b4dc48-8fea-4333-9726-ce31b9e08b35}">
+  <DUT Name="T_Ctrl_SIf_STB_In" Id="{8af009f3-34b4-4a29-81a5-8d7328f58f0c}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_In :
 STRUCT
 	/// Sensor hanger detected
-	bolHangerDetected: T_Ctrl_IoBool;
+	bolHangerDetected: T_Ctrl_IoBoolDebounced;
 	/// Sensor buffer full
-	bolBufferFull: T_Ctrl_IoBool;
+	bolBufferFull: T_Ctrl_IoBoolDebounced;
+	/// Sensor decrement counter (option)
+	bolDecrementCounter: T_Ctrl_IoBoolDebounced;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

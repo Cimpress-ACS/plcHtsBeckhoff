@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Sequence" Id="{9e110bfc-713a-494f-9c2a-36e36ac320de}">
+  <DUT Name="T_Sequence" Id="{24336a0f-d8f7-455e-8da4-03269eb3cd7b}">
     <Declaration><![CDATA[TYPE T_Sequence :
 STRUCT
 	pChild: POINTER TO fb_CtrlBase;
@@ -17,6 +17,8 @@ STRUCT
 	intCmdSeqStop: INT;
 	// Expected status for run sequence
 	intStatusSeqStop: INT;
+	// Used internal for run and stop sequence to detect if the sequence has been processed
+	bolChecked: BOOL;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

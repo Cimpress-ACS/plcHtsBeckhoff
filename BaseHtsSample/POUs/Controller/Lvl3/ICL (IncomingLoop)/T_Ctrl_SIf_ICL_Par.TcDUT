@@ -1,0 +1,15 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_ICL_Par" Id="{643f2853-e83e-4cfc-bca7-53d68b46b81f}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_ICL_Par :
+STRUCT
+	Module: T_Ctrl_SIf_MOD_Par;
+	/// [ms] Time to wait for starting a new drive
+	udiTimeDriveStart_ms: UDINT;
+	/// [ms] Time to wait for stopping a new drive
+	udiTimeDriveStop_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

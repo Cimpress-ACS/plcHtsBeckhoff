@@ -34,9 +34,7 @@ VAR
 	fbSBI_10: FB_STB;
 	fbSLB_8: FB_SLB;
 	fbSEP_8: FB_STB;
-		
-
-
+	
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -55,8 +53,13 @@ call of all controller (FUB) for the middle task class.
 History:
 Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
-0.00.1		25.09.2013		AVME/KVO	Start history
-0.00.2		21.11.2013		AVME/MRU	Use BaseHts as Lib, StartUp Order
+0.00.1		16.09.2013		AVME/PRE	Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		23.09.2013		AVME/DSC	Definition of "par" and "cfg"
+0.00.4		26.09.2013		AVME/DSC	Delete controller SBO_3 and SBO_10. Stopper physically not used.
+0.00.5		08.10.2013		VP/RE		Optimizations FAT Bürglistrasse version
+0.00.6		30.10.2013		AVME/DSC	Moved MER_8 to MiddlePRG. Test at the tool.
+0.00.7		18.11.2013		AVME/MRU	Add decrementsensor 3.0-B3 at SBI_3 for test
 
 ___________________________________________________________________________________________________*)
 
@@ -65,8 +68,13 @@ ________________________________________________________________________________
 // -----------------------------------------------------------------------------------------------
 IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	bolPlcStartupDone := TRUE;	
-
-		// ----------------------------------
+	
+	// init	
+	// ----------------------------------------------------------------------------------------------------------------------
+	//  Incomming Loop
+	// ----------------------------------------------------------------------------------------------------------------------
+	
+	// ----------------------------------
 	// All Transports
 	// ----------------------------------
 	// ----------
@@ -216,7 +224,8 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	
 	// SBI_3 - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
-	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor:= TRUE;											// Decrement with sensor, not cylinder stroke   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 466;													// Number of hangers between +3.0 Q4.0 and +3.0 B18.0 (7000mm distance / 15mm between hanger to hanger) 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
@@ -302,6 +311,33 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbSLB_8.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_8);     		// SLB_8 - init and entry fb_instance in global fb pointer array
 	fbSLB_8.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_8]);				// Add Element as Type Bufferelement
 	
+	// ----------------------------------
+	// MERGERS
+	// ----------------------------------
+	
+	// ----------
+	// MER_8
+	// ----------
+	fbMER_8.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_8);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_MER:= fbMER_8.getCtrlSIf();
+	// ADD Childs
+	fbMER_8.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_8]);
+
+	// MER_8 - configuration fix	
+	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;	
+	pTmpSIf_MER^.Par.dinHangerSensorPosition_um := 770000; 				    // 770 mm  Distance between pin sensor and hanger detected sensor
+	pTmpSIf_MER^.Par.dinPinLenght_um:= 25000; 								// 25 mm								
+	pTmpSIf_MER^.Par.dinSectionLenght_um:= 484000;							// 484 mm
+	pTmpSIf_MER^.Par.dinTrigStartOffset_um:= 1000;							// 1 mm						
+	pTmpSIf_MER^.Par.dinTrigEndOffset_um:= 10000;							// 10 mm							
+	
+  	// MER_8 - parameters fix	
+	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 0;
+
+	// MER_8 - init parameters for line control	
+	pTmpSIf_MER^.Par.a_LinePar[0].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeIntoTrp;
+	pTmpSIf_MER^.Par.a_LinePar[0].dinLinePosition_um:= 1900000;				// 1900 mm  Distance between pin sensor and the point where the line comes into the transport system
+
 	g_uinStartProzess := g_uinStartProzess + 1; // For StartUp order
 	
 END_IF
@@ -340,61 +376,98 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	//****************************************************************************************************
 	
 	// TLC_2
+	fbTLC_2.In_bolOverload := NOT(In_bol_2_0_A1_Motor_Protection);
+	fbTLC_2.In_bolPulse := In_bol_2_0_B15_Charging_impulse_TLC_TLT;
+	fbTLC_2.In_a_bolBlockedSupvervis[1] := In_bol_2_0_B13_Blocking_monitoring;
+	fbTLC_2.In_a_bolBlockedSupvervis[2] := In_bol_2_0_B16_Blocking_monitoring;
 	fbTLC_2();
+	Out_bol_2_0_A1_Drive_On := fbTLC_2.Out_bolSpeed_1;
 
 	// TLP_3
+	fbTLP_3.In_bolOverload := NOT(In_bol_3_0_A1_Motor_Protection);
+	fbTLP_3.In_bolPulse := In_bol_3_0_B7_Charging_impulse_TLK_TLP;
 	fbTLP_3();
-
+	Out_bol_3_0_A1_Drive_On := fbTLP_3.Out_bolSpeed_1;
 
 	// TLP_10
+	fbTLP_10.In_bolOverload := NOT(In_bol_10_0_A1_Motor_Protection);
+	fbTLP_10.In_bolPulse := In_bol_10_0_B7_Charging_impulse_TLK_TLP_A;
 	fbTLP_10();
-
+	Out_bol_10_0_A1_Drive_On := fbTLP_10.Out_bolSpeed_1;
 
 	// TLP_4
+	fbTLP_4.In_bolOverload := In_bol_4_0_T1_Motor_Protection;
+	fbTLP_4.In_bolPulse := In_bol_4_0_B23_Charging_impulse_TLK_TLP;
 	fbTLP_4();
-
+	Out_bol_4_0_K1_Drive_On := fbTLP_4.Out_bolSpeed_1;
+	Out_bol_4_0_K2_Drive_On := fbTLP_4.Out_bolSpeed_2;
 
 	// TLP_5
+	fbTLP_5.In_bolOverload := NOT(In_bol_5_0_A1_Motor_Protection);
 	fbTLP_5();
+	Out_bol_5_0_A1_Drive_On := fbTLP_5.Out_bolSpeed_1;
 
 	// TLK_9
+	fbTLK_9.In_bolOverload := In_bol_9_0_T1_Motor_Protection;
+	fbTLK_9.In_bolPulse := In_bol_9_0_B13_Charging_impulse_TLK_TLP_A;
 	fbTLK_9();
-
+	Out_bol_9_0_K1_Drive_On := fbTLK_9.Out_bolSpeed_1;
+	Out_bol_9_0_K2_Drive_On := fbTLK_9.Out_bolSpeed_2;
 	
 	// SLB_2
 	fbSLB_2();	
 	// DSB_2
+	fbDSB_2.In_bolBufferFull := In_bol_2_0_B1_Doublestopper_full;
+	fbDSB_2.In_bolDecrementCounter:= fbDSB_2.In_bolDecrementCounter;
 	fbDSB_2();
-	// SEP_2;
+	Out_bol_2_0_Q2_Doublestopper := fbDSB_2.Out_bolRetract;	
+	// SEP_2
+	fbSEP_2.In_bolHangerDetected := In_bol_2_0_B3_Hanger_in_Seperator;
+	fbSEP_2.In_bolBufferFull := In_bol_2_0_B5_Seperator_full;
 	fbSEP_2();
-
+	Out_bol_2_0_Q4_Seperator := fbSEP_2.Out_bolRetract;
 			
 	// BUF_5
 	fbBUF_5();	
 	// SBI_5
+	fbSBI_5.In_bolBufferFull := In_bol_5_0_B18_TLP_full;
+	fbSBI_5.In_bolHangerDetected := In_bol_5_0_B4_Hanger_at_pilotStopper;
 	fbSBI_5();
+	Out_bol_5_0_Q5_Pilotstopper := fbSBI_5.Out_bolRetract;
     // DBO_5
+	fbDBO_5.In_bolBufferFull := In_bol_5_0_B6_Doublestopper_full;
 	fbDBO_5();
-
+	Out_bol_5_0_Q7_Doublestopper := fbDBO_5.Out_bolRetract;
 		
 	// BUF_3
 	fbBUF_3();
 	// SBI_3
+	fbSBI_3.In_bolHangerDetected := In_bol_3_0_B3_Hanger_at_pilotStopper;
+	fbSBI_3.In_bolBufferFull := In_bol_3_0_B18_TLP_full;
+	fbSBI_3.In_bolDecrementCounter := In_bol_3_0_B3_Hanger_at_pilotStopper;	// Decrement with sensor, not cylinder stroke
 	fbSBI_3();
-
+	Out_bol_3_0_Q4_Pilotstopper := fbSBI_3.Out_bolRetract;
 
 	// BUF_10
 	fbBUF_10();
 	// SBI_10
+	fbSBI_10.In_bolHangerDetected := In_bol_10_0_B3_Hanger_at_pilotStopper;
+	fbSBI_10.In_bolBufferFull := In_bol_10_0_B8_TLP_50percent_full;
 	fbSBI_10();
-
+	Out_bol_10_0_Q4_Pilotstopper := fbSBI_10.Out_bolRetract;
 	
 	// SLB_8
 	fbSLB_8();
-	// SEP_8
+	fbSEP_8.In_bolHangerDetected:= In_bol_8_0_B1_Hanger_in_Seperator;
+	fbSEP_8.In_bolBufferFull := In_bol_8_0_B6_Seperator_full;
 	fbSEP_8();
-
+	Out_bol_8_0_Q7_Seperator := fbSEP_8.Out_bolRetract;
+	
+	// MER_8
+	fbMER_8.In_bolHangerDetected := In_bol_9_0_B16_Hanger_in_station;
+	fbMER_8.In_bolPinDetected := In_bol_9_0_B15_Charging_impulse;	
 	fbMER_8();
+	
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
     </Implementation>
