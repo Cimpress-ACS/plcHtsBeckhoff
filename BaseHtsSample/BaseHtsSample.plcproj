@@ -341,7 +341,7 @@
     <LibraryReference Include="Base_Elements,0.0.0.12,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.9,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.10,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
@@ -432,6 +432,7 @@
     <SubObject Include="FB_ICB_1.sta_RUNBusy" />
     <SubObject Include="FB_ICB_1.sta_STOP" />
     <SubObject Include="FB_ICB_1.sta_STOPBusy" />
+    <SubObject Include="FB_ICL.sta_STOP_1" />
     <SubObject Include="FB_IDR_1.CtrlInit" />
     <SubObject Include="FB_IDR_1.FB_init" />
     <SubObject Include="FB_IDR_1.getCtrlSIf" />

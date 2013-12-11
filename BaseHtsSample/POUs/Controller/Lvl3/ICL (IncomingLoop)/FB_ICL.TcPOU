@@ -54,6 +54,8 @@ Version		Date			Author		Comment
 0.00.6		21.11.2013		AVME/MRU	New BaseHts added
 0.00.7		06.12.2013		AVME/DSC	New BaseHts V0.0.0.8 added.
 0.00.8		09.12.2013		AVME/DSC	New BaseHts V0.0.0.9 added. Change in state STOP. Clear pending command to prevent automatic recovery!
+0.00.9		11.12.2013		AVME/MRU	New BaseHts V0.0.0.10 added. Change in state OFF and STOPBusy. 
+										Clear pending command to prevent automatic recovery!
 
 ___________________________________________________________________________________________________*)
 
@@ -363,6 +365,41 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
+    </Method>
+    <Method Name="sta_OFF" Id="{8e5d69b0-1f3d-4ab3-a409-1f81bdacc77c}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+				
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF (me.intCmd=cCMD_RUN) THEN 
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			END_IF
+		ELSE
+			// Clear pending command to prevent automatic recovery!
+			CIf.Job.intACmd:=cSTA_DONE;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

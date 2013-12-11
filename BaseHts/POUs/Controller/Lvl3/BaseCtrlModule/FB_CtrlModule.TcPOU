@@ -79,6 +79,8 @@ Version		Date			Author		Comment
 0.00.8		06.12.2013		AVM/MRU		Add TSTOP in checkChildAlmClass
 0.00.9		09.12.2013		AVM/DSC		BugFix in sub state "cSTA_SUB_CHECK_GROUP_STATUS" from run and stop sequence. Insert new "bolChecked" flag
 						 				to detect if the sequence has been processed correctly.
+0.00.10		11.12.2013		AVM/MRU		Clear pending command to prevent automatic recovery in sta_STOPBusy
+
 ___________________________________________________________________________________________________*)
 
 
@@ -475,8 +477,15 @@ END_VAR
 		IF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN
 			me.StateMachine.intStateNext := cSTA_STOP;
 		ELSIF (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+			// State Change Condition
+			IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP) THEN	
+				me.StateMachine.intStateNext := cSTA_RUNBusy;	
+			ELSE
+				// Clear pending command to prevent automatic recovery!
+				CIf.Job.intACmd:=cSTA_DONE;
+			END_IF
 		END_IF
+
 	END_IF
 
 //--------------------------------------------------------------------------------------

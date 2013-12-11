@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.9</ProjectVersion>
+    <ProjectVersion>0.0.0.10</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.9 - BugFix in sub state "cSTA_SUB_CHECK_GROUP_STATUS" from run and stop sequence. Insert new "bolChecked" flag to detect if the sequence has been processed correctly.
+    <Description>0.0.0.10 - Clear pending command to prevent automatic recovery in sta_STOPBusy
+
+0.0.0.9 - BugFix in sub state "cSTA_SUB_CHECK_GROUP_STATUS" from run and stop sequence. Insert new "bolChecked" flag to detect if the sequence has been processed correctly.
 
 0.0.0.8 - Add TSTOP in checkChildAlmClass
 
@@ -79,6 +81,7 @@
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl3" />
     <Folder Include="POUs\Controller\Lvl1" />
+    <Folder Include="POUs\Controller\Lvl3\BaseCtrlModule\" />
     <Folder Include="POUs\Utility Functions\" />
     <Folder Include="Version\" />
   </ItemGroup>
