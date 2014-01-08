@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HRU_In" Id="{7e28c24c-a37a-4303-8089-de39c9513554}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HRU_In :
+STRUCT
+	///sensor hanger in rotation unit
+	bolHangerDetected: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

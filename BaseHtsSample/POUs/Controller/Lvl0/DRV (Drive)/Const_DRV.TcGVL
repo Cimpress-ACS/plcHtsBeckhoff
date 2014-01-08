@@ -1,8 +1,0 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <GVL Name="Const_DRV" Id="{30eb72f0-7a68-4c95-8647-0882641efcfa}">
-    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
-	cMAX_BLOCKED_SUP: INT := 3;
-END_VAR]]></Declaration>
-    <ObjectProperties />
-  </GVL>
-</TcPlcObject>

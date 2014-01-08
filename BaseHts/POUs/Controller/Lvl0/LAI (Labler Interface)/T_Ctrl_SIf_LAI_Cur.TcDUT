@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_LAI_Cur" Id="{57a5b5c5-f5be-4ca9-ae3b-e0ff8af98a23}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_LAI_Cur :
+STRUCT
+	/// Signal from Labler Job finished
+	bolJobFinished: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

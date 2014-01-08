@@ -1,0 +1,13 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DPJ_In" Id="{9c44d6da-a340-468a-8976-7ed5d6684a95}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_In :
+STRUCT
+	bolHangerDetector: T_Ctrl_IoBool;
+	bolCounterIn: T_Ctrl_IoBool;
+	bolCounterOut: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

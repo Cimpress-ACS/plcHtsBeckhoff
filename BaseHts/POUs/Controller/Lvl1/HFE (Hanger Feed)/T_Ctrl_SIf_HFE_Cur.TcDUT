@@ -1,0 +1,10 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HFE_Cur" Id="{a2f081c8-31bf-4424-aa9b-fa9e144e272e}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HFE_Cur :
+STRUCT
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

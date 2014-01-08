@@ -1,0 +1,8 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="Const_SLB" Id="{64176971-1e8b-47b7-b7bd-f8d8c67f11d6}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cusiMinAddedChilds: USINT := 1;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

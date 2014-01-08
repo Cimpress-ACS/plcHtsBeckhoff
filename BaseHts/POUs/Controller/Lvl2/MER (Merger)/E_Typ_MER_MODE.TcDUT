@@ -1,0 +1,14 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="E_Typ_MER_MODE" Id="{0429f04e-a5ad-4d22-b9f7-03a9a1c70084}">
+    <Declaration><![CDATA[TYPE E_Typ_MER_MODE :
+(
+	/// 0= main mode automatic, controller automatically merge hangers from different lines dependent E_Typ_MER_AUTO_MODE
+	Automatic := 0,
+	/// 1= main mode on command, in case if merger work as charge controller. Release line X dependent from parent command.
+	OnCommand
+);
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

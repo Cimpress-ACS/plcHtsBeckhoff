@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_PLS_Cur" Id="{0693268c-1c7d-4240-afc3-452808cca080}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_PLS_Cur :
+STRUCT
+	dinCounter: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

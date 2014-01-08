@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="FOL_CmdState" Id="{2558c520-d7ec-48d3-b50f-836ee4e8b83c}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	/// ctrl commands definitions
+	/// specific commands >200 - every command has to be a even number
+	///...needs no specific commands 
+	cSTA_READY: UINT := 201;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HRU_Par" Id="{bb559684-4afc-4ddd-948e-58bf87c7bfe8}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HRU_Par :
+STRUCT
+	///[ms] time for eject (no sensor exist)
+	udiEjectTime_ms: UDINT;
+	///[ms] time for retract (no sensor exist)
+	udiRetractTime_ms: UDINT;
+	///[ms] time for rotate (no sensor exist)
+	udiRotateTime_ms: UDINT;
+	///[ms] wait time with hanger at sensor for start rotating
+	udiWaitForRotate_ms: UDINT;
+	///[ms] simulate the next hanger
+	udiSimNextHangerTime_ms: UDINT;
+	/// [ms] Timeout to detect a hanger in the rotation unit
+	udiTimeOutHRU_Hanger_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_MER" Id="{b5f09cca-1388-47a7-9f93-4832a4b389d7}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER :
+STRUCT
+	/// configuration
+	Cfg: T_Ctrl_SIf_MER_Cfg;
+	/// parameter
+	Par: T_Ctrl_SIf_MER_Par;
+	/// current values
+	Cur: T_Ctrl_SIf_MER_Cur;
+	/// io input
+	In: T_Ctrl_SIf_MER_In;
+	/// io output
+	/// ...no physical Output
+	/// alarm number used in this controller
+	Alm: ARRAY[1..3] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

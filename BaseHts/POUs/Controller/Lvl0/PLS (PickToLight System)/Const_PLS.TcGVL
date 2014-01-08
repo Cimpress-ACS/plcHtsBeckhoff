@@ -1,0 +1,8 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="Const_PLS" Id="{ebbeccf7-04cd-4c81-8d1e-1e3a70434058}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	MAX_SKUS : INT := 11;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

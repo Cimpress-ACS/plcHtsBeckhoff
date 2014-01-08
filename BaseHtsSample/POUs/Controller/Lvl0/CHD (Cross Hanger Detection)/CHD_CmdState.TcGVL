@@ -1,7 +1,0 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <GVL Name="CHD_CmdState" Id="{1054af7f-24de-44c2-bb11-e55bbf723053}">
-    <Declaration><![CDATA[VAR_GLOBAL
-END_VAR]]></Declaration>
-    <ObjectProperties />
-  </GVL>
-</TcPlcObject>

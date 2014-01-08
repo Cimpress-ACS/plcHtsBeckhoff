@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN_Ilk" Id="{9edabfeb-57ea-4d02-b9ef-365e598a493c}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_Ilk :
+STRUCT
+	///interlock Open the junction 
+	bolOpen: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

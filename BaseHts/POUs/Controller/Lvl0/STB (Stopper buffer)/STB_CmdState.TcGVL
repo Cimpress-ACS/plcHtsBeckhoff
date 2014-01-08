@@ -1,0 +1,17 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="STB_CmdState" Id="{bf1a0170-3af9-413e-92ba-7b6fc204f991}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	/// ctrl commands definitions
+	/// specific commands >200 - every command has to be a even number
+	cCMD_RELEASE: INT := 306;
+	/// Empties the whole buffer dependent the selected buffer mode
+	cCMD_RELEASE_ALL: INT := 308;
+	/// ctrl specific states definitions
+	cSTA_RELEASEBusy: INT := 305;
+	cSTA_RELEASE: INT := cCMD_RELEASE;
+	cSTA_RELEASE_ALLBusy: INT := 307;
+	cSTA_RELEASE_ALL: INT := cCMD_RELEASE_ALL;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

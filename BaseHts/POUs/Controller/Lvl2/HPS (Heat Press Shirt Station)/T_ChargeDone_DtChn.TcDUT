@@ -1,0 +1,13 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_ChargeDone_DtChn" Id="{5d941433-1ce1-430c-9416-94dddcf4b9a0}">
+    <Declaration><![CDATA[TYPE T_ChargeDone_DtChn :
+STRUCT
+	intLine: INT;
+	dtTimestamp: DT;
+	intDataState: INT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

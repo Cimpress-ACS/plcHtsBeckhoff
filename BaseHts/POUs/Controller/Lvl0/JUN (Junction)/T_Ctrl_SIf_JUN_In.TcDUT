@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN_In" Id="{b1f19cb9-f39a-49c2-a51b-5498b761dd73}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_In :
+STRUCT
+	///sensor hanger passed the junction
+	bolPassed: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

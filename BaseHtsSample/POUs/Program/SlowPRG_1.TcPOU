@@ -54,6 +54,8 @@ Version		Date			Author		Comment
 0.00.11		18.11.2013		AVME/MRU	Jam Sensor 5.0-B18 for MER3 added
 0.00.12		02.12.2013		AVME/MRU	BaseHts added, StartUp improved
 0.00.13		04.12.2013		AVME/MRU	BaseHts updated, GeneralError connected
+0.00.14		07.01.2014		AVME/MRU	Moved all controllers to BaseHts/BaseElements
+0.00.15		08.01.2014		AVME/MRU	Update BasePlc 0.3.3.7, BaseElements 0.0.0.17
 
 ___________________________________________________________________________________________________*)
 

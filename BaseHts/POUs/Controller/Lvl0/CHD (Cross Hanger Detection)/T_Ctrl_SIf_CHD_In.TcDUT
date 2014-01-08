@@ -1,0 +1,20 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_CHD_In" Id="{311abf70-1d8e-4260-9127-af3c0f0e1916}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_CHD_In :
+STRUCT
+	/// Sensor hanger passed the junction	
+	bolPassed: T_Ctrl_IoBool;
+	/// Sensor double hanger
+	bolSensorDoubleHanger: T_Ctrl_IoBoolDebounced;
+	/// Sensor inconsistent hanger (as option)
+	bolSensorInconsistentHanger: T_Ctrl_IoBool;
+	/// Sensor empty hanger (as option)
+	bolSensorEmptyHanger: T_Ctrl_IoBool;
+	/// Button (as option)
+	bolButtonRestartTLP: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

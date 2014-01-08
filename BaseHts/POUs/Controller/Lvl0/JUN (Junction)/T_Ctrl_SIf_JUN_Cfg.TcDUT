@@ -1,0 +1,13 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN_Cfg" Id="{f0f35846-9b6d-47e5-ac01-a0fffb815f9d}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_Cfg :
+STRUCT
+	eTyp: E_Typ_JUN;
+	/// Number of the target
+	dinTargetNr: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

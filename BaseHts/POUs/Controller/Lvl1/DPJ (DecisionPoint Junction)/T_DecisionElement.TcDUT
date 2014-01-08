@@ -1,0 +1,15 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_DecisionElement" Id="{74d105ff-d289-4d1f-a275-132c4cc87dde}">
+    <Declaration><![CDATA[TYPE T_DecisionElement :
+STRUCT
+	stDecision: T_Decision;
+	dtTimeJob: DT;
+	dtTimeRFID: DT;
+	eState: E_DecisionState;
+	dinActPos_um: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

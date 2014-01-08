@@ -1,0 +1,16 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS_In" Id="{92daeb6e-714c-4946-a41e-119a42b0b12a}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS_In :
+STRUCT
+	bolCounterIn1: T_Ctrl_IoBool;
+	bolCounterIn2: T_Ctrl_IoBool;
+	bolCounterOut1: T_Ctrl_IoBool;
+	bolCounterOut2: T_Ctrl_IoBool;
+	bolBringShirtStraight: T_Ctrl_IoBool;
+	bolBringShirtTurned: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

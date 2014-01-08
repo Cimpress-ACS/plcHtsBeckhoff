@@ -1,0 +1,14 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Decision" Id="{d8ca184e-881a-4f65-af51-7317fcaeb208}">
+    <Declaration><![CDATA[TYPE T_Decision :
+STRUCT
+	strID: STRING(16);
+	uliRFID: ULINT;
+	/// junction nr.
+	dinTarget: DINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

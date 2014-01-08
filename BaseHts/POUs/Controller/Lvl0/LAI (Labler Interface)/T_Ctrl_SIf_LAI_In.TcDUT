@@ -1,0 +1,19 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_LAI_In" Id="{b908a70d-085e-4b4d-88e3-d89be92bafb7}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_LAI_In :
+STRUCT
+	bolReady: T_Ctrl_IoBool;
+	bolNoError: T_Ctrl_IoBool;
+	bolLowMaterial: T_Ctrl_IoBool;
+	bolJobFinished: T_Ctrl_IoBool;
+	bolCylInPosition: T_Ctrl_IoBool;
+	bolErrLabel: T_Ctrl_IoBool;
+	bolErrPrinter: T_Ctrl_IoBool;
+	bolErrDrive: T_Ctrl_IoBool;
+	bolErrCylinder: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

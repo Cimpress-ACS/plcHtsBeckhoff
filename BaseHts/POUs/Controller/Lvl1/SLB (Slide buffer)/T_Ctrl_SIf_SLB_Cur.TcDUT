@@ -1,0 +1,28 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_SLB_Cur" Id="{92ea5a4e-320b-45f5-ad63-b649567f5a73}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_SLB_Cur :
+STRUCT
+	/// Number of buffer zones, depends on how many times the method "AddBufferZone" was called at init
+	usiNumOfBufferZones: USINT;
+	/// Hanger detected -> based on zone 1, output
+	bolHangerDetected: BOOL;
+	/// Hangers passed total counter -> based on zone 1, output (reset in state OFF)
+	dinHangersPassedTotal: DINT;
+	/// Hangers passed package counter -> based on zone 1, output (is updated when “RELEASE_ALL” command is completed)
+	dinHangersPassedPackage: DINT;
+	/// Approximate number of hangers in buffer -> based on all zones
+	dinNumOfHangersInBuffer: DINT;
+	/// Max. buffer capacity -> based on all zones
+	dinMaxCapacity: DINT;
+	/// Input buffer is full -> based on last zone full signal
+	bolInputBufferFull: BOOL;
+	/// All buffers full -> based on all zones
+	bolAllBuffersFull: BOOL;
+	/// Number of passing hangers per pulse in first zone
+	uinNumOfHangersPerPulseFirstZone: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

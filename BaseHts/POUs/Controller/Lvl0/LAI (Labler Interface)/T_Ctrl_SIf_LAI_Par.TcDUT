@@ -1,0 +1,16 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_LAI_Par" Id="{e67ad6ad-156f-4233-b553-c6f6b3611749}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_LAI_Par :
+STRUCT
+	/// [ms] Timeout supervision ready signal
+	udi_TimeoutReady_ms: UDINT;
+	/// [ms] Simulation of Ready signal
+	udi_SimReady_ms: UDINT;
+	/// [ms] Simulation of pulse finished signal
+	udi_Finished_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

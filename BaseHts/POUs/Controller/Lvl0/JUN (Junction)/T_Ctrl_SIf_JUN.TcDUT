@@ -1,0 +1,24 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_JUN" Id="{aaa5c7e3-6e57-4d71-ad61-d917a700ab9a}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN :
+STRUCT
+	///configuration
+	Cfg: T_Ctrl_SIf_JUN_Cfg;
+	///parameter
+	Par: T_Ctrl_SIf_JUN_Par;
+	///current values
+	Cur: T_Ctrl_SIf_JUN_Cur;
+	///io input
+	In: T_Ctrl_SIf_JUN_In;
+	///io output
+	Out: T_Ctrl_SIf_JUN_Out;
+	///alarm number used in this controller
+	Alm: ARRAY[1..4] OF T_Ctrl_Alm;
+	///interlock of output/movements
+	Ilk: T_Ctrl_SIf_JUN_Ilk;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

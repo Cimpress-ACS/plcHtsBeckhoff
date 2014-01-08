@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_DPJ_DtChnToPLC" Id="{37e374eb-9ce6-427a-a4a0-c168fdb1807d}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_DtChnToPLC :
+STRUCT
+	stNewDecision: T_Decision_DtChn;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

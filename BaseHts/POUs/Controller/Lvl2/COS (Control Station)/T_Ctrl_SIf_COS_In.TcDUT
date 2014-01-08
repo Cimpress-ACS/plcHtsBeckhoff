@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_COS_In" Id="{742680ba-b402-4651-883a-18e7c79b5820}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_COS_In :
+STRUCT
+	bolNextShirt: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_LAI" Id="{44c23c9d-e0ad-4a44-b459-841a5012200e}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_LAI :
+STRUCT
+	///configuration
+	Cfg: T_Ctrl_SIf_LAI_Cfg;
+	///parameter
+	Par: T_Ctrl_SIf_LAI_Par;
+	///current values
+	Cur: T_Ctrl_SIf_LAI_Cur;
+	///io input
+	In: T_Ctrl_SIf_LAI_In;
+	///io output
+	Out: T_Ctrl_SIf_LAI_Out;
+	///alarm number used in this controller
+	Alm: ARRAY[1..7] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

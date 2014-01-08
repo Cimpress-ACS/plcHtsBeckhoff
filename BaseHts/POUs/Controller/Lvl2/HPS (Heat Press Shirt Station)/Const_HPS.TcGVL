@@ -1,0 +1,8 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="Const_HPS" Id="{3fee818e-bba7-4c75-be5f-3303d926f516}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cintMaxCharge: INT := 10;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

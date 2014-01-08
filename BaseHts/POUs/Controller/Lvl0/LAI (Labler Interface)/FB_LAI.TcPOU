@@ -1,0 +1,562 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <POU Name="FB_LAI" Id="{a3444747-6136-4ac4-a525-e1307f42dcf1}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_LAI EXTENDS FB_CtrlBase
+VAR_INPUT
+	In_bolReady: BOOL;
+	In_bolNoError: BOOL;
+	In_bolLowMaterial: BOOL;
+	/// Feedback from Labler -> Labeling finished
+	In_bolJobFinished: BOOL;
+	In_bolCylInPosition: BOOL;
+	In_bolErrLabel: BOOL;
+	In_bolErrPrinter: BOOL;
+	In_bolErrDrive: BOOL;
+	In_bolErrCylinder: BOOL;
+END_VAR
+VAR_OUTPUT
+	/// Enable labler in automatic mode
+	Out_bolAutomaticOn: BOOL;
+	/// Info to labler, product in position. Labler execute job with signal = TRUE 
+	Out_bolProductInPos: BOOL;
+END_VAR
+VAR
+	/// cmd from LineControl indicating hanger is in clamping position (inclusive reclamp) and ready for process step
+	bolCMD_PRODUCT_IN_POSITION: BOOL;
+	/// Specific interface struct for public access
+	SIf: T_Ctrl_SIf_LAI;
+	/// Loop variable
+	intI: INT;
+END_VAR
+VAR CONSTANT
+	cSTA_SUB_WAIT_FOR_HANGER: INT := 300;
+	cSTA_SUB_EXECUTE_PRINT_JOB: INT := 301;
+	cSTA_SUB_WAIT_JOB_FINISHED: INT := 302;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+Interface to external Labler
+Labler gets the data directly from the Line Controller
+This interface only checks the state of the Labler and set errormessages
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		11.09.2013		AVME/PRE	Start history
+0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.3		02.10.2013		AVME/MRU	New simulation time in RUN and RUNBusy
+0.00.4		08.10.2013		VP/RE		Bug fixes, tested during FAT
+0.00.5		21.10.2013		AVME/MRU	Some changes for Simulation
+0.00.6		04.12.2013		AVME/DSC	Some changes for Simulation
+___________________________________________________________________________________________________*)
+
+
+IF (me.bolActivate) THEN // cyclic call enabled
+	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
+		CtrlInit();
+		CIf.Info.bolInitDone := TRUE;
+	ELSE
+		CycleStartDuty();
+	
+		Always();
+		
+		StateMachine();
+		
+		CycleEndDuty();
+	END_IF
+END_IF;
+]]></ST>
+    </Implementation>
+    <Method Name="sta_RUNBusy" Id="{998a129c-5da1-479d-b376-0d4450e4e555}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+		fbSimulationTimer.IN := FALSE;
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_SimReady_ms); // Divide 2 because of toggle, every 
+		fbSimulationTimer(); // set time/reset timer
+		fbSimulationTimer.IN := TRUE; // start timer
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN		
+				SIf.In.bolReady.intern := TRUE;
+			END_IF
+			SIf.In.bolCylInPosition.intern := TRUE;	// Simulate Cyl in Position
+		END_IF
+		
+		// Labler on
+		SIf.Out.bolAutomaticOn.intern := TRUE;
+				
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms>SIf.Par.udi_TimeoutReady_ms) THEN
+			// Set Alarm: SIf.Alm[1].strText := 'Labler not ready';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		ELSIF (SIf.In.bolReady.intern = TRUE) AND (SIf.In.bolCylInPosition.intern = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFF" Id="{313e5060-f440-4d6a-8713-d38129f4e2a4}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+			
+		// State Change Condition
+		IF (me.intCmd=cCMD_RUN) THEN 
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="StateMachine" Id="{ca878c49-2617-4503-b74e-54d4296f5605}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+END_CASE;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoOutBridge" Id="{4b43508c-9faf-4a9c-8b38-ccb1174597f9}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolAutomaticOn));
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolProductInPos));
+	
+	THIS^.Out_bolAutomaticOn := SIf.Out.bolAutomaticOn.map;
+	THIS^.Out_bolProductInPos := SIf.Out.bolProductInPos.map;
+	
+END_IF
+
+
+
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFFBusy" Id="{fa10f3ed-21e1-47b5-addf-53b82e08acdd}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Labler off
+		SIf.Out.bolAutomaticOn.intern := FALSE;
+		SIf.Out.bolProductInPos.intern := FALSE;
+				
+		// State Change Condition
+		IF (TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_OFF;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_ERROR" Id="{460b7c95-c27f-4cbb-9f03-55c24c752527}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+	me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+	me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+	;
+END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Labler off
+		SIf.Out.bolAutomaticOn.intern := FALSE;
+		SIf.Out.bolProductInPos.intern := FALSE;
+
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCtrlSIf" Id="{1309b030-cb95-4905-9e01-b3d33268a531}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_LAI
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUN" Id="{b9828bce-065e-4e82-b948-3f95987c5cf0}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		fbSimulationTimer.IN := FALSE;
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_SimReady_ms ); // Divide 2 because of toggle, every 
+		fbSimulationTimer(); // set time/reset timer
+		fbSimulationTimer.IN := TRUE; // start timer
+		
+		// Initialize sub state machine
+		me.SubStateMachine.intState:= cSTA_SUB_WAIT_FOR_HANGER; 
+		me.SubStateMachine.intStateNext:= cSTA_SUB_WAIT_FOR_HANGER;
+		SIf.Cur.bolJobFinished:= TRUE;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN
+				SIf.In.bolJobFinished.intern := NOT SIf.In.bolJobFinished.intern; // toggle pulse
+				fbSimulationTimer.IN := FALSE;
+			ELSE
+				fbSimulationTimer.IN := TRUE;
+			END_IF
+			SIf.In.bolNoError.intern := TRUE;	// Simulate no errror
+		END_IF
+		
+		//---------------------------------------------------------
+		// Check Alarms from Labler
+		//---------------------------------------------------------
+	
+		IF SIf.In.bolNoError.intern = FALSE THEN
+			// Set Alarm: SIf.Alm[2].strText := 'General fault active';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			me.StateMachine.intStateNext :=  cSTA_ERROR;	
+		END_IF
+		
+		IF SIf.In.bolErrLabel.intern = TRUE THEN
+			// Set Alarm: SIf.Alm[3].strText := 'Label error'; 
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext :=  cSTA_ERROR;		
+		END_IF
+				
+		IF SIf.In.bolErrPrinter.intern = TRUE THEN
+			// Set Alarm: SIf.Alm[4].strText := 'Printer error';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext :=  cSTA_ERROR;			
+		END_IF
+		
+		IF SIf.In.bolErrDrive.intern = TRUE THEN
+			// Set Alarm: SIf.Alm[5].strText := 'Drive error';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,5,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext :=  cSTA_ERROR;			
+		END_IF
+		
+		IF SIf.In.bolErrCylinder.intern = TRUE THEN
+			// Set Alarm: SIf.Alm[6].strText := 'Cylinder error'; 
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,6,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext :=  cSTA_ERROR;			
+		END_IF
+	
+	
+		//--------------------------------------------------------------------------------------
+		// sub state machine for Handshake between line control and labler
+		//--------------------------------------------------------------------------------------
+		CASE me.SubStateMachine.intState OF
+		
+			cSTA_SUB_WAIT_FOR_HANGER:
+			
+				// Signal from line control
+				IF (bolCMD_PRODUCT_IN_POSITION = TRUE) THEN
+					bolCMD_PRODUCT_IN_POSITION := FALSE;
+					SIf.Cur.bolJobFinished := FALSE;
+					me.SubStateMachine.intStateNext := cSTA_SUB_EXECUTE_PRINT_JOB;
+				END_IF
+	
+			cSTA_SUB_EXECUTE_PRINT_JOB:
+					
+				// State Change Condition
+				//IF (SIf.In.bolJobFinished.intern=FALSE) AND (SIf.In.bolCylInPosition.intern=TRUE) THEN
+					// Info to labler, product in position. Labler execute print job!
+					SIf.Out.bolProductInPos.intern := TRUE;
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_JOB_FINISHED;
+				//END_IF
+
+			cSTA_SUB_WAIT_JOB_FINISHED:
+	
+				// State Change Condition
+				IF (SIf.In.bolJobFinished.intern=TRUE) AND (SIf.In.bolCylInPosition.intern=TRUE) THEN
+					SIf.Out.bolProductInPos.intern:= FALSE;
+					SIf.Cur.bolJobFinished:= TRUE;
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_HANGER;
+				END_IF		
+					
+		END_CASE
+			
+
+		// State Change Condition
+		IF (SIf.In.bolReady.intern = FALSE) THEN 
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		END_IF
+	
+	END_IF
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoInBridge" Id="{7a121043-d181-4bd6-911e-85d805a032e2}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+
+SIf.In.bolReady.map := THIS^.In_bolReady;
+SIf.In.bolNoError.map := THIS^.In_bolNoError;
+SIf.In.bolLowMaterial.map := THIS^.In_bolLowMaterial;
+SIf.In.bolJobFinished.map := THIS^.In_bolJobFinished;
+SIf.In.bolCylInPosition.map := THIS^.In_bolCylInPosition;
+SIf.In.bolErrLabel.map := THIS^.In_bolErrLabel;
+SIf.In.bolErrPrinter.map := THIS^.In_bolErrPrinter;
+SIf.In.bolErrDrive.map := THIS^.In_bolErrDrive;
+SIf.In.bolErrCylinder.map := THIS^.In_bolErrCylinder;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN	
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolReady));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolNoError));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolLowMaterial));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolJobFinished));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCylInPosition));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolErrLabel));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolErrPrinter));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolErrDrive));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolErrCylinder));
+	//ctrl.In.bol_PosSwitchBasicDefTyp.intern := getInBol(ctrl.ifc.Job.bol_Force ,ADR(ctrl.In.bol_PosSwitchBasicDefTyp);
+ELSE
+	//simulation of global IO
+END_IF
+
+
+
+
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="Always" Id="{f9201287-87bd-4a65-abfb-eaf75e674ee1}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Always();
+
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	;
+END_IF
+
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF
+
+// Conditions Always
+IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_AlmClass.OFF) OR (me.intCmd=cCMD_OFF))
+		 AND (me.StateMachine.intState<>cSTA_ERROR) AND (me.StateMachine.intState<>cSTA_ERRORQuit) AND
+		(me.StateMachine.intState<>cSTA_OFF) AND (me.StateMachine.intState<>cSTA_OFFBusy)) THEN
+	// alarm evt EOFF, OFF or cmd off
+	me.StateMachine.intStateNext := cSTA_OFFBusy;
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="FB_init" Id="{c8f4edba-b154-4a4a-aab9-44498cf95797}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+
+// set name of class/typ
+CIf.Info.strType := 'FB_LAI'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[1].strText := 'Labler not ready'; 
+SIf.Alm[2].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[2].strText := 'General fault active';
+SIf.Alm[3].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[3].strText := 'Label error'; 
+SIf.Alm[4].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[4].strText := 'Printer error';
+SIf.Alm[5].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[5].strText := 'Drive error';
+SIf.Alm[6].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[6].strText := 'Cylinder error'; 
+SIf.Alm[7].eAlmClass := E_AlmClass.OFF;
+SIf.Alm[7].strText := 'Error 6';
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// parmeter
+SIf.Par.udi_TimeoutReady_ms := 10000;
+SIf.Par.udi_SimReady_ms := SIf.Par.udi_TimeoutReady_ms/2;
+SIf.Par.udi_Finished_ms := 10000;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCmdState" Id="{5e72c271-28e9-4dbc-96d4-ee004eab7563}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+		END_CASE;
+	ELSE
+	
+	// states
+		CASE intCmdState OF		
+			// SUB States
+			cSTA_SUB_WAIT_FOR_HANGER:
+				getCmdState := 'cSTA_SUB_WAIT_FOR_HANGER';
+			cSTA_SUB_EXECUTE_PRINT_JOB:
+				getCmdState := 'cSTA_SUB_EXECUTE_PRINT_JOB';
+			cSTA_SUB_WAIT_JOB_FINISHED:
+				getCmdState := 'cSTA_SUB_WAIT_JOB_FINISHED';										
+		END_CASE;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

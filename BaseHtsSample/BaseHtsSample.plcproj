@@ -27,240 +27,6 @@
     <Compile Include="GVLs\Io.TcGVL">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\CHD_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\Const_CHD.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\FB_CHD.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_CheckElement.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\Const_DRV.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\E_Typ_DRV.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\FB_DRV.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\DRV %28Drive%29\T_Ctrl_SIf_DRV_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\E_Typ_JUN.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\FB_JUN.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\JUN_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_Ilk.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_Ctrl_SIf_JUN_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\JUN %28Junction%29\T_JUN_OutfeedCheck.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\FB_STB.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\STB_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Ilk.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\Const_DPJ.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\DPJ_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\E_DecisionState.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\E_Decision_Job.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\E_ProductFlowState.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\FB_DPJ.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\FB_DtChnToLine_JobDone.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_DtChnToLine.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_DtChnToPLC.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Ctrl_SIf_DPJ_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Decision.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_DecisionElement.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_Decision_DtChn.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_JobDone_DtChn.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\Const_SLB.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\FB_SLB.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\SLB_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\T_Ctrl_SIf_SLB_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\Const_MER.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_AUTO_MODE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_MODE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\FB_MER.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\MER_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Line.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_MER_Buffer_Sections.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\FB_ICL.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -304,16 +70,9 @@
     <Folder Include="POUs\" />
     <Folder Include="POUs\Controller\" />
     <Folder Include="POUs\Controller\Lvl0\" />
-    <Folder Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\" />
-    <Folder Include="POUs\Controller\Lvl0\DRV %28Drive%29\" />
-    <Folder Include="POUs\Controller\Lvl0\JUN %28Junction%29\" />
-    <Folder Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\" />
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl1\" />
-    <Folder Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\" />
-    <Folder Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\" />
     <Folder Include="POUs\Controller\Lvl2\" />
-    <Folder Include="POUs\Controller\Lvl2\MER %28Merger%29\" />
     <Folder Include="POUs\Controller\Lvl3\" />
     <Folder Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\" />
     <Folder Include="POUs\Program\" />
@@ -338,13 +97,13 @@
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.12,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.0.17,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.10,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.12,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.3.7,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">

@@ -1,0 +1,13 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS_Out" Id="{7d3102d0-c480-4868-9870-fbad79e6b719}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS_Out :
+STRUCT
+	/// Interface to Heatpress without LineControl
+	bolShirtStraightReady: T_Ctrl_IoBool;
+	bolShirtTurnReady: T_Ctrl_IoBool;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

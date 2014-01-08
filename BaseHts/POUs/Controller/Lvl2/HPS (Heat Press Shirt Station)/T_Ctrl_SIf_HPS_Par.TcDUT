@@ -1,0 +1,16 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS_Par" Id="{0c82fbbf-ad8a-44fb-aa73-aaeab4b43a22}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS_Par :
+STRUCT
+	/// Timeout communication at Datachannel
+	udiTimeOutRead_ms: UDINT;
+	/// [ms] Time to wait for starting a new drive
+	udiTimeDriveStart_ms: UDINT;
+	/// [ms] Time to wait for stopping a new drive
+	udiTimeDriveStop_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

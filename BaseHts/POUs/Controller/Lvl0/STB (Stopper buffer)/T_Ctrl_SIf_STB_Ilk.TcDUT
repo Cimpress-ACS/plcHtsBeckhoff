@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_STB_Ilk" Id="{12463f23-fd78-4794-97ce-c206c2fe1f4d}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Ilk :
+STRUCT
+	/// interlock retraction of cylinder
+	bolRetract: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

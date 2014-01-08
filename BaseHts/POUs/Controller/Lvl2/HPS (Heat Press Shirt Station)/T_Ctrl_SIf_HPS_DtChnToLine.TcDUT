@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS_DtChnToLine" Id="{d2e4aa41-8b90-4cdb-ab75-820be49cc8a7}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS_DtChnToLine :
+STRUCT
+	stChargeDone: T_ChargeDone_DtChn;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

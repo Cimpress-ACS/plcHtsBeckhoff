@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_FOL_Par" Id="{c1488240-40c7-4cc6-a45a-17c701bfbe17}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOL_Par :
+STRUCT
+	///udiHangerLoadingTime_ms	: UDINT;	// time delay for clamping and for separator to bring a hanger into LST chain
+	udiTimeNextHangers_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

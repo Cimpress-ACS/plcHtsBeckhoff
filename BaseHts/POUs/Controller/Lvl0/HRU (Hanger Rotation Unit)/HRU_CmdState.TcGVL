@@ -1,0 +1,19 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <GVL Name="HRU_CmdState" Id="{81d7e2f7-0564-422e-ad11-215d04d7c794}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	///ctrl commands definitions
+	///specific commands >200 - every command has to be a even number
+	cCMD_RETRACT: INT := 202;
+	cCMD_EJECT: INT := 204;
+	cCMD_ROTATE: INT := 206;
+	///ctrl specific states definitions
+	cSTA_RETRACTBusy: INT := 201;
+	cSTA_RETRACT: INT := cCMD_RETRACT;
+	cSTA_EJECTBusy: INT := 203;
+	cSTA_EJECT: INT := cCMD_EJECT;
+	cSTA_ROTATEBusy: INT := 205;
+	cSTA_ROTATE: INT := cCMD_ROTATE;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_MER_Cfg" Id="{d66ab2f1-586b-4ade-9737-d3f2ea0f1e40}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Cfg :
+STRUCT
+	/// Merger main mode
+	usiMergeMainMode: E_Typ_MER_MODE;
+	/// Number of jam sensors (option)
+	usiCountJamSensors: USINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

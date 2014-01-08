@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="E_Typ_JUN" Id="{4abde8d2-6cca-4379-a84f-d0ff98ec89b8}">
+    <Declaration><![CDATA[TYPE E_Typ_JUN :
+(
+	Max_E_Typ_JUN
+);
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

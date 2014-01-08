@@ -1,0 +1,26 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS" Id="{9d0676f0-4f3a-4e68-8d13-3162e25be46e}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS :
+STRUCT
+	///configuration
+	Cfg: T_Ctrl_SIf_HPS_Cfg;
+	///parameter
+	Par: T_Ctrl_SIf_HPS_Par;
+	///current values
+	Cur: T_Ctrl_SIf_HPS_Cur;
+	///io input
+	In: T_Ctrl_SIf_HPS_In;
+	///io output
+	Out: T_Ctrl_SIf_HPS_Out;
+	///Data Channel from Line Controller to PLC
+	DtChnToPLC: T_Ctrl_SIf_HPS_DtChnToPLC;
+	///Data Channel from PLC to Line Controller
+	DtChnToLine: T_Ctrl_SIf_HPS_DtChnToLine;
+	///alarm number used in this controller
+	Alm: ARRAY[1..9] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

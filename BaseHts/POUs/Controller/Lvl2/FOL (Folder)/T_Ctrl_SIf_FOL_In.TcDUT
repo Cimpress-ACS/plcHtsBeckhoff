@@ -1,0 +1,10 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_FOL_In" Id="{76538c1a-bca5-4420-bffd-0ab12e6df5b9}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOL_In :
+STRUCT
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>
