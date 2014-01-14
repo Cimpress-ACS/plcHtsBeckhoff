@@ -64,6 +64,8 @@ Version		Date			Author		Comment
 0.00.10		09.12.2013		AVME/DSC	Modification in method "checkStateAllZones".
 										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
 										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+0.00.11		10.01.2014		AVME/MRU	Bugzilla ID 55: Refill aloud, if dinNumOfHangersInBuffer < dinMaxCapacity (Without uinNumOfHangersPerPulse)
+0.00.12		13.01.2014		AVME/MRU	Bugzilla ID 03: BufferFull for LineControl added
 										
 __________________________________________________________________________________________________*)
 
@@ -141,7 +143,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{26b6ea33-6bd4-43d7-9606-369cc642d144}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -165,7 +166,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RELEASE_ALL();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{d9a81861-d929-4de2-ae9a-f35e78e939aa}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -182,7 +182,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{a7067b04-143c-4533-a2e8-173ec3dfe03f}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
@@ -299,7 +298,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{89c34d93-df4e-4632-94c7-f3f250c6a002}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -334,7 +332,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{587ce8ca-32e3-4ccb-b94f-26a838e810fa}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -367,7 +364,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{9523b858-6ee1-48ed-bede-1ec8bd701936}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_SLB
@@ -375,7 +371,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcSumNumOfHangers" Id="{18166955-e879-4f17-af78-50f08c22b3ef}">
       <Declaration><![CDATA[METHOD PROTECTED CalcSumNumOfHangers : DINT
@@ -400,7 +395,6 @@ END_FOR
 // Return result
 CalcSumNumOfHangers:= dinSumNumOfHangers;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddBufferZone" Id="{400a77b5-ebb3-4a5b-b274-817a2967e906}">
       <Declaration><![CDATA[METHOD AddBufferZone
@@ -422,7 +416,6 @@ IF (usiNumOfBufferZones <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllZones" Id="{ec1ff035-62d8-4453-9b13-8f382416c248}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllZones : BOOL
@@ -456,7 +449,6 @@ IF (usiNumOfCheckedChilds = usiNumOfBufferZones) THEN
 	checkStateAllZones:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAllZonesFull" Id="{f9d1f158-d3d1-4dba-ae47-bf76a11a086b}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesFull : BOOL
@@ -485,7 +477,6 @@ IF (usiNumOfFullZones = usiNumOfBufferZones) THEN
 	checkAllZonesFull:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{a4fd6660-0207-4c56-b7db-9c51f5d405bf}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -577,7 +568,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAllZonesEmpty" Id="{46cc0c29-dd9a-4738-9c34-36aa71ffb4d4}">
       <Declaration><![CDATA[METHOD PROTECTED checkAllZonesEmpty : BOOL
@@ -606,7 +596,6 @@ IF (usiNumOfEmptyZones = usiNumOfBufferZones) THEN
 	checkAllZonesEmpty:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{92d28f0c-41ee-4cdc-9452-6c56272bf50d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -646,7 +635,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcMaxCapacity" Id="{8082d4c5-f45d-4fbd-80a3-c3846f0860c6}">
       <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
@@ -671,7 +659,6 @@ END_FOR
 // Return result
 CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{80f434e8-26ce-4a65-95e8-ebcc6e3c0c62}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -690,7 +677,6 @@ FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
 END_FOR
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildValid" Id="{74835029-f01f-4049-8b1e-02d32e954671}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
@@ -715,7 +701,6 @@ ELSE
 	
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllZones" Id="{b7c9f43d-dd34-4392-86a0-69d6a470e6d4}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllZones
@@ -735,7 +720,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALL" Id="{64b2fd50-ed78-480e-b847-c2e294b837f2}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
@@ -766,7 +750,6 @@ END_FOR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{9b466cf6-7798-42ea-afe7-1a07666040e5}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -783,7 +766,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="RefillZones" Id="{0264125e-745d-4440-aecd-3f3663f5c29a}">
       <Declaration><![CDATA[METHOD RefillZones
@@ -839,8 +821,10 @@ CASE SubStateMachineRefill OF
 	0:
 		// Check if number of hangers "per Pulse" have space in the next buffer
 		// Condition: (zone[X].NumOfHangers + zone[ X + 1] .NumOfHangersPerPuls) < zone[X].MaxCapacity   			
-		IF (((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse)
+(*		IF (((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse)
 			< a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
+*)		IF ((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer < a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND 
+			(a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
 			
 			// Send release command to buffer zone X+1
 			a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;	
@@ -889,7 +873,6 @@ CASE SubStateMachineRefill OF
 		
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{2bd9f202-c6c3-4049-b6ee-a2bc07f7f910}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -956,7 +939,6 @@ SIf.Par.udiIntervalBufferFilling_ms:= 2000;
 SIf.Par.udiSimIncomingTime_ms := 20000;
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{741896c7-dfde-412a-a471-e458320cdfcf}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -996,7 +978,6 @@ SIf.Par.udiSimIncomingTime_ms := 20000;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{0ddc56b1-5d31-46cc-b52b-bfed6de117fb}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -1039,7 +1020,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{4832a6f0-f587-4960-9943-f4d218659e28}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -1077,7 +1057,6 @@ ELSE
 	SetAllChildAlmClass(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="MaxCapacity" Id="{3d5a92ab-770e-4087-bc42-77a16bb532c1}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
@@ -1087,9 +1066,7 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Property Name="NumOfHangers" Id="{0f3cb782-bd9d-4f2b-b176-7d0728a76bab}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
@@ -1099,9 +1076,17 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
+    </Property>
+    <Property Name="BufferFull" Id="{8590e97b-8cfb-49a1-a425-eeba7eb2fdf3}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{9f18e0fe-2f20-479d-87fa-ceda52e56587}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= SIf.Cur.bolAllBuffersFull;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <ObjectProperties />
   </POU>

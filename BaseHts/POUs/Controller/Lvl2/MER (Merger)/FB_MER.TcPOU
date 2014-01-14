@@ -109,6 +109,7 @@ Version		Date			Author		Comment
 0.00.11		09.12.2013		AVME/DSC	Modification in method "checkStateAllLines".
 										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
 										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+0.00.12		13.01.2014		AVME/MRU	Bugzilla ID 03: BufferFull for LineControl added
 
 __________________________________________________________________________________________________*)
 
@@ -165,7 +166,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{7ba70d8e-77b0-4e5d-9e00-77a064cba4f8}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -185,7 +185,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUN();				
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllLines" Id="{982b8bae-f8ff-4f28-930f-49ca1cdf1f51}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllLines : BOOL
@@ -223,7 +222,6 @@ IF (usiNumOfCheckedChilds = usiNumOfLines) THEN
 	checkStateAllLines:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{9b91bf69-7311-405c-8aa0-b2ed0cc6f6af}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -269,7 +267,6 @@ IF (getCmdState='') THEN // global not defined get local
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{c4d218ea-a65b-4e13-aa14-4b29912961d5}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -330,7 +327,6 @@ SIf.Cfg.usiCountJamSensors:= 0;
 SIf.Par.udi_jamTimeout_ms:= 500;
 // Default parameter for the lines are set in method InitLines]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{1da635e9-7b39-44bb-8869-10a4027ca53f}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -411,7 +407,6 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 	me.StateMachine.intStateNext := cSTA_OFFBusy;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{0d0a73b2-64e0-4a3e-98e4-3985a499f182}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -438,7 +433,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{e73347e6-d359-4d6e-9cf3-09d28c932c40}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -472,7 +466,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{483de46a-1813-4732-ba54-429bc4b8410d}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -519,7 +512,6 @@ END_IF
 //----------------------------------------------------------------------
 dinPositionOfLastLine_um:= SIf.Par.a_LinePar[usiNumOfLines-1].dinLinePosition_um;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{7713e70e-ad89-49ba-aa03-fe8e0b98321d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -549,7 +541,6 @@ dinPositionOfLastLine_um:= SIf.Par.a_LinePar[usiNumOfLines-1].dinLinePosition_um
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{2c78accc-afc7-4d90-acf7-275a5a13ccc1}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -566,7 +557,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllLines" Id="{3b97476f-9fb7-4f1d-9b47-9554ee126bdf}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllLines
@@ -586,7 +576,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{9fda181c-f474-4ad2-b574-65ed50a3091e}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -1044,7 +1033,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{792d7e83-d67a-435f-9cef-02393e414a15}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_MER
@@ -1052,7 +1040,6 @@ END_VAR
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddLine" Id="{d272e310-154a-4706-917e-47bd91856013}">
       <Declaration><![CDATA[METHOD AddLine
@@ -1074,7 +1061,6 @@ IF (usiNumOfLines <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcMaxCapacity" Id="{7cc9409e-d41f-4a8b-b36d-ebdd2f7429d5}">
       <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
@@ -1099,7 +1085,6 @@ END_FOR
 // Return result
 CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{5b4a2819-60e3-4465-bb6e-50cef987fe85}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -1182,7 +1167,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildValid" Id="{1ad30143-7a77-4e83-8f6f-af25c5ef12f7}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
@@ -1199,7 +1183,6 @@ ELSE
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcSumOfItems" Id="{115a0ded-0390-40d0-8cf8-cd15a5839728}">
       <Declaration><![CDATA[METHOD PROTECTED CalcSumOfItems : DINT
@@ -1224,7 +1207,6 @@ END_FOR
 // Return result
 CalcSumOfItems:= dinSumOfItems;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{76218c07-bdad-4421-b652-7a3736fca00c}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -1262,7 +1244,6 @@ ELSE
 	SetAllChildAlmClass(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="NumOfHangers" Id="{070aa852-d01d-4086-a7f9-d5ac0fe3831f}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
@@ -1272,9 +1253,7 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinCurrentItemCount;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Property Name="MaxCapacity" Id="{7a147946-14e1-4a40-a5f2-cb6f59ea8dfb}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
@@ -1284,9 +1263,17 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
+    </Property>
+    <Property Name="BufferFull" Id="{201eac71-4233-43f6-b777-56ce7f3e21a0}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{a48a61b8-1194-4725-9144-9816681c195b}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= False;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <ObjectProperties />
   </POU>

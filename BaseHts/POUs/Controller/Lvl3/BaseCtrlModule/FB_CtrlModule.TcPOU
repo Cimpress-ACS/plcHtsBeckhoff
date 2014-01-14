@@ -32,7 +32,10 @@ VAR
 	usiNumOfStopGrpWaitTime: USINT := 0;
 	// Array includes all registered childs of type IBuffer
 	a_IBufferChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF IBuffer;
+	a_IBufferFullChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF IBuffer;
+
 	usiNumOfIBufferChild: USINT;
+	usiNumOfIBufferFullChild: USINT;
 	// Counter
 	ii: INT;	
 END_VAR
@@ -80,6 +83,7 @@ Version		Date			Author		Comment
 0.00.9		09.12.2013		AVM/DSC		BugFix in sub state "cSTA_SUB_CHECK_GROUP_STATUS" from run and stop sequence. Insert new "bolChecked" flag
 						 				to detect if the sequence has been processed correctly.
 0.00.10		11.12.2013		AVM/MRU		Clear pending command to prevent automatic recovery in sta_STOPBusy
+0.00.11		13.01.2014		AVM/MRU		Bugzilla ID 03: BufferFull added
 
 ___________________________________________________________________________________________________*)
 
@@ -345,6 +349,16 @@ IF (usiNumOfIBufferChild>0) THEN
 		SIf_Cur^.dinMaxCapacity:= SIf_Cur^.dinMaxCapacity + a_IBufferChildCtrl[ii].MaxCapacity;
 	END_FOR
 END_IF
+
+//-------------------------------------------------------------------------------
+// Write BufferFull for LineControl into SIF
+//-------------------------------------------------------------------------------
+IF (usiNumOfIBufferFullChild>0) THEN 
+	FOR ii:= 0 TO (usiNumOfIBufferFullChild-1) DO
+		SIf_Cur^.a_bBufferIsFull[ii]:= a_IBufferFullChildCtrl[ii].BufferFull;
+	END_FOR
+END_IF
+
 
 // ----------------------------------------------------------------------------------
 // Conditions Always
@@ -912,6 +926,25 @@ END_IF
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
 		;
 	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddIBufferFullChilds" Id="{3b96e4bd-8cae-49d2-8e00-8de38b5dc701}">
+      <Declaration><![CDATA[METHOD AddIBufferFullChilds
+VAR_INPUT
+	pFB_ChildTypeIBuffer: POINTER TO FB_IBuffer;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method add childs with BufferFull information to the array
+IF (usiNumOfIBufferFullChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add child controller to list
+	a_IBufferFullChildCtrl[usiNumOfIBufferFullChild] := pFB_ChildTypeIBuffer^;
+
+	// Inc. number of IBufferFull childs
+	usiNumOfIBufferFullChild:= usiNumOfIBufferFullChild+1;
+END_IF
+
+]]></ST>
       </Implementation>
     </Method>
     <Property Name="SIf_Cur" Id="{da09324d-d509-4c63-87a6-56489e58339e}">

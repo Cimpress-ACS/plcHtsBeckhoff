@@ -23,7 +23,7 @@ VAR
 	stSequence : T_Sequence;
 		
 	fbAlm_Man: FB_Alm_Man; // alarm manager
-
+	
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
@@ -56,6 +56,8 @@ Version		Date			Author		Comment
 0.00.13		04.12.2013		AVME/MRU	BaseHts updated, GeneralError connected
 0.00.14		07.01.2014		AVME/MRU	Moved all controllers to BaseHts/BaseElements
 0.00.15		08.01.2014		AVME/MRU	Update BasePlc 0.3.3.7, BaseElements 0.0.0.17
+0.00.16		13.01.2014		AVME/MRU	Add AddIBufferFullChilds for infos to LineControl
+
 
 ___________________________________________________________________________________________________*)
 
@@ -358,6 +360,11 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_3]); 
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_8]); 
 
+	// Add infos to LineControl (BufferFull -> No more hanger needed)
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB_2]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_8]); 
+
+	
 	// Add pointers
 	fbICL_1.p_fbDPJ_4 := g_a_pCtrlInst[E_CtrlId.DPJ_4];
 	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_9];

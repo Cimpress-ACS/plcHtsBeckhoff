@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0">
-	<Project ProjectGUID="{7AC7810E-5EB2-44B2-A988-AEFBFFF013A2}" ModifiedGUID="{481E1322-EC15-4DA2-9B4C-6975A0B615DE}">
+	<Project ProjectGUID="{7AC7810E-5EB2-44B2-A988-AEFBFFF013A2}" ModifiedGUID="{659D326C-2A48-4014-B77C-64B5350FA231}">
 		<System>
 			<Tasks>
 				<Task Id="1" Priority="3" CycleTime="20000" AmsPort="350">

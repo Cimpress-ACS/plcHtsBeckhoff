@@ -97,6 +97,9 @@ Version		Date			Author		Comment
 										Add bolDisableBufferDelete for preventing deleting buffer count 
 0.00.15		17.12.2013		AVME/MRU	sta_Release_AllBusy Buffermode=0, Bug fixed
 										Code review, some comments changed
+0.00.16		10.01.2014		AVME/MRU	Bugzilla ID 55: Limitation of dinNumOfHangersInBuffer reworked
+										Bug in Simulation resolved
+0.00.17		13.01.2014		AVME/MRU	Bugzilla ID 03: BufferFull for LineControl added
 ___________________________________________________________________________________________*)
 
 
@@ -149,7 +152,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{f8081592-99ca-4243-9b6b-aa94ab5351fb}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -196,7 +198,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{96921b28-e05b-4405-961d-b144c8ee78a0}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
@@ -398,7 +399,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{f37b83df-eacd-4a07-aa78-8d8dc7df76fb}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -428,9 +428,11 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 				bolRESimHangerIn := FALSE;				
 			END_IF
 		END_IF
-		// Use number of hangers to generate hanger detection signal
+		// Use number of hangers to generate buffer full signal
 		IF (SIf.Cur.dinNumOfHangersInBuffer >= SIf.Cfg.dinMaxCapacity) THEN
 			SIf.In.bolBufferFull.intern := TRUE;
+		ELSIF ((SIf.In.bolBufferFull.intern = TRUE) AND (SIf.Cur.dinNumOfHangersInBuffer < SIf.Cfg.dinMaxCapacity)) THEN
+			SIf.In.bolBufferFull.intern := FALSE;
 		END_IF
 		// Use number of hangers to generate hanger detection signal
 		IF (SIf.Cur.dinNumOfHangersInBuffer <= 0) AND (SIf.Out.bolRetract.intern = TRUE) THEN
@@ -577,15 +579,23 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 		END_IF
 	END_IF
 	
-	//If buffer full detected, set number of hangers in buffer to max. capacity
+	// If buffer full detected, set number of hangers in buffer to max. capacity
 	IF ((SIf.Cur.bolBufferFull = TRUE) AND (SIf.Cfg.bolHasBufferFullSensor = TRUE)) THEN	
 		SIf.Cur.dinNumOfHangersInBuffer:= Sif.Cfg.dinMaxCapacity;
 	END_IF
 	
 	// Limit Counter to max capacity
-	IF SIf.Cur.dinNumOfHangersInBuffer > SIf.Cfg.dinMaxCapacity THEN
+	IF (SIf.Cur.dinNumOfHangersInBuffer > SIf.Cfg.dinMaxCapacity) THEN
 		SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cfg.dinMaxCapacity;
 	END_IF
+	
+	// Counter shows max. capacity, buffer full not detected (used for Bugzilla ID 55)
+	IF ((SIf.Cur.dinNumOfHangersInBuffer >= SIf.Cfg.dinMaxCapacity) AND (SIf.In.bolBufferFull.intern =FALSE) AND
+		(SIf.Cur.bolBufferFull = FALSE) AND (SIf.Cfg.bolHasBufferFullSensor = TRUE)) THEN	
+		// Buffer is not full, decrement dinNumOfHangersInBuffer
+		SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cfg.dinMaxCapacity-1;
+	END_IF
+	
 	
 	// Limit Counter to min capacity
 	IF SIf.Cur.dinNumOfHangersInBuffer < 0 THEN
@@ -621,7 +631,6 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 	me.StateMachine.intStateNext := cSTA_OFFBusy;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE" Id="{632ac101-26b3-4df8-93c4-c1c54c4c55bc}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
@@ -659,7 +668,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{b19a9664-e214-4c42-b4a8-fc9e0c839d71}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -696,7 +704,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{0f03536d-f025-4705-ae1a-ea848a9ae9d3}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -738,7 +745,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALL" Id="{c270598d-9370-48c3-a25d-857fdb3c4555}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
@@ -769,7 +775,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{fa71967a-09ac-4c86-8f4f-c89b8ab9a30e}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -805,7 +810,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{3c0c90f2-7045-48fe-9051-251cd0301b10}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -887,7 +891,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASEBusy" Id="{f328c702-0720-4a71-8360-94db243f4c87}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
@@ -953,7 +956,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{99555eec-c051-410d-91b9-b5883a5dedd6}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_STB
@@ -961,7 +963,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{60edfbe2-6778-4705-a02d-64a3ed232fe1}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -988,7 +989,6 @@ END_CASE;
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{1224cd93-39ea-497c-a70b-3f687cc7f11c}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -1010,7 +1010,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{8243a118-f2f7-4983-a7f3-41508662bd93}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -1051,7 +1050,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{e23b9092-ed4a-4478-b59f-4d0b1a5a781e}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -1127,7 +1125,6 @@ SIf.Cfg.uinNumOfHangersPerPulse:= 1;
 SIF.Cfg.bolCylPosLostMonitoring:= FALSE;
 SIF.Cfg.bolReleaseAllNonPulse:= FALSE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="MaxCapacity" Id="{256d9eb0-306a-401c-85d7-7a9719e136a2}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
@@ -1137,9 +1134,7 @@ SIF.Cfg.bolReleaseAllNonPulse:= FALSE;]]></ST>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cfg.dinMaxCapacity;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Property Name="NumOfHangers" Id="{822b849a-4311-453d-bb33-2d88fe6ce437}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
@@ -1149,9 +1144,17 @@ SIF.Cfg.bolReleaseAllNonPulse:= FALSE;]]></ST>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
+    </Property>
+    <Property Name="BufferFull" Id="{2b9a51a8-9adb-4a42-83f5-af1c9ddda21e}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{8c7578fc-c1a1-401f-9017-6d15a95604c2}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= SIf.Cur.bolBufferFull;]]></ST>
+        </Implementation>
+      </Get>
     </Property>
     <ObjectProperties />
   </POU>

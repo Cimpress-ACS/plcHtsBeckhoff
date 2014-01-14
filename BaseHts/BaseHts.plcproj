@@ -15,9 +15,15 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.12</ProjectVersion>
+    <ProjectVersion>0.0.0.15</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.12 - Update of BasePLC 0.3.3.7, BaseElements 0.0.0.17
+    <Description>0.0.0.15 - Rebuild
+
+0.0.0.14 - Bugzilla ID 03: BufferFull for LineControl added
+
+0.0.0.13 - Bugzilla ID 55: reworked refill of SLB/STB
+
+0.0.0.12 - Update of BasePLC 0.3.3.7, BaseElements 0.0.0.17
 
 0.0.0.11 - Add more controllers to the library (LAI, CHD, HFE, PLS, JUN, DPJ, MER, HRU, HPS, COS, STB, SLB)
 
@@ -508,6 +514,7 @@
   </ItemGroup>
   <ItemGroup>
     <SubObject Include="FB_CtrlModule.AddIBufferChilds" />
+    <SubObject Include="FB_CtrlModule.AddIBufferChilds_1" />
     <SubObject Include="FB_CtrlModule.AddRunGrpTime" />
     <SubObject Include="FB_CtrlModule.AddSeqChild" />
     <SubObject Include="FB_CtrlModule.AddStopGrpTime" />
@@ -554,6 +561,8 @@
     <SubObject Include="FB_CYL_1.sta_PON" />
     <SubObject Include="FB_IBuffer.MaxCapacity" />
     <SubObject Include="FB_IBuffer.MaxCapacity.Get" />
+    <SubObject Include="FB_IBuffer.MaxCapacity_1" />
+    <SubObject Include="FB_IBuffer.MaxCapacity_1.Get" />
     <SubObject Include="FB_IBuffer.NumOfHangers" />
     <SubObject Include="FB_IBuffer.NumOfHangers.Get" />
     <SubObject Include="FB_LDS_1.Always" />
@@ -604,6 +613,8 @@
     <SubObject Include="FB_LST_1.sta_OFFBusy" />
     <SubObject Include="FB_LST_1.sta_PON" />
     <SubObject Include="FB_LST_1.sta_PONBusy" />
+    <SubObject Include="FB_MER.BufferFull" />
+    <SubObject Include="FB_MER.BufferFull.Get" />
     <SubObject Include="FB_PTL.CtrlInit" />
     <SubObject Include="FB_PTL.FB_init" />
     <SubObject Include="FB_PTL.getCmdState" />
@@ -617,10 +628,14 @@
     <SubObject Include="FB_PTL.sta_OFFBusy" />
     <SubObject Include="FB_PTL.sta_PON" />
     <SubObject Include="FB_PTL.sta_PONBusy" />
+    <SubObject Include="FB_STB.BufferFull" />
+    <SubObject Include="FB_STB.BufferFull.Get" />
     <SubObject Include="IBuffer.MaxCapacity" />
     <SubObject Include="IBuffer.MaxCapacity" />
     <SubObject Include="IBuffer.MaxCapacity.Get" />
     <SubObject Include="IBuffer.MaxCapacity.Get" />
+    <SubObject Include="IBuffer.MaxCapacity_1" />
+    <SubObject Include="IBuffer.MaxCapacity_1.Get" />
     <SubObject Include="IBuffer.NumOfHangers" />
     <SubObject Include="IBuffer.NumOfHangers" />
     <SubObject Include="IBuffer.NumOfHangers.Get" />

@@ -9,6 +9,8 @@ STRUCT
 	// Togglebit to Line Control
 	bolKeepAliveHost: BOOL;
 	bolKeepAlivePlc: BOOL;
+	// LineControl-Signal: Input Buffer is Full
+	a_bBufferIsFull: ARRAY[0..10] OF BOOL;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

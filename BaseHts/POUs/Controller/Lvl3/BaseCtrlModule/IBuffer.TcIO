@@ -16,6 +16,15 @@
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Property Name="BufferFull" Id="{9e998961-26c6-450a-9a4a-f169bda381db}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{67a7175e-860d-40d4-8fce-dabb38d60195}">
+        <Declaration><![CDATA[]]></Declaration>
+        <ObjectProperties />
+      </Get>
+      <ObjectProperties />
+    </Property>
     <ObjectProperties />
   </Itf>
 </TcPlcObject>
