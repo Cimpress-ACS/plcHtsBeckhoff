@@ -4,6 +4,10 @@
 STRUCT
 	// [ms] Communication timeout to line control
 	udiComTimeOutLineCtrl_ms: UDINT;
+	// [ms] Array with wait time for run groups
+	aListOfRunGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
+	// [ms] Array with wait time for stop groups
+	aListOfStopGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

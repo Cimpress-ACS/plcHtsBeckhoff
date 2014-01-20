@@ -171,56 +171,56 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Members are: CHD_4, TLK_9
 	// New run Group 2 starts here!
 	// Members are: TLP_5
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[0] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 3 starts here!
 	// Members are: TLP_4
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[1] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 4 starts here!
 	// Members are: TLP_3
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[2] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 5 starts here!
 	// Members are: TLC_2
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[3] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 6 starts here!
 	// Members are: TLP_10
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[4] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 7 starts here!
 	// Members are: DPJ_4, DPJ_9
-	fbICL_1.AddRunGrpTime(fbICL_1.SIf.Par.udiTimeDriveStart_ms); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[5] := fbICL_1.SIf.Par.udiTimeDriveStart_ms;
 	// New run Group 8 starts here!
 	// Members are: MER_3, MER_8
-	fbICL_1.AddRunGrpTime(100); 
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[6] := 100;
 	// New run Group 9 starts here!
 	// Members are: MER_2
-	fbICL_1.AddRunGrpTime(100);	
+	fbICL_1.SIf_Par^.aListOfRunGrpWaitTime_ms[7] := 100;
 	 
 	
 	// Stop Group 1 need no parameters
 	// Members are: MER_2, MER_8, MER_3 
 	// New stop Group 2 starts here!
 	// Members are: DPJ_4, DPJ_9
-	fbICL_1.AddStopGrpTime(100); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[0] := 100;
 	// New stop Group 3 starts here!
 	// Members are: TLP_10
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[1] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 4 starts here!
 	// Members are: TLC_2
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[2] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 5 starts here!
 	// Members are: TLP_3
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[3] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 6 starts here!
 	// Members are: TLP_4
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[4] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 7 starts here!
 	// Members are: TLP_5
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[5] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 8 starts here!
 	// Members are: TLK_9
-	fbICL_1.AddStopGrpTime(fbICL_1.SIf.Par.udiTimeDriveStop_ms); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[6] := fbICL_1.SIf.Par.udiTimeDriveStop_ms;
 	// New stop Group 9 starts here!
 	// Members are: CHD_4
-	fbICL_1.AddStopGrpTime(100); 
+	fbICL_1.SIf_Par^.aListOfStopGrpWaitTime_ms[7] := 100;
 	
 	
 	// Define sequence parameter

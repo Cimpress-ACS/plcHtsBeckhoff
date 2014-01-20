@@ -286,7 +286,12 @@ SIf.Par.udiTimeDriveStop_ms := 2000;
 // Configuration
 SIf.Cfg.Module.bolComToLineControlEnabled:= FALSE;
 // Parameter
-SIf.Par.Module.udiComTimeOutLineCtrl_ms:= 10000;]]></ST>
+SIf.Par.Module.udiComTimeOutLineCtrl_ms:= 10000;
+FOR ii:= 0 TO Base_Const.cMaxNrOfChilds DO
+	SIf.Par.Module.aListOfRunGrpWaitTime_ms[ii] := 999;
+	SIf.Par.Module.aListOfStopGrpWaitTime_ms[ii] := 999;
+END_FOR
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="getCmdState" Id="{56732ee2-bf16-496a-ba6f-e89bdde02a52}">
@@ -399,7 +404,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

@@ -286,19 +286,23 @@ END_IF;
 		// A hanger is on slide message
 		IF ((SIf.In.bolPassed.intern = TRUE) AND (bolFpPassed = FALSE)) THEN
 			bolFpPassed := TRUE;
+			udinTimeUntilJamDetected:= me.StateMachine.udiTimeInState_ms + SIf.Par.udinTimeUntilJam_ms;
+							
 			IF SIf.cfg.bolStopAtRejact THEN 
-(*				Alarm set in State Machine
-				// Set Alarm: SIf.Alm[4].strText := 'TLP stopped by CHD';
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-				me.SubStateMachine.intStateNext := cSTA_SUB_ERROR;
-				SIf.Out.bolLightTLPStopedByCHD.intern := TRUE;
-*)			ELSE	
+				; //No message needed
+			ELSE	
 				// Set Alarm: SIf.Alm[2].strText := 'Cross hanger detection has an hanger rejected';
 				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 			END_IF
 		ELSIF (SIf.In.bolPassed.intern = FALSE) THEN
 			bolFpPassed := FALSE;
 		END_IF
+		// Jam on slide message
+		IF (bolFpPassed AND (udinTimeUntilJamDetected < me.StateMachine.udiTimeInState_ms)) THEN
+			// SIf.Alm[3].strText := 'Open not possible, destination is full';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		END_IF
+
 		
 		// Count double hanger
 		IF (SIf.In.bolSensorDoubleHanger.intern AND NOT bolDoubleHangerOnce) THEN
@@ -328,22 +332,22 @@ END_IF;
 					me.SubStateMachine.intStateNext := cSTA_SUB_WAY1;	// cSTA_SUB_CLOSE;
 				// Empty hanger or crossed hanger at (junction - reaction way)
 				ELSIF (dinPositionWithoutSensorSignal >= (SIf.Par.dinPinDistance_um - LREAL_TO_DINT( UDINT_TO_LREAL(SIf.Par.udiOpenTime_ms) * DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s))/1000.0)) THEN
-					IF (SIf.In.bolPassed.intern = FALSE) THEN
+//					IF (SIf.In.bolPassed.intern = FALSE) THEN
 						me.SubStateMachine.intStateNext := cSTA_SUB_WAY2;	// cSTA_SUB_OPEN;
-						bolTimeForJamOnce := FALSE;	
-					ELSE
+//						bolTimeForJamOnce := FALSE;	
+//					ELSE
 (*						IF (bolTimeForJamOnce = FALSE) THEN
 							udinTimeUntilJamDetected:= me.StateMachine.udiTimeInState_ms + SIf.Par.udinTimeUntilJam_ms;
 							bolTimeForJamOnce := TRUE;	
 						END_IF
 						IF (bolTimeForJamOnce AND (udinTimeUntilJamDetected < me.StateMachine.udiTimeInState_ms)) THEN
 *)							// SIf.Alm[3].strText := 'Open not possible, destination is full';
-							pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-							me.SubStateMachine.intStateNext := cSTA_SUB_WAY2;
+//							pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+//							me.SubStateMachine.intStateNext := cSTA_SUB_WAY2;
 (*							me.SubStateMachine.intStateNext := cSTA_sub_ERROR;
 							bolTimeForJamOnce := FALSE;
 						END_IF
-*)					END_IF
+*)//				END_IF
 				END_IF
 
 			//--------------------------------------------------------------------------------------
@@ -461,7 +465,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{a23c7af5-4cc5-4b3f-8995-b0bd599a39a9}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -514,7 +517,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_PON" Id="{220a0c85-35b2-4df6-8650-bc6d0dd695c6}">
       <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
@@ -555,7 +557,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{289e9e00-6c9f-4d80-90f4-4a7a6359b49b}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -633,7 +634,6 @@ SIf.Par.udiDebounceTimeDoubleHanger_ms := 80;
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{a12d2715-75ee-4534-aa61-1d9b64a627a6}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -662,7 +662,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{7c0b9b9a-3b44-44b2-85b6-459b6ccbda14}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -691,7 +690,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERRORQuit" Id="{a4251ca1-df37-4d66-b9e2-76b33ceb7025}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
@@ -742,7 +740,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{ab0516a2-44d8-4ae2-954f-b8175f2df0eb}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -784,7 +781,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{1ee1e6f1-17dc-4c5c-827f-1eef2fe405ce}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -801,7 +797,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	THIS^.Out_bolBlow := SIf.Out.bolBlow.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{ac6f3ac0-fa48-45b9-ab1d-35113ead2b0a}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -836,7 +831,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{2ff622b4-4d61-4b56-a707-7d77a7c42884}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -856,7 +850,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_STOP();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{91ad706f-01b4-435a-88c4-dd975e7ec2de}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_CHD
@@ -864,7 +857,6 @@ END_CASE;]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{478c3791-4d32-421d-beb6-2596aa8b8dbd}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -906,7 +898,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERROR" Id="{6e340b50-3592-4ca2-8f98-b583d1217707}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
@@ -949,7 +940,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{f714cb56-aaaf-4eff-9ce3-a161dd78f3d7}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -989,7 +979,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{5fc4037b-9e42-4ff2-b9e2-e30fa848e9a2}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -1029,7 +1018,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

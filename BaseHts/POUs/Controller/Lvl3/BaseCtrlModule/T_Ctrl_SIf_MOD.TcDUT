@@ -11,7 +11,7 @@ STRUCT
 	// io input
 	In: POINTER TO T_Ctrl_SIf_MOD_In;
 	// alarm number used in this controller
-	Alm: ARRAY[1..5] OF T_Ctrl_Alm;
+	Alm: ARRAY[1..6] OF T_Ctrl_Alm;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

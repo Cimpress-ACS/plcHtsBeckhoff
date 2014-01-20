@@ -24,11 +24,11 @@ VAR
 	usiNumOfValidPointerSeqChild: USINT := 0;
 	// [ms] List of waiting times for run sequence until the next group will execute
 	// If wait time is zero, next group will be directly executed after current group.  
-	aListOfRunGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
+//	aListOfRunGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
 	usiNumOfRunGrpWaitTime: USINT := 0;
 	// [ms] List of waiting times for stop sequence until the next group will execute
 	// If wait time is zero, next group will be directly executed after current group. 
-	aListOfStopGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
+//	aListOfStopGrpWaitTime_ms: ARRAY[0..Base_Const.cMaxNrOfChilds] OF UDINT;
 	usiNumOfStopGrpWaitTime: USINT := 0;
 	// Array includes all registered childs of type IBuffer
 	a_IBufferChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF IBuffer;
@@ -84,6 +84,9 @@ Version		Date			Author		Comment
 						 				to detect if the sequence has been processed correctly.
 0.00.10		11.12.2013		AVM/MRU		Clear pending command to prevent automatic recovery in sta_STOPBusy
 0.00.11		13.01.2014		AVM/MRU		Bugzilla ID 03: BufferFull added
+0.00.12		20.01.2014		AVM/MRU		EMO, general error reworked; AddRunGrp, AddStopGrp removed
+										Timeout run/stop group added 
+
 
 ___________________________________________________________________________________________________*)
 
@@ -198,7 +201,7 @@ END_VAR
 
 			cSTA_SUB_WAIT:
 				
-				IF (me.SubStateMachine.udiTimeInState_ms >= aListOfRunGrpWaitTime_ms[uinGroupIndex-1]) THEN
+				IF (me.SubStateMachine.udiTimeInState_ms >= SIf_Par^.aListOfRunGrpWaitTime_ms[uinGroupIndex-1]) THEN
 					// Inc. group index 
 					uinGroupIndex:= uinGroupIndex + 1;	
 					// Change state, send command for next group
@@ -208,6 +211,12 @@ END_VAR
 			cSTA_SUB_FINISHED:
 					;		
 		END_CASE
+		
+		// Check time out error
+		IF (me.SubStateMachine.udiTimeInState_ms > (SIf_Par^.aListOfRunGrpWaitTime_ms[uinGroupIndex-1] + 30000)) THEN
+			// SIf_MOD.Alm[5].strText := 'Timeout start group '; 
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,5,uinGroupIndex,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		END_IF
 		
 		// State Change Condition
 		IF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN
@@ -301,17 +310,23 @@ IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
 	// No general error
 	IF ((SIf_In^.bolNoGeneralError.intern = FALSE) AND (me.StateMachine.intState <> cSTA_ERROR) AND (me.StateMachine.intState <> cSTA_ERRORQuit) 
 		AND (me.StateMachine.intState <> cSTA_EOFF) AND (me.StateMachine.intState <> cSTA_EOFFBusy)) THEN
+		me.StateMachine.intStateNext := cSTA_Error;		
+	END_IF
+	// As long as general error is not OK, set Alarm
+	IF (SIf_In^.bolNoGeneralError.intern = FALSE) AND (me.StateMachine.intState = BASE_PLC.cSTA_ERROR) THEN
 		// Set Alarm: SIf_MOD.Alm[4].strText := 'General error active'; 
 		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
-		me.StateMachine.intStateNext := cSTA_Error;		
 	END_IF
 	
 	// Emergency Off
 	IF ((SIf_In^.bolEmergencyOffOk.intern = FALSE) AND (me.StateMachine.intState <> cSTA_EOFF) AND (me.StateMachine.intState <> cSTA_EOFFBusy)
 		AND (me.StateMachine.intState <> cSTA_ERROR) AND (me.StateMachine.intState <> cSTA_ERRORQuit)) THEN
+		me.StateMachine.intStateNext := cSTA_EOFFBusy;				
+	END_IF
+	// As long as EMO is not OK, set Alarm
+	IF (SIf_In^.bolEmergencyOffOk.intern = FALSE) AND ((me.StateMachine.intState = cSTA_EOFF) OR (me.StateMachine.intState = cSTA_EOFFBusy)) THEN
 		// Set Alarm: SIf_MOD.Alm[3].strText := 'Emergency off active'; 
 		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
-		me.StateMachine.intStateNext := cSTA_EOFFBusy;				
 	END_IF
 	
 END_IF
@@ -476,7 +491,7 @@ END_VAR
 
 			cSTA_SUB_WAIT:
 				
-				IF (me.SubStateMachine.udiTimeInState_ms >= aListOfRunGrpWaitTime_ms[uinGroupIndex-1]) THEN
+				IF (me.SubStateMachine.udiTimeInState_ms >= SIf_Par^.aListOfStopGrpWaitTime_ms[uinGroupIndex-1]) THEN
 					// Inc. group index 
 					uinGroupIndex:= uinGroupIndex + 1;	
 					// Change state, send command for next group
@@ -486,6 +501,12 @@ END_VAR
 			cSTA_SUB_FINISHED:
 					;		
 		END_CASE
+		
+		// Check time out error
+		IF (me.SubStateMachine.udiTimeInState_ms > (SIf_Par^.aListOfStopGrpWaitTime_ms[uinGroupIndex-1] + 30000)) THEN
+			// SIf_MOD.Alm[6].strText := 'Timeout stop group '; 
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,6,uinGroupIndex,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		END_IF
 	
 		// State Change Condition
 		IF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN
@@ -585,6 +606,10 @@ SIf_MOD.Alm[3].eAlmClass := E_AlmClass.EOFF;
 SIf_MOD.Alm[3].strText := 'Emergency off active'; 
 SIf_MOD.Alm[4].eAlmClass := E_AlmClass.OFF;
 SIf_MOD.Alm[4].strText := 'General error active'; 
+SIf_MOD.Alm[5].eAlmClass := E_AlmClass.OFF;
+SIf_MOD.Alm[5].strText := 'Timeout start group '; 
+SIf_MOD.Alm[6].eAlmClass := E_AlmClass.OFF;
+SIf_MOD.Alm[6].strText := 'Timeout stop group '; 
 
 //*******************************************************************************
 // initial values
@@ -759,16 +784,16 @@ END_IF]]></ST>
 // Entry action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		// Clear pending command to prevent automatic recovery!
-		CIf.Job.intACmd:=cSTA_DONE;
-		// In case on an emergency, set all childs to off
-		SetAllChildCmd(cCMD_OFF);
 	END_IF
 
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		;
+		
+		// In case of an emergency, set all childs to off 
+		// Set in cyclic action because of possible errors or manual/auto changes!
+		SUPER^.SetAllChildCmd(BASE_PLC.cCMD_OFF);
+
 		// check if all childs have reached the state
 		IF CheckAllChildState(cSTA_OFF) THEN
 			me.StateMachine.intStateNext := cSTA_EOFF;
@@ -797,8 +822,15 @@ END_IF]]></ST>
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN		
 		
+		// As long as the EMO is not reseted!
+		IF NOT (SIf_In^.bolEmergencyOffOk.intern) THEN
+			// Clear pending and new commands cyclic to prevent automatic recovery!
+			CIf.Job.intACmd := BASE_PLC.cCMD_DONE;
+			CIf.Job.intMCmd := BASE_PLC.cCMD_DONE;
+		END_IF
+	
 		// State Change Condition
-		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.intCmd<>cCMD_EOFF) AND (me.intCmd<>cCMD_DONE) THEN
+		IF (SIf_In^.bolEmergencyOffOk.intern) AND (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.intCmd<>BASE_PLC.cCMD_EOFF) AND (me.intCmd<>BASE_PLC.cCMD_DONE) THEN
 			me.StateMachine.intStateNext := cSTA_OFF;
 		END_IF
 	END_IF
@@ -832,34 +864,6 @@ IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	IF (stSequence.pChild<>0) THEN
 		usiNumOfValidPointerSeqChild:= usiNumOfValidPointerSeqChild+1;
 	END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="AddRunGrpTime" Id="{d1f28383-a338-4507-ac1f-d30113f03da0}">
-      <Declaration><![CDATA[METHOD AddRunGrpTime
-VAR_INPUT
-	udiGrpWaitTime_ms: UDINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method add a wait time to the list
-IF (usiNumOfRunGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	aListOfRunGrpWaitTime_ms[usiNumOfRunGrpWaitTime]:= udiGrpWaitTime_ms;
-	usiNumOfRunGrpWaitTime:= usiNumOfRunGrpWaitTime+1;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="AddStopGrpTime" Id="{a3a8ef40-052c-454f-923e-e03a1edaa212}">
-      <Declaration><![CDATA[METHOD AddStopGrpTime
-VAR_INPUT
-	udiGrpWaitTime_ms: UDINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method add a wait time to the list
-IF (usiNumOfStopGrpWaitTime <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	aListOfStopGrpWaitTime_ms[usiNumOfStopGrpWaitTime]:= udiGrpWaitTime_ms;
-	usiNumOfStopGrpWaitTime:= usiNumOfStopGrpWaitTime+1;
 END_IF]]></ST>
       </Implementation>
     </Method>
