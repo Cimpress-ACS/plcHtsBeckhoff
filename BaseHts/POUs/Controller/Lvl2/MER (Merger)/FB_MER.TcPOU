@@ -2,68 +2,70 @@
   <POU Name="FB_MER" Id="{81e1f74f-aae1-42cf-9873-cf8a29e6c322}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MER EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
-	/// Sensor hanger detected
+	// Sensor hanger detected
 	In_bolHangerDetected: BOOL;
-	/// Pin of Drive is detected
+	// Pin of Drive is detected
 	In_bolPinDetected: BOOL;
-	/// Sensors for jam detection
+	// Sensors for jam detection
 	In_a_bolJamSensor: ARRAY[1..cMAX_JAM_SENSORS] OF BOOL;
 END_VAR
 VAR
-	/// Specific interface struct for public access
+	// Specific interface struct for public access
 	SIf: T_Ctrl_SIf_MER;
-	/// List of pointers to Childs
+	// List of pointers to Childs
 	a_pLineChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO FB_SLB;
-	/// List of childs common interface
+	// List of childs common interface
 	a_pLineChildCIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_CIf;
-	/// List of childs specific interface for additional parameters or cur
+	// List of childs specific interface for additional parameters or cur
 	a_pLineChildSIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_SIf_SLB;
-	/// Function specific variables
+	// Function specific variables
 	usiNumOfLines: USINT;
 	usiNumOfValidPointerToLine: USINT;
 	bolHangerExist: BOOL;
 	bolGoToRun: BOOL;
 	dinPassedTotalLineXOld: DINT;
-	/// Used for counting passed hangers if "E_Typ_MER_MODE.MergeOverSetpoint" is selected.
+	// Used for counting passed hangers if "E_Typ_MER_MODE.MergeOverSetpoint" is selected.
 	dinNumOfPassedHangers: DINT;
-	/// Used for time measurement if "E_Typ_MER_MODE.MergeOverTime" is selected.
+	// Used for time measurement if "E_Typ_MER_MODE.MergeOverTime" is selected.
 	udiMergingTime: UDINT;
 	usiLineNumToReleaseAll: USINT;
 	usiIndexToRelease: USINT;
-	/// Last new position value from parent
+	// Last new position value from parent
 	dinTransportPositionOld_um: DINT;
-	/// Driven Way in the task
+	// Driven Way in the task
 	dinDrivenWay_um: DINT;
-	/// Position correction in faster Task cycletime
+	// Position correction in faster Task cycletime
 	dinPositionCorrection_um: DINT;
-	/// Position of the section
+	// Position of the section
 	dinPositionSection_um: DINT;
-	/// Section buffer
+	// Section buffer
 	a_stSectionBuffer: ARRAY[0..cusiSectionBuffer_SIZE] OF T_MER_Buffer_Sections;
-	/// Edge detection of the inputs
+	// Edge detection of the inputs
 	bolRE_HangerDetected: BOOL;
-	/// Pin of Drive is detected
+	// Pin of Drive is detected
 	bolRE_PinDetected: BOOL;
 	bolModeMergeIntoTrpUsed: BOOL;
 	bolSectionFree: BOOL;
 	bolReleaseHanger: BOOL;
-	/// Used to detect if a section is driven out
+	// Used to detect if a section is driven out
 	dinPositionOfLastLine_um: DINT;
-	/// Shadow copy of In_a_bolJamSensor[]
+	// Shadow copy of In_a_bolJamSensor[]
 	a_bolJamSensorOnce: ARRAY[1..cMAX_JAM_SENSORS] OF BOOL;
-	/// Start time of jam sensor is true
+	// Start time of jam sensor is true
 	a_udiTimeJamDetection: ARRAY[1..cMAX_JAM_SENSORS] OF UDINT;
-	/// Jam at merger output detected 
+	// Jam release delay timer
+	udiJamReleaseDelayTime_ms: UDINT;
+	// Jam at merger output detected 
 	bolJamDetected: BOOL;
-	/// Loop variable
+	// Loop variable
 	intI: INT;
-	/// Simulated section length
+	// Simulated section length
 	dinSimSectionLength_um: DINT := 510000;
-	/// Simulated way to trigger section start/end
+	// Simulated way to trigger section start/end
 	dinSimWayTrigSection_um: DINT;
 END_VAR
 VAR CONSTANT
-	/// sub States
+	// sub States
 	cSTA_SUB_INITIALIZED: INT := 500;
 	cSTA_SUB_WAIT_FOR_CMD: INT := 502;
 	cSTA_SUB_CHECK_HANGER_EXIST: INT := 504;
@@ -110,6 +112,7 @@ Version		Date			Author		Comment
 										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
 										Parent controller need state STOP that automatic stop sequence can work for all other childs.
 0.00.12		13.01.2014		AVME/MRU	Bugzilla ID 03: BufferFull for LineControl added
+0.00.13		22.01.2014		AVME/MRU	udiJamReleaseDelayTime_ms added; Timing "Check jam detection" reworked
 
 __________________________________________________________________________________________________*)
 
@@ -737,22 +740,30 @@ END_VAR
 		THIS^.checkStateAllLines(cSTA_RUN);
 
 		// Check jam detection
-		bolJamDetected := FALSE;
+		IF (udiJamReleaseDelayTime_ms > SIf.Par.udi_jamTimeout_ms) THEN
+			bolJamDetected := FALSE;
+		ELSE
+			udiJamReleaseDelayTime_ms := udiJamReleaseDelayTime_ms + me.FUBInfo.udiSample_ms;
+		END_IF
+		
 		FOR intI := 1 TO SIf.Cfg.usiCountJamSensors DO
 			// Start jam timer
 			IF ((SIf.In.a_bolJamSensor[intI].intern = TRUE) AND (a_bolJamSensorOnce[intI] = FALSE)) THEN
 				a_bolJamSensorOnce[intI]:= TRUE;
-				a_udiTimeJamDetection[intI]:= me.StateMachine.udiTimeInState_ms;
+				//a_udiTimeJamDetection[intI]:= me.StateMachine.udiTimeInState_ms;
+				a_udiTimeJamDetection[intI]:= 0;
 			// Stop jam timer
 			ELSIF ((SIf.In.a_bolJamSensor[intI].intern = FALSE) AND (a_bolJamSensorOnce[intI] = TRUE)) THEN
 				a_bolJamSensorOnce[intI]:= FALSE;
-				//a_bolJamDetected[intI] := FALSE;
 			// Set flag if neccessary
 			ELSIF ((SIf.In.a_bolJamSensor[intI].intern = TRUE) AND (a_bolJamSensorOnce[intI] = TRUE)) THEN
-				IF (me.StateMachine.udiTimeInState_ms > a_udiTimeJamDetection[intI] + SIf.Par.udi_jamTimeout_ms) THEN
+				//IF (me.StateMachine.udiTimeInState_ms > a_udiTimeJamDetection[intI] + SIf.Par.udi_jamTimeout_ms) THEN
+				IF (a_udiTimeJamDetection[intI] > SIf.Par.udi_jamTimeout_ms) THEN
 					bolJamDetected := TRUE;
+					udiJamReleaseDelayTime_ms := 0;
 				END_IF
 			END_IF
+			a_udiTimeJamDetection[intI]:= a_udiTimeJamDetection[intI]+ me.FUBInfo.udiSample_ms;
 		END_FOR
 	
 		//----------------------------------------------------------------------------------------

@@ -86,7 +86,7 @@ Version		Date			Author		Comment
 0.00.11		13.01.2014		AVM/MRU		Bugzilla ID 03: BufferFull added
 0.00.12		20.01.2014		AVM/MRU		EMO, general error reworked; AddRunGrp, AddStopGrp removed
 										Timeout run/stop group added 
-
+0.00.13		22.01.2014		AVM/MRU		Alternativ status for run sequence added
 
 ___________________________________________________________________________________________________*)
 
@@ -172,7 +172,8 @@ END_VAR
 					// If child is associated for the current group index		
 					IF (aListOfSeq[ii].uinGroupRun = uinGroupIndex) THEN
 						// Check defined status and if child not already checked
-						IF ((aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqRun) AND (aListOfSeq[ii].bolChecked = FALSE)) THEN
+						IF (((aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqRun) OR 
+						(aListOfSeq[ii].pCIF^.Job.intState = aListOfSeq[ii].intStatusSeqRun2)) AND (aListOfSeq[ii].bolChecked = FALSE)) THEN
 							aListOfSeq[ii].bolChecked:= TRUE;
 							intCheckCounter:= intCheckCounter - 1;
 						END_IF				
@@ -856,6 +857,7 @@ IF (usiNumOfSeq <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	aListOfSeq[usiNumOfSeq].uinGroupStop:= stSequence.uinGroupStop;
 	aListOfSeq[usiNumOfSeq].intCmdSeqRun:= stSequence.intCmdSeqRun;
 	aListOfSeq[usiNumOfSeq].intStatusSeqRun:= stSequence.intStatusSeqRun;
+	aListOfSeq[usiNumOfSeq].intStatusSeqRun2:= stSequence.intStatusSeqRun2;
 	aListOfSeq[usiNumOfSeq].intCmdSeqStop:= stSequence.intCmdSeqStop;
 	aListOfSeq[usiNumOfSeq].intStatusSeqStop:= stSequence.intStatusSeqStop;
 	// Inc. number of sequence

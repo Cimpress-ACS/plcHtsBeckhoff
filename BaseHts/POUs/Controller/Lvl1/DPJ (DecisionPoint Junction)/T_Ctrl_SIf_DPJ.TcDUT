@@ -16,7 +16,7 @@ STRUCT
 	///Data Channel from PLC to Line Controller
 	DtChnToLine: T_Ctrl_SIf_DPJ_DtChnToLine;
 	///alarm number used in this controller
-	Alm: ARRAY[1..11] OF T_Ctrl_Alm;
+	Alm: ARRAY[1..13] OF T_Ctrl_Alm;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

@@ -15,9 +15,12 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.18</ProjectVersion>
+    <ProjectVersion>0.0.0.19</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.18 - Timeout Run / Stop sequence added
+    <Description>0.0.0.19 - Alternativ status for run sequence added; Timing reworked in MER jam detection;
+DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
+
+0.0.0.18 - Timeout Run / Stop sequence added
 
 0.0.0.17 - EMO reworked in BaseCtrlModule; CHD "destination full" reworked; AddStpGrp, AddRunGrp removed
 

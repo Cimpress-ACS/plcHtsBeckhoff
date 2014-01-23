@@ -286,8 +286,8 @@ END_IF;
 		// A hanger is on slide message
 		IF ((SIf.In.bolPassed.intern = TRUE) AND (bolFpPassed = FALSE)) THEN
 			bolFpPassed := TRUE;
-			udinTimeUntilJamDetected:= me.StateMachine.udiTimeInState_ms + SIf.Par.udinTimeUntilJam_ms;
-							
+			udinTimeUntilJamDetected:= 0;
+				
 			IF SIf.cfg.bolStopAtRejact THEN 
 				; //No message needed
 			ELSE	
@@ -298,9 +298,12 @@ END_IF;
 			bolFpPassed := FALSE;
 		END_IF
 		// Jam on slide message
-		IF (bolFpPassed AND (udinTimeUntilJamDetected < me.StateMachine.udiTimeInState_ms)) THEN
-			// SIf.Alm[3].strText := 'Open not possible, destination is full';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		IF (bolFpPassed = TRUE) THEN
+			udinTimeUntilJamDetected:= udinTimeUntilJamDetected + me.FUBInfo.udiSample_ms;
+			IF (udinTimeUntilJamDetected > SIf.Par.udinTimeUntilJam_ms) THEN
+				// SIf.Alm[3].strText := 'Open not possible, destination is full';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
 		END_IF
 
 		

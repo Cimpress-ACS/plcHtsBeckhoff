@@ -131,7 +131,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{d643d3ce-c3a3-4949-99ff-f9349508240f}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -179,13 +178,13 @@ CIf.Job.aCmdList[ii].bolAvailable := TRUE;
 CIf.Info.strType := 'FB_HRU';
 
 // set alarm class
-SIf.Alm[1].eAlmClass := E_AlmClass.TSTOP;
+SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[1].strText := 'sensor hangerDetected always on'; 
-SIf.Alm[2].eAlmClass := E_AlmClass.TSTOP;
+SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[2].strText := 'sensor hangerDetected always on';
-SIf.Alm[3].eAlmClass := E_AlmClass.TSTOP;
+SIf.Alm[3].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[3].strText := 'sensor hangerDetected always on';
-SIf.Alm[4].eAlmClass := E_AlmClass.TSTOP;
+SIf.Alm[4].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[4].strText := 'Expected Hanger not in Rotation Unit';
 
 //*******************************************************************************
@@ -204,7 +203,6 @@ SIf.Par.udiWaitForRotate_ms := 4000;		// No sensor, work with time
 SIf.Par.udiSimNextHangerTime_ms := 5000;	// For simulation
 SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RETRACTBusy" Id="{320f6078-e245-4d47-a49f-217085321fcb}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RETRACTBusy : BOOL
@@ -255,7 +253,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_EJECT" Id="{14a531a2-46cf-4064-847e-c670d34b589f}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EJECT : BOOL
@@ -304,7 +301,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{6858f917-2fab-4582-a04f-9a9509e1f096}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -350,7 +346,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RETRACT" Id="{d8ab7be5-af2e-45de-a83b-eaced7a8b732}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RETRACT : BOOL
@@ -395,7 +390,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{4fa02b40-e25e-4f78-9cb6-d34028e86296}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -564,7 +558,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{452e79f6-9c6d-4c20-b538-1c5573f25e88}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -606,7 +599,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{1b617f7b-a794-4338-92da-3e6a3f0e465f}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HRU
@@ -614,7 +606,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ROTATEBusy" Id="{29398fc9-21df-48af-abd1-bb4882462baf}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ROTATEBusy : BOOL
@@ -660,7 +651,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{9faad390-abfc-46ee-b257-7bb0c5b9e8fe}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -699,7 +689,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{be156e11-04eb-4142-8c99-c662a9103b70}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -744,7 +733,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{66438238-6d7d-4718-a8ce-677a732faa2d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -783,7 +771,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{1a8b54f3-45d9-4433-8efa-9df953e7be19}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -798,7 +785,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	THIS^.Out_bolRotate := SIf.Out.bolRotate.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{5c20de26-01e9-4464-bd05-2f21273be419}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -831,7 +817,6 @@ CASE me.StateMachine.intState OF
 		
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_EJECTBusy" Id="{4877cc40-a1b7-4684-af1e-67b223137e67}">
       <Declaration><![CDATA[METHOD PROTECTED sta_EJECTBusy : BOOL
@@ -885,7 +870,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{593af27c-1a76-48d5-b3a4-1932fa43020d}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -901,7 +885,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{107a1b23-5daf-4da3-b36f-d0e0914536ad}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -927,7 +910,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ROTATE" Id="{ae137dec-2217-4c39-8664-d4bc46bfb94a}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ROTATE : BOOL
@@ -974,7 +956,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

@@ -103,6 +103,8 @@ Version		Date			Author		Comment
 0.00.5		09.12.2013		AVME/DSC	Modification in method "checkStateAllMultiChild".
 										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
 										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+0.00.6		22.10.2014		AVME/MRU	New settings (SIf.Par.udiTimeMaxJob_s := 60; cintMaxDecisions: INT := 100;)
+										Reworked in sta_STOPBusy calculation of bolNoJobActive
 										
 ___________________________________________________________________________________________________*)
 
@@ -176,7 +178,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{0123a615-b6ed-4328-8fde-ea84d8ef5a71}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -237,6 +238,10 @@ SIf.Alm[10].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[10].strText := 'RFID Not found';
 SIf.Alm[11].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[11].strText := 'Delete all cmd not possible because of invalid state';
+SIf.Alm[12].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
+SIf.Alm[13].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
 
 //*******************************************************************************
 // initial values
@@ -247,18 +252,18 @@ CIf.SwCfg.bolExist := TRUE;
 CIf.SwCfg.bolSimulation := FALSE;
 
 // parmeter
-SIf.Par.udiTimeMaxJob_s := 3600;
+SIf.Par.udiTimeMaxJob_s := 60; // Reduced, was 3600;
 SIf.Par.dinDistanceOffsetUntilDelJob_um:= 500000; // 500mm
 SIf.Cfg.bolHangerDetectionExist := TRUE;
 SIf.Cfg.dinMaxCapacity := 10;
 SIf.Cfg.bolSimSpeedInternal := FALSE;
+SIf.Cfg.bolStopAtPassLastJunction := FALSE; // Normaly just info
 
 
 
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{d9eb6d28-4d05-486c-bf9f-3e9c77921b94}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -273,7 +278,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{191d1a48-e3d4-4f0e-aa60-ba911c2dc22a}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -310,7 +314,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{cfd0dc08-ae10-4d9a-b1db-8ad33bc4b1e7}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -330,7 +333,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_STOP();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildPointer" Id="{79304374-32b3-4858-aec3-f77b58b32028}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
@@ -344,7 +346,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_PON" Id="{2e7eb100-331a-4b18-84aa-666584a4ac85}">
       <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
@@ -381,7 +382,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="SetAlmClassAllMultiChild" Id="{82faa679-35f5-44a9-b5e9-9f179c319f5c}">
       <Declaration><![CDATA[METHOD PROTECTED SetAlmClassAllMultiChild
@@ -398,7 +398,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	a_pMultiChildCIF[ii]^.Job.eParent_ActivAlmClass:= In_AlmClass;	
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{9764949e-3463-4a90-821f-9c708116dd9f}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -451,7 +450,6 @@ END_FOR]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{211c8ab3-3387-4155-bcc4-90dd5f241656}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -635,7 +633,6 @@ END_FOR]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAlmClassAllMultiChild" Id="{56e66066-5442-4b4e-a813-e75ebb61e8e5}">
       <Declaration><![CDATA[METHOD PROTECTED checkAlmClassAllMultiChild : BOOL
@@ -661,7 +658,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	END_IF
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="DtChnToPLC_Decision" Id="{b2d4a345-44d9-40c1-884b-0a110db4a2bd}">
       <Declaration><![CDATA[METHOD DtChnToPLC_Decision : BOOL
@@ -960,7 +956,6 @@ CASE intStatemachine OF
 			
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERROR" Id="{91eadbec-8215-433c-9d58-edadbf8fe729}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
@@ -998,7 +993,6 @@ END_CASE]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{c3e233aa-416f-4d17-8ddc-ae38fd8987f3}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -1054,7 +1048,6 @@ END_FOR
 
 SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllMultiChild" Id="{085ecd3a-2ffd-4f11-b261-2c7f09b5b09c}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
@@ -1089,7 +1082,6 @@ IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
 	checkStateAllMultiChild:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{e143040d-cec4-4fb3-a6a2-90ef26d92ddc}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -1126,7 +1118,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{e45cb3c1-3500-4774-a80b-44f3ea726fdb}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_DPJ
@@ -1134,7 +1125,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{44c5babe-2996-45e9-9eff-25cf8d6e33bf}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -1176,7 +1166,12 @@ END_IF]]></ST>
 		// Check in the same loop if any job is active
 		bolNoJobActive := TRUE;
 		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
-			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+(*			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+*)			IF ((aTblDecision[uinLoopRFID].eState = WayToJunction) OR (aTblDecision[uinLoopRFID].eState = OnJunction) OR
+			(aTblDecision[uinLoopRFID].eState = Processed) OR (aTblDecision[uinLoopRFID].eState = DriveOut)) THEN
 				bolNoJobActive := FALSE;
 				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
 			END_IF
@@ -1208,7 +1203,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{763c0064-5ad7-4645-8e69-a09db5209eda}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -1280,7 +1274,17 @@ FOR intI:=0 TO cintMaxDecisions DO
 			aTblDecision[intI].stDecision.strID := '';	
 		END_IF
 	END_IF
-	
+
+	// Write an Error when the hanger crossed the last junction but did not get finished
+	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget > 0)) THEN
+		IF (SIf.Cfg.bolStopAtPassLastJunction = TRUE) THEN	// E_AlmClass.STOP
+			// SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,13,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		ELSE // E_AlmClass.INFO
+			// SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,12,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		END_IF
+	END_IF
 	
 	// Check if a hanger passed the junction to send a message to line
 	IF (aTblDecision[intI].eState = E_DecisionState.DriveOut) THEN
@@ -1356,7 +1360,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{d20c16c4-74d2-4e7c-9ee7-c0381f843f0a}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -1376,7 +1379,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERRORQuit" Id="{e6bf1171-bd60-4db5-ac74-ac920ef481f6}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
@@ -1423,7 +1425,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllMultiChild" Id="{8a4fc957-df6e-4c01-8fea-11c8d4edad29}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
@@ -1443,7 +1444,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddJunction" Id="{c3e0e466-d161-4d66-af3b-d6d96ae3bb4e}">
       <Declaration><![CDATA[METHOD AddJunction
@@ -1465,7 +1465,6 @@ IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{1a458747-bf8a-432e-b91a-dbacf18a0879}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -1503,7 +1502,6 @@ ELSE
 	THIS^.SetAlmClassAllMultiChild(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

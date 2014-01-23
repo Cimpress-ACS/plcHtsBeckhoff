@@ -13,6 +13,8 @@ STRUCT
 	intCmdSeqRun: INT;
 	// Expected status for run sequence
 	intStatusSeqRun: INT;
+	// Alternativ status for run sequence
+	intStatusSeqRun2: INT;
 	// Command to be executed for run sequence
 	intCmdSeqStop: INT;
 	// Expected status for run sequence
