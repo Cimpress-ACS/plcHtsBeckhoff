@@ -15,6 +15,8 @@ STRUCT
 	bolSimSpeedInternal: BOOL;
 	// Stop when Hanger passed the last instead of selected junction, else just Info
 	bolStopAtPassLastJunction: BOOL;
+	// Number of elements in aTblDecision
+	intMaxDecisions: INT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

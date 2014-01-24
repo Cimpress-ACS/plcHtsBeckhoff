@@ -1277,12 +1277,21 @@ FOR intI:=0 TO cintMaxDecisions DO
 
 	// Write an Error when the hanger crossed the last junction but did not get finished
 	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget > 0)) THEN
-		IF (SIf.Cfg.bolStopAtPassLastJunction = TRUE) THEN	// E_AlmClass.STOP
-			// SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,13,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-		ELSE // E_AlmClass.INFO
-			// SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,12,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
+			IF (SIf.Cfg.bolStopAtPassLastJunction = TRUE) THEN	// E_AlmClass.STOP
+				// SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,13,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			ELSE // E_AlmClass.INFO
+				// SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,12,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';	
 		END_IF
 	END_IF
 	

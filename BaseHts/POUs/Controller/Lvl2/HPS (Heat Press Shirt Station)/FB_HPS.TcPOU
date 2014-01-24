@@ -17,6 +17,7 @@ VAR_INPUT
 	/// Slide buffer for turned T-Shirts
 	p_fbSLB_T: POINTER TO FB_SLB;
 	p_fbHRU: POINTER TO FB_HRU;
+	p_fbSEP: POINTER TO FB_STB;
 END_VAR
 VAR_OUTPUT
 	/// Interface to HeatPress without LineControl
@@ -35,6 +36,8 @@ VAR
 	pSLB_T_SIF: POINTER TO T_Ctrl_SIf_SLB;
 	pHRU_SIF: POINTER TO T_Ctrl_SIf_HRU;
 	pSLB_WORK_CIF: POINTER TO T_Ctrl_CIf;
+	pSEP_CIF: POINTER TO T_Ctrl_CIf;
+	pSEP_SIF: POINTER TO T_Ctrl_SIf_STB;
 	/// Childs of Drives
 	/// List of pointers to Childs
 	a_pMultiChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO FB_DRV;
@@ -90,7 +93,9 @@ VAR CONSTANT
 	cSTA_SUB_RUN_SET_PAR: INT := 532;
 	cSTA_SUB_RUN_SET_CMD: INT := 534;
 	cSTA_SUB_RUN_WAIT_DONE: INT := 536;
-	cSTA_SUB_RUN_UPDATE: INT := 538;
+	cSTA_SUB_RUN_SET_RELEASE: INT := 538;	// Step for SEP
+	cSTA_SUB_RUN_WAIT_RELEASED: INT := 540;	// Step for SEP
+	cSTA_SUB_RUN_UPDATE: INT := 542;
 	cSTA_SUB_ERROR: INT := 598;
 	cSTA_SUB_FINISHED: INT := 600;
 END_VAR
@@ -124,6 +129,7 @@ Version		Date			Author		Comment
 										T_Ctrl_SIf_HPS_Out for Heatpress without LineControl added
 										and calculated in RUN
 0.00.5		11.12.2013		AVME/MRU	Add Methode checkChildAlmClass for Error Stop of childs
+0.00.6		24.01.2014		AVME/MRU	Add SEP_7b
 
 ___________________________________________________________________________________________________*)
 
@@ -164,7 +170,6 @@ IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{d707ba90-8a95-48e7-babb-3b57edc5edd9}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HPS
@@ -172,7 +177,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{4bc833b2-54f1-4999-9dda-03412ffa2ed1}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -283,7 +287,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{7d30c543-b248-4931-9792-14dd5417ceff}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -348,7 +351,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{f363fb42-29c7-43a4-bf7e-f7eb07b96de9}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -363,6 +365,7 @@ END_VAR
 pSLB_S_CIf := THIS^.AddChild(p_fbSLB_S^);
 pSLB_T_CIf := THIS^.AddChild(p_fbSLB_T^);
 pHRU_CIf := THIS^.AddChild(p_fbHRU^);
+pSEP_CIF := THIS^.AddChild(p_fbSEP^);
 
 //initialize all multi Child controller.
 FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
@@ -373,10 +376,9 @@ END_FOR
 pSLB_S_SIF := p_fbSLB_S^.getCtrlSIf();
 pSLB_T_SIF := p_fbSLB_T^.getCtrlSIf();
 pHRU_SIF := p_fbHRU^.getCtrlSIf();
-
+pSEP_SIF := p_fbSEP^.getCtrlSIf();
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{ebb7ab8c-fbf9-4bfb-8aae-b2aeef2bee7b}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -452,7 +454,6 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{c6f54b67-19a0-4496-826f-47c20a34adc0}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -489,7 +490,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllMultiChild" Id="{82221f82-60f4-4f4e-b828-7dae13488d80}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
@@ -522,7 +522,6 @@ IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
 	checkStateAllMultiChild:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{1809088e-e2d6-4dcb-b739-94b2af8ddf81}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -548,7 +547,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{acf1abad-1359-410d-80f6-c570387f24d1}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -570,7 +568,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildPointer" Id="{e561d79e-db85-4410-8df7-c8096985ffca}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
@@ -584,7 +581,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{aca7619f-5d95-41b2-8b79-d7ce8a9d6f47}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -605,7 +601,6 @@ CASE me.StateMachine.intState OF
 		
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{6d6aaca4-9d3d-410e-9e06-9a5d0db99766}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -718,7 +713,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllMultiChild" Id="{bf626568-3771-4c0a-97fe-3955ffda1c91}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
@@ -738,7 +732,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{d145926a-f6db-42ad-9128-3552f475355e}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -809,7 +802,6 @@ SIf.Par.udiTimeDriveStart_ms := 2000;
 SIf.Par.udiTimeDriveStop_ms := 500;
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="DtChnToPLC_NewCharge" Id="{750a454f-0d91-4157-b2f0-a81033fbce2f}">
       <Declaration><![CDATA[METHOD DtChnToPLC_NewCharge : BOOL
@@ -975,7 +967,6 @@ CASE intStatemachine OF
 			
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{68fbada5-fbd3-4f73-85cc-f094c63d9052}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -1012,7 +1003,6 @@ END_CASE]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{3ba87d9f-ca05-421c-a76f-35355223a41d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -1109,6 +1099,17 @@ END_CASE]]></ST>
 				
 				END_IF
 				
+			cSTA_SUB_RUN_SET_RELEASE:		// SEP between HRU and SLS
+				IF (pSEP_SIF^.Cur.bolHangerDetected = TRUE) THEN
+					pSEP_CIF^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
+					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_WAIT_RELEASED;
+				END_IF
+				
+			cSTA_SUB_RUN_WAIT_RELEASED:		// SEP between HRU and SLS
+				IF (pSEP_CIF^.Job.intACmd = BASE_PLC.cSTA_DONE) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
+				END_IF
+				
 			cSTA_SUB_RUN_UPDATE:
 				// only delete the table if the job was from the table
 				IF 	usiLineAct = INT_TO_USINT(aTblCharge[0]) THEN
@@ -1168,7 +1169,6 @@ END_CASE]]></ST>
 		SIf.Out.bolShirtTurnReady.intern := FALSE;		// Not Ready
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{7ed35258-df4b-4b5a-9465-5bf15c06dcef}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -1206,7 +1206,6 @@ ELSE
 	SetAllChildAlmClass(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>
