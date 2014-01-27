@@ -18,6 +18,7 @@
     <ProjectVersion>0.0.0.20</ProjectVersion>
     <Released>True</Released>
     <Description>0.0.0.20 - HPS with new Child SEP
+	New BaseElements 0.0.0.20
 
 0.0.0.19 - Alternativ status for run sequence added; Timing reworked in MER jam detection;
 DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
@@ -507,7 +508,7 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.19,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.0.20,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">

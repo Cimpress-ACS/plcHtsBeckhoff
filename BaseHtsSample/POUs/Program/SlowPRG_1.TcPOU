@@ -57,6 +57,8 @@ Version		Date			Author		Comment
 0.00.14		07.01.2014		AVME/MRU	Moved all controllers to BaseHts/BaseElements
 0.00.15		08.01.2014		AVME/MRU	Update BasePlc 0.3.3.7, BaseElements 0.0.0.17
 0.00.16		13.01.2014		AVME/MRU	Add AddIBufferFullChilds for infos to LineControl
+0.00.17		08.01.2014		AVME/MRU	Update BaseHts 0.0.0.20, BaseElements 0.0.0.20
+
 
 
 ___________________________________________________________________________________________________*)
