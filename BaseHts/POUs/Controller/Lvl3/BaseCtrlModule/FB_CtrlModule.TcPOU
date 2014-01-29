@@ -504,7 +504,7 @@ END_VAR
 		END_CASE
 		
 		// Check time out error
-		IF (me.SubStateMachine.udiTimeInState_ms > (SIf_Par^.aListOfStopGrpWaitTime_ms[uinGroupIndex-1] + 30000)) THEN
+		IF (me.SubStateMachine.udiTimeInState_ms > (SIf_Par^.aListOfStopGrpWaitTime_ms[uinGroupIndex-1] + SIf_MOD.Par^.udiTimeoutStopping_ms)) THEN
 			// SIf_MOD.Alm[6].strText := 'Timeout stop group '; 
 			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,6,uinGroupIndex,ADR(SIf_MOD.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 		END_IF

@@ -1089,7 +1089,7 @@ END_CASE]]></ST>
 				IF (pSLB_WORK_CIF^.Job.intACmd = cSTA_DONE) THEN
 					IF (pSLB_WORK_CIF^.Info.intCtrlId = pSLB_T_CIF^.Info.intCtrlId) THEN	// Check if Shirt is in Turn Line
 						IF (pHRU_CIf^.Job.intACmd = cSTA_DONE) THEN							// Hanger Rotation Unit done
-							me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
+							me.SubStateMachine.intStateNext := cSTA_SUB_RUN_SET_RELEASE;
 						ELSIF (pHRU_CIf^.Job.intState = cSTA_ERROR) THEN					// Hanger Rotation Unit failed
 							me.SubStateMachine.intStateNext := cSTA_SUB_ERROR;
 						END_IF
@@ -1108,6 +1108,7 @@ END_CASE]]></ST>
 			cSTA_SUB_RUN_WAIT_RELEASED:		// SEP between HRU and SLS
 				IF (pSEP_CIF^.Job.intACmd = BASE_PLC.cSTA_DONE) THEN
 					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
+					pSEP_CIF^.Job.intACmd := BASE_PLC.cCMD_STOP;
 				END_IF
 				
 			cSTA_SUB_RUN_UPDATE:
