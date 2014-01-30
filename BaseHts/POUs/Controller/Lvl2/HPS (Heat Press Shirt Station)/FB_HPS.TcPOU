@@ -74,6 +74,11 @@ VAR
 	/// Datachannel to send done job
 	fbDtChnToLine_ChargeDone: FB_DtChnToLine_ChargeDone;
 	intDtChnToLineState: INT;
+	/// Var. used for sub sequence refill
+	intIndexRefill: INT;
+	SubStateMachineRefill: INT;
+	udiTimeInStateRefill_ms: UDINT;
+
 END_VAR
 VAR CONSTANT
 	///sub States for RELEASE Function
@@ -800,6 +805,7 @@ SIf.Cfg.bolDtChToLine_send := TRUE;
 // parmeter
 SIf.Par.udiTimeDriveStart_ms := 2000;
 SIf.Par.udiTimeDriveStop_ms := 500;
+SIf.Par.udiIntervalBufferFilling_ms:= 2000;
 ]]></ST>
       </Implementation>
     </Method>
@@ -1053,7 +1059,7 @@ END_CASE]]></ST>
 				
 				// Interface to HeatPress without LineControl
 				SIf.Out.bolShirtStraightReady.intern := pSLB_S_SIF^.Cur.bolHangerDetected; 	// Sensor SEP7 has Hanger detected
-				SIf.Out.bolShirtTurnReady.intern := pSLB_T_SIF^.Cur.bolHangerDetected;		// Sensor SEP6 has Hanger detected
+				SIf.Out.bolShirtTurnReady.intern := pSEP_SIF^.Cur.bolHangerDetected; // pSLB_T_SIF^.Cur.bolHangerDetected;		// Sensor SEP6 has Hanger detected
 				
 			cSTA_SUB_RUN_SET_CMD:
 				// Digital Input has priority to the data channel
@@ -1061,7 +1067,7 @@ END_CASE]]></ST>
 				IF (SIf.In.bolBringShirtStraight.intern = TRUE) THEN
 					pSLB_WORK_CIF := pSLB_S_CIF;
 				ELSIF (SIf.In.bolBringShirtTurned.intern = TRUE) THEN
-					pSLB_WORK_CIF := pSLB_T_CIF;
+					pSLB_WORK_CIF := pSEP_CIF; //pSLB_T_CIF;
 				ELSIF (aTblCharge[0] = 1) THEN
 					// If job from Datachannel, save the line number
 					usiLineAct := INT_TO_USINT(aTblCharge[0]);
@@ -1069,16 +1075,16 @@ END_CASE]]></ST>
 				ELSIF (aTblCharge[0] = 2) THEN
 					// If job from Datachannel, save the line number
 					usiLineAct := INT_TO_USINT(aTblCharge[0]);
-					pSLB_WORK_CIF := pSLB_T_CIF;
+					pSLB_WORK_CIF := pSEP_CIF; //pSLB_T_CIF;
 				END_IF
 				
 				// Send Release command to the correct job interface to release one hanger 
 				pSLB_WORK_CIF^.Job.intACmd := STB_CmdState.cCMD_RELEASE;				
-				// Send Run command to HRU if Shirt is in Turn Line
+(*				// Send Run command to HRU if Shirt is in Turn Line
 				IF (pSLB_WORK_CIF^.Info.intCtrlId = pSLB_T_CIF^.Info.intCtrlId) THEN	// Check if Shirt is in Turn Line
 					pHRU_CIF^.Job.intACmd := cCMD_RUN;									// Send Command Run to HRU
 				END_IF
-				
+*)		
 				// Interface to HeatPress without LineControl
 				SIf.Out.bolShirtStraightReady.intern := FALSE; 	// Not Ready
 				SIf.Out.bolShirtTurnReady.intern := FALSE;		// Not Ready
@@ -1087,19 +1093,19 @@ END_CASE]]></ST>
 			
 			cSTA_SUB_RUN_WAIT_DONE:
 				IF (pSLB_WORK_CIF^.Job.intACmd = cSTA_DONE) THEN
-					IF (pSLB_WORK_CIF^.Info.intCtrlId = pSLB_T_CIF^.Info.intCtrlId) THEN	// Check if Shirt is in Turn Line
-						IF (pHRU_CIf^.Job.intACmd = cSTA_DONE) THEN							// Hanger Rotation Unit done
+					IF (pSLB_WORK_CIF^.Info.intCtrlId = pSEP_CIF^.Info.intCtrlId) THEN		// Check if Shirt is in Turn Line
+						pSLB_WORK_CIF^.Job.intACmd := BASE_PLC.cCMD_STOP;
+(*						IF (pHRU_CIf^.Job.intACmd = cSTA_DONE) THEN							// Hanger Rotation Unit done
 							me.SubStateMachine.intStateNext := cSTA_SUB_RUN_SET_RELEASE;
 						ELSIF (pHRU_CIf^.Job.intState = cSTA_ERROR) THEN					// Hanger Rotation Unit failed
 							me.SubStateMachine.intStateNext := cSTA_SUB_ERROR;
 						END_IF
 					ELSE																	// Straight Line -> no HRU check required
-						me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
-					END_IF
-				
+*)					END_IF
+					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
 				END_IF
 				
-			cSTA_SUB_RUN_SET_RELEASE:		// SEP between HRU and SLS
+(*			cSTA_SUB_RUN_SET_RELEASE:		// SEP between HRU and SLS
 				IF (pSEP_SIF^.Cur.bolHangerDetected = TRUE) THEN
 					pSEP_CIF^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
 					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_WAIT_RELEASED;
@@ -1110,7 +1116,7 @@ END_CASE]]></ST>
 					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_UPDATE;
 					pSEP_CIF^.Job.intACmd := BASE_PLC.cCMD_STOP;
 				END_IF
-				
+*)				
 			cSTA_SUB_RUN_UPDATE:
 				// only delete the table if the job was from the table
 				IF 	usiLineAct = INT_TO_USINT(aTblCharge[0]) THEN
@@ -1136,6 +1142,12 @@ END_CASE]]></ST>
 				; // Do nothing
 					
 		END_CASE
+		
+		//----------------------------------------------------------------------
+		// Continuous refill of last SEP
+		//----------------------------------------------------------------------
+		THIS^.RefillTurnedLine();
+		
 		
 		me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
 		CIf.Job.strSubState := THIS^.getCmdState(intCmdState:=me.SubStateMachine.intState,bolState:=TRUE);
@@ -1207,6 +1219,80 @@ ELSE
 	SetAllChildAlmClass(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
+    </Method>
+    <Method Name="RefillTurnedLine" Id="{dd22b8af-a22d-4d5a-907c-43546cb41955}">
+      <Declaration><![CDATA[METHOD RefillTurnedLine
+VAR
+	/// Loop variable
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Simulation
+IF (CIf.SwCfg.bolSimulation) THEN
+;
+END_IF
+	
+	
+// Method refill all zones
+CASE SubStateMachineRefill OF		
+			
+	// Check space in buffer X
+	//-------------------------------
+	0:
+		// Check if number of hangers "per Pulse" have space in the next buffer
+		// Condition: (zone[X].NumOfHangers + zone[ X + 1] .NumOfHangersPerPuls) < zone[X].MaxCapacity   			
+		IF ((pSEP_SIF^.Cur.dinNumOfHangersInBuffer < pSEP_SIF^.Cfg.dinMaxCapacity) AND 
+			(pSLB_T_SIF^.Cur.dinNumOfHangersInBuffer <> 0) AND (pSLB_T_SIF^.Cur.bolHangerDetected = TRUE)) THEN
+			
+			// Send release command to buffer zone X+1
+			pSLB_T_CIF^.Job.intACmd:= SLB_CmdState.cCMD_RELEASE;	
+			SubStateMachineRefill:= 1;						
+		END_IF
+	
+	// Check if zone X+1 is released
+	//-------------------------------
+	1:
+		IF(pSLB_T_CIF^.Job.intACmd = BASE_PLC.cCMD_DONE)THEN
+			// Send stop command to buffer zone X+1
+			//pSLB_T_CIF^.Job.intACmd:= cCMD_STOP;					
+			SubStateMachineRefill:= 2;
+			// Counter correction if no counter at inside of Buffer
+			IF pSEP_SIF^.Cfg.bolHasBufferFullSensor = FALSE THEN
+				pSEP_SIF^.Cur.dinNumOfHangersInBuffer := pSEP_SIF^.Cur.dinNumOfHangersInBuffer + 1;
+			END_IF
+		END_IF	
+	
+	// Check if zone X+1 is stopped
+	//-------------------------------
+	2:
+	//	IF(pSLB_T_CIF^.Job.intState  = cSTA_STOP)THEN
+			udiTimeInStateRefill_ms:= 0;
+			SubStateMachineRefill:= 3;
+			pHRU_CIF^.Job.intACmd := cCMD_RUN;	// Set Command to HRU				
+	//	END_IF
+
+	// Check if HRU is done
+	//-------------------------------
+	3: 
+		IF (pHRU_CIf^.Job.intACmd = cSTA_DONE) THEN							// Hanger Rotation Unit done
+			SubStateMachineRefill:= 4;
+		END_IF
+
+		
+	// Break
+	//-------------------------------
+	4:	
+		// Increment time in state	
+		udiTimeInStateRefill_ms:= udiTimeInStateRefill_ms + me.FUBInfo.udiSample_ms;
+		IF (udiTimeInStateRefill_ms > SIf.Par.udiIntervalBufferFilling_ms) THEN
+			// Back to first state
+			SubStateMachineRefill:= 0;	
+		END_IF
+		
+END_CASE]]></ST>
+      </Implementation>
+      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

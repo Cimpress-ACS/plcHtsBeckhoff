@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.22</ProjectVersion>
+    <ProjectVersion>0.0.0.23</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.22 - Bug fixed in STOPbusy
+    <Description>0.0.0.23 - HTS, hanger turned line wait at SEP
+
+0.0.0.22 - Bug fixed in STOPbusy
 
 0.0.0.21 - Bugs fixed in HPS
 
@@ -573,6 +575,7 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <SubObject Include="FB_CYL_1.sta_OFF" />
     <SubObject Include="FB_CYL_1.sta_OFFBusy" />
     <SubObject Include="FB_CYL_1.sta_PON" />
+    <SubObject Include="FB_HPS.RefillZones" />
     <SubObject Include="FB_IBuffer.MaxCapacity" />
     <SubObject Include="FB_IBuffer.MaxCapacity.Get" />
     <SubObject Include="FB_IBuffer.MaxCapacity_1" />
