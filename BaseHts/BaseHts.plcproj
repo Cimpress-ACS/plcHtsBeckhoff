@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.23</ProjectVersion>
+    <ProjectVersion>0.0.0.24</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.23 - HTS, hanger turned line wait at SEP
+    <Description>0.0.0.24 - Rising Edge detection of bolBringShirt in HPS
+
+0.0.0.23 - HTS, hanger turned line wait at SEP
 
 0.0.0.22 - Bug fixed in STOPbusy
 

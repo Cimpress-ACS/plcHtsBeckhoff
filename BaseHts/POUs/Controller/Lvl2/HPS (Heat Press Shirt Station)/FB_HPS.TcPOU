@@ -78,7 +78,10 @@ VAR
 	intIndexRefill: INT;
 	SubStateMachineRefill: INT;
 	udiTimeInStateRefill_ms: UDINT;
-
+	/// Rising Edge detection of SIf.In.bolBringShirtStraight.intern
+	bolREBringShirtStraight: BOOL;
+	/// Rising Edge detection of SIf.In.bolBringShirtTurned.intern
+	bolREBringShirtTurned: BOOL;
 END_VAR
 VAR CONSTANT
 	///sub States for RELEASE Function
@@ -1053,7 +1056,9 @@ END_CASE]]></ST>
 			//--------------------------------------------------------------------------------------
 			cSTA_SUB_RUN_WAIT_JOB:
 				// Job set by digital input or with Datachannel from Line Controller
-				IF (aTblCharge[0] > 0) OR SIf.In.bolBringShirtStraight.intern OR SIf.In.bolBringShirtTurned.intern THEN
+				IF ((aTblCharge[0] > 0) 
+				OR (SIf.In.bolBringShirtStraight.intern AND NOT bolREBringShirtStraight)
+				OR (SIf.In.bolBringShirtTurned.intern AND NOT bolREBringShirtTurned)) THEN
 					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_SET_CMD;
 				END_IF
 				
@@ -1148,6 +1153,9 @@ END_CASE]]></ST>
 		//----------------------------------------------------------------------
 		THIS^.RefillTurnedLine();
 		
+		// Rising Edge detection of inputs
+		bolREBringShirtStraight:= SIf.In.bolBringShirtStraight.intern;
+		bolREBringShirtTurned:= SIf.In.bolBringShirtTurned.intern;
 		
 		me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
 		CIf.Job.strSubState := THIS^.getCmdState(intCmdState:=me.SubStateMachine.intState,bolState:=TRUE);
@@ -1255,7 +1263,6 @@ CASE SubStateMachineRefill OF
 	1:
 		IF(pSLB_T_CIF^.Job.intACmd = BASE_PLC.cCMD_DONE)THEN
 			// Send stop command to buffer zone X+1
-			//pSLB_T_CIF^.Job.intACmd:= cCMD_STOP;					
 			SubStateMachineRefill:= 2;
 			// Counter correction if no counter at inside of Buffer
 			IF pSEP_SIF^.Cfg.bolHasBufferFullSensor = FALSE THEN
@@ -1266,12 +1273,10 @@ CASE SubStateMachineRefill OF
 	// Check if zone X+1 is stopped
 	//-------------------------------
 	2:
-	//	IF(pSLB_T_CIF^.Job.intState  = cSTA_STOP)THEN
-			udiTimeInStateRefill_ms:= 0;
-			SubStateMachineRefill:= 3;
-			pHRU_CIF^.Job.intACmd := cCMD_RUN;	// Set Command to HRU				
-	//	END_IF
-
+		udiTimeInStateRefill_ms:= 0;
+		SubStateMachineRefill:= 3;
+		pHRU_CIF^.Job.intACmd := cCMD_RUN;	// Set Command to HRU				
+	
 	// Check if HRU is done
 	//-------------------------------
 	3: 
@@ -1292,7 +1297,6 @@ CASE SubStateMachineRefill OF
 		
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>
