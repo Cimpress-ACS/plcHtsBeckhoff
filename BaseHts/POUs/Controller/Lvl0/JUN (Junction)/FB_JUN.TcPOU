@@ -77,6 +77,7 @@ Version		Date			Author		Comment
 0.00.2		19.09.2013		AVME/PRE	Implement new Base Concept
 0.00.3		02.10.2013		VP/MK,RE	Fixed multiplication issues (cast INT to REAL before division)
 0.00.4		10.12.2013		AVME/MRU	Reset aCheckPassing time at exit of sta_RUN
+0.00.5		03.02.2014		AVME/MRU	Changed 'timeout passed sensor does not detect the hanger' to INFO
 
 ___________________________________________________________________________________________________*)
 
@@ -507,7 +508,7 @@ ii := ii +1;
 CIf.Info.strType := 'FB_JUN'; 
 
 // set alarm class
-SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[1].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[1].strText := 'timeout passed sensor does not detect the hanger'; 
 SIf.Alm[2].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[2].strText := 'RUN not possible, no Hashtable';
