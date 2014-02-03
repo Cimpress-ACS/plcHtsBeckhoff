@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.25</ProjectVersion>
+    <ProjectVersion>0.0.0.26</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.25 - Error JUN changed
+    <Description>0.0.0.26 - DPJ.sta_RUN Entry action reworked
+
+0.0.0.25 - Error JUN changed
 
 0.0.0.24 - Rising Edge detection of bolBringShirt in HPS
 

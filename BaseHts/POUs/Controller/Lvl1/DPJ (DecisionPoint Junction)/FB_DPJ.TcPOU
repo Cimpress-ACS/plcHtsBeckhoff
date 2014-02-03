@@ -105,6 +105,7 @@ Version		Date			Author		Comment
 										Parent controller need state STOP that automatic stop sequence can work for all other childs.
 0.00.6		22.10.2014		AVME/MRU	New settings (SIf.Par.udiTimeMaxJob_s := 60; cintMaxDecisions: INT := 100;)
 										Reworked in sta_STOPBusy calculation of bolNoJobActive
+0.00.7		03.02.2014		AVME/MRU	sta_RUN entry action reworked
 										
 ___________________________________________________________________________________________________*)
 
@@ -461,6 +462,8 @@ END_FOR]]></ST>
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
 
+		uliRFID_Tag_old := pRFW_SIF^.Cur.stData.uliTagID; // Do no action with old datas
+
 	END_IF
 
 
@@ -524,7 +527,7 @@ END_FOR]]></ST>
 			IF dinPositionRFID_um = 0 THEN //Sensor first
 				dinPositionRFID_um := 1;
 			ELSIF dinPositionRFID_um > 1 THEN	// Since last input no RFID Read
-				// Set Alarm: SIf.Alm[5].strText := 'RFID Reader Tag no readed';
+				// Set Alarm: SIf.Alm[5].strText := 'RFID Reader Tag not readed';
 				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,5,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 			ELSE	// RFID Tag Reader first
 				aTblDecision[intIndexActualHanger].dinActPos_um := 1;
