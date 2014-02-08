@@ -11,6 +11,9 @@ STRUCT
 	bolKeepAlivePlc: BOOL;
 	// LineControl-Signal: Input Buffer is Full
 	a_bBufferIsFull: ARRAY[0..10] OF BOOL;
+	
+	// LineControl-Signal: If true Module is not allowed to release hangers (but can be still in RUN state). 
+	bolStopReleaseHangers: BOOL;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

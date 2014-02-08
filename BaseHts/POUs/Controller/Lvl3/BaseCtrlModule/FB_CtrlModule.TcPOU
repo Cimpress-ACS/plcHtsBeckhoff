@@ -87,6 +87,7 @@ Version		Date			Author		Comment
 0.00.12		20.01.2014		AVM/MRU		EMO, general error reworked; AddRunGrp, AddStopGrp removed
 										Timeout run/stop group added 
 0.00.13		22.01.2014		AVM/MRU		Alternativ status for run sequence added
+0.00.14		08.02.2014		VP/RE		Added bolStopReleaseHangers to CUR.
 
 ___________________________________________________________________________________________________*)
 
