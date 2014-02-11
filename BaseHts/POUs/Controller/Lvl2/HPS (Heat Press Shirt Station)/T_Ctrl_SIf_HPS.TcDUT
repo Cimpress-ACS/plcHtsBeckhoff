@@ -12,6 +12,8 @@ STRUCT
 	In: T_Ctrl_SIf_HPS_In;
 	///io output
 	Out: T_Ctrl_SIf_HPS_Out;
+	///ADS data channel from heatpress
+	Ads: T_Ctrl_SIf_HPS_Ads;
 	///Data Channel from Line Controller to PLC
 	DtChnToPLC: T_Ctrl_SIf_HPS_DtChnToPLC;
 	///Data Channel from PLC to Line Controller

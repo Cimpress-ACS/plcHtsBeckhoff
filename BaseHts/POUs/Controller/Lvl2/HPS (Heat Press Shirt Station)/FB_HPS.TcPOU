@@ -82,6 +82,10 @@ VAR
 	bolREBringShirtStraight: BOOL;
 	/// Rising Edge detection of SIf.In.bolBringShirtTurned.intern
 	bolREBringShirtTurned: BOOL;
+	// ADS value changed detection for front shirt request 
+	udiRequestFrontShirtOld: UDINT;
+	// ADS value changed detection for back shirt request 
+	udiRequestBackShirtOld: UDINT;
 END_VAR
 VAR CONSTANT
 	///sub States for RELEASE Function
@@ -138,7 +142,7 @@ Version		Date			Author		Comment
 										and calculated in RUN
 0.00.5		11.12.2013		AVME/MRU	Add Methode checkChildAlmClass for Error Stop of childs
 0.00.6		24.01.2014		AVME/MRU	Add SEP_7b
-
+0.00.7		11.02.2014		AVME/DSC	Inserted ADS channel for shirt request send from heatpress
 ___________________________________________________________________________________________________*)
 
 
@@ -1048,31 +1052,41 @@ END_CASE]]></ST>
 			// Set Alarm: SIf.Alm[8].strText := 'Data Channel Error Send Data';
 			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,8,fbDtChnToLine_ChargeDone.intError,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
 		END_IF
-		
+	
 		// Start Cycle with substates	
 		//--------------------------------------------------------------------------------------
 		// sub state machine for sequence
 		CASE me.SubStateMachine.intState OF
 			//--------------------------------------------------------------------------------------
+			
 			cSTA_SUB_RUN_WAIT_JOB:
-				// Job set by digital input or with Datachannel from Line Controller
+				//--------------------------------------------------------------
+				// Job can be set on 3 different ways:
+				// 1. Over data channel from Line Controller
+				// 2. By digital input (output on heatpress)
+				// 3. Over ADS data channel from heatpress
+				//--------------------------------------------------------------
 				IF ((aTblCharge[0] > 0) 
 				OR (SIf.In.bolBringShirtStraight.intern AND NOT bolREBringShirtStraight)
-				OR (SIf.In.bolBringShirtTurned.intern AND NOT bolREBringShirtTurned)) THEN
+				OR (SIf.In.bolBringShirtTurned.intern AND NOT bolREBringShirtTurned)
+				OR (SIf.Ads.stRead.udiRequestBackShirt <> udiRequestBackShirtOld)
+				OR (SIf.Ads.stRead.udiRequestFrontShirt <> udiRequestFrontShirtOld)) THEN																	
 					me.SubStateMachine.intStateNext := cSTA_SUB_RUN_SET_CMD;
 				END_IF
-				
+							
 				// Interface to HeatPress without LineControl
 				SIf.Out.bolShirtStraightReady.intern := pSLB_S_SIF^.Cur.bolHangerDetected; 	// Sensor SEP7 has Hanger detected
 				SIf.Out.bolShirtTurnReady.intern := pSEP_SIF^.Cur.bolHangerDetected; // pSLB_T_SIF^.Cur.bolHangerDetected;		// Sensor SEP6 has Hanger detected
 				
 			cSTA_SUB_RUN_SET_CMD:
-				// Digital Input has priority to the data channel
+				// Digital Input or ADS has priority to the data channel
 				// get the correct Common interface to set the RELEASE Command
-				IF (SIf.In.bolBringShirtStraight.intern = TRUE) THEN
+				IF ((SIf.In.bolBringShirtStraight.intern = TRUE) OR (SIf.Ads.stRead.udiRequestFrontShirt <> udiRequestFrontShirtOld)) THEN
+					udiRequestFrontShirtOld:= SIf.Ads.stRead.udiRequestFrontShirt; 
 					pSLB_WORK_CIF := pSLB_S_CIF;
-				ELSIF (SIf.In.bolBringShirtTurned.intern = TRUE) THEN
-					pSLB_WORK_CIF := pSEP_CIF; //pSLB_T_CIF;
+				ELSIF ((SIf.In.bolBringShirtTurned.intern = TRUE) OR (SIf.Ads.stRead.udiRequestBackShirt <> udiRequestBackShirtOld)) THEN
+					udiRequestBackShirtOld:= SIf.Ads.stRead.udiRequestBackShirt; 
+					pSLB_WORK_CIF := pSEP_CIF; //pSLB_T_CIF;	
 				ELSIF (aTblCharge[0] = 1) THEN
 					// If job from Datachannel, save the line number
 					usiLineAct := INT_TO_USINT(aTblCharge[0]);
@@ -1156,6 +1170,7 @@ END_CASE]]></ST>
 		// Rising Edge detection of inputs
 		bolREBringShirtStraight:= SIf.In.bolBringShirtStraight.intern;
 		bolREBringShirtTurned:= SIf.In.bolBringShirtTurned.intern;
+
 		
 		me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
 		CIf.Job.strSubState := THIS^.getCmdState(intCmdState:=me.SubStateMachine.intState,bolState:=TRUE);

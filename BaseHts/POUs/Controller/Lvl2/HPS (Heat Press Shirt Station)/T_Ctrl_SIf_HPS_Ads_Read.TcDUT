@@ -1,0 +1,14 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+  <DUT Name="T_Ctrl_SIf_HPS_Ads_Read" Id="{699a1035-d60e-4bcc-907a-a0248f5d99d1}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HPS_Ads_Read :
+STRUCT
+	// Request for front shirt send from Heatpress 
+	udiRequestFrontShirt: 		UDINT;
+	// Request for back shirt send from Heatpress
+	udiRequestBackShirt: 		UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>
