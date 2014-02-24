@@ -161,7 +161,7 @@ END_IF;
 						// If driven to much, wait for next passing
 						SIf.par.pTblDecision^[intLoopHashtable].eState := E_DecisionState.Wait;
 					ELSE
-						// Chech if it is the nearest tag
+						// Check if it is the nearest tag
 						IF 	dinPositionDifference_um > SIf.Par.dinPosition_um - SIf.par.pTblDecision^[intLoopHashtable].dinActPos_um THEN
 							dinPositionDifference_um := SIf.Par.dinPosition_um - SIf.par.pTblDecision^[intLoopHashtable].dinActPos_um;
 							intNextHastableIdx := intLoopHashtable;

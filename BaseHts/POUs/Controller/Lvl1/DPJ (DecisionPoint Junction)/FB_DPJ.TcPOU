@@ -674,7 +674,6 @@ VAR CONSTANT
 	cSTA_SUB_Data_Acknowledge: INT := 906;
 	cSTA_SUB_Data_Retry: INT := 908;
 	cSTA_SUB_Data_Error: INT := 910;
-	cDataState_DONE: INT := -1;
 	cDataState_Ready: INT := 1;
 	cDataState_Retry: INT := -99;
 	cDataState_Error: INT := -100;
@@ -772,7 +771,7 @@ CASE intStatemachine OF
 					// Only now, the target is determined from line control!	
 					aTblDecision[intIndexActualRFID].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
 					aTblDecision[intIndexActualRFID].dtTimeJob := dtActualTime;
-					aTblDecision[intIndexActualRFID].eState := E_DecisionState.WayToJunction;
+					aTblDecision[intIndexActualRFID].eState := E_DecisionState.WayToJunction; // ????
 					intStatemachine := cSTA_SUB_Data_Acknowledge;
 
 			
@@ -795,7 +794,7 @@ CASE intStatemachine OF
 						END_IF
 					END_FOR
 					// IF Loop was finished and no input done = No empty Hashtable line was there
-					// Overwrite the oldest one
+					// Overwrite the oldest one                   ???????
 					IF ((UINT_TO_INT(uinLoopRFID) = cintMaxDecisions+1) AND (aTblDecision[uinLoopRFID].stDecision.uliRFID <> SIf.DtChnToPLC.stNewDecision.stDecision.uliRFID)) THEN
 						// The oldest input was saved at a loop before
 						IF intIndexOldest >= 0 THEN		// A possible line to overwrite was found: -1 = initial value
@@ -803,7 +802,7 @@ CASE intStatemachine OF
 							aTblDecision[intIndexOldest].stDecision.dinTarget := SIf.DtChnToPLC.stNewDecision.stDecision.dinTarget;
 							aTblDecision[intIndexOldest].dtTimeJob := dtActualTime;
 							aTblDecision[intIndexOldest].eState := E_DecisionState.Wait;
-							aTblDecision[intIndexOldest].dinActPos_um := 0;
+							aTblDecision[intIndexOldest].dinActPos_um := 0;          //// ???????
 							aTblDecision[intIndexOldest].dtTimeRFID := DINT_TO_DT(0);
 							intStatemachine := cSTA_SUB_Data_Acknowledge;
 						ELSE
