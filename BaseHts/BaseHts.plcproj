@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.28</ProjectVersion>
+    <ProjectVersion>0.0.0.29</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.28 - Added ADS data channel to FB_HPS
+    <Description>0.0.0.29 - BaseElements 0.0.1.2 BasePLC 0.3.4.2 included; FB_CtrlModule moved to BaseElements
+
+0.0.0.28 - Added ADS data channel to FB_HPS
 for shirt request from Heatpress
 
 0.0.0.27 - Added bolStopReleaseHangers
@@ -456,33 +458,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_MER_Buffer_Sections.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_CtrlModule.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\FB_IBuffer.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\IBuffer.TcIO">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Ctrl_SIf_MOD_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl3\BaseCtrlModule\T_Sequence.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Version\Global_Version.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -508,7 +483,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="POUs\Controller\Lvl2\MER %28Merger%29\" />
     <Folder Include="POUs\Controller\Lvl3" />
     <Folder Include="POUs\Controller\Lvl1" />
-    <Folder Include="POUs\Controller\Lvl3\BaseCtrlModule\" />
     <Folder Include="POUs\Utility Functions\" />
     <Folder Include="Version\" />
   </ItemGroup>
@@ -531,10 +505,10 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.20,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.2,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.4.2,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">
@@ -548,38 +522,7 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     </LibraryReference>
   </ItemGroup>
   <ItemGroup>
-    <SubObject Include="FB_CtrlModule.AddIBufferChilds" />
     <SubObject Include="FB_CtrlModule.AddIBufferChilds_1" />
-    <SubObject Include="FB_CtrlModule.AddSeqChild" />
-    <SubObject Include="FB_CtrlModule.Always" />
-    <SubObject Include="FB_CtrlModule.checkChildAlmClass" />
-    <SubObject Include="FB_CtrlModule.checkValidPointer" />
-    <SubObject Include="FB_CtrlModule.CtrlInit" />
-    <SubObject Include="FB_CtrlModule.FB_init" />
-    <SubObject Include="FB_CtrlModule.getCmdState" />
-    <SubObject Include="FB_CtrlModule.IoInBridge" />
-    <SubObject Include="FB_CtrlModule.IoOutBridge" />
-    <SubObject Include="FB_CtrlModule.SIf_Cfg" />
-    <SubObject Include="FB_CtrlModule.SIf_Cfg.Get" />
-    <SubObject Include="FB_CtrlModule.SIf_Cfg.Set" />
-    <SubObject Include="FB_CtrlModule.SIf_Cur" />
-    <SubObject Include="FB_CtrlModule.SIf_Cur.Get" />
-    <SubObject Include="FB_CtrlModule.SIf_Cur.Set" />
-    <SubObject Include="FB_CtrlModule.SIf_In" />
-    <SubObject Include="FB_CtrlModule.SIf_In.Get" />
-    <SubObject Include="FB_CtrlModule.SIf_In.Set" />
-    <SubObject Include="FB_CtrlModule.SIf_Par" />
-    <SubObject Include="FB_CtrlModule.SIf_Par.Get" />
-    <SubObject Include="FB_CtrlModule.SIf_Par.Set" />
-    <SubObject Include="FB_CtrlModule.StateMachine" />
-    <SubObject Include="FB_CtrlModule.sta_EOFF" />
-    <SubObject Include="FB_CtrlModule.sta_EOFFBusy" />
-    <SubObject Include="FB_CtrlModule.sta_ERROR" />
-    <SubObject Include="FB_CtrlModule.sta_OFF" />
-    <SubObject Include="FB_CtrlModule.sta_RUN" />
-    <SubObject Include="FB_CtrlModule.sta_RUNBusy" />
-    <SubObject Include="FB_CtrlModule.sta_STOP" />
-    <SubObject Include="FB_CtrlModule.sta_STOPBusy" />
     <SubObject Include="FB_CYL_1.CtrlInit" />
     <SubObject Include="FB_CYL_1.FB_init" />
     <SubObject Include="FB_CYL_1.getCmdState" />
@@ -593,12 +536,8 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <SubObject Include="FB_CYL_1.sta_OFFBusy" />
     <SubObject Include="FB_CYL_1.sta_PON" />
     <SubObject Include="FB_HPS.RefillZones" />
-    <SubObject Include="FB_IBuffer.MaxCapacity" />
-    <SubObject Include="FB_IBuffer.MaxCapacity.Get" />
     <SubObject Include="FB_IBuffer.MaxCapacity_1" />
     <SubObject Include="FB_IBuffer.MaxCapacity_1.Get" />
-    <SubObject Include="FB_IBuffer.NumOfHangers" />
-    <SubObject Include="FB_IBuffer.NumOfHangers.Get" />
     <SubObject Include="FB_LDS_1.Always" />
     <SubObject Include="FB_LDS_1.CtrlInit" />
     <SubObject Include="FB_LDS_1.FB_init" />

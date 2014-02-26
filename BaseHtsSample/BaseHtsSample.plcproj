@@ -97,13 +97,13 @@
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.0.20,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.2,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.28,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.29,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.3.5,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.4.2,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">

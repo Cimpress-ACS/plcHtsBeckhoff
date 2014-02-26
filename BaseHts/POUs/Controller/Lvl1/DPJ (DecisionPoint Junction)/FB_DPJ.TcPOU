@@ -675,6 +675,7 @@ VAR CONSTANT
 	cSTA_SUB_Data_Retry: INT := 908;
 	cSTA_SUB_Data_Error: INT := 910;
 	cDataState_Ready: INT := 1;
+	cDataState_DONE: INT := -1;
 	cDataState_Retry: INT := -99;
 	cDataState_Error: INT := -100;
 	cMAX_RETRY: INT := 10;
