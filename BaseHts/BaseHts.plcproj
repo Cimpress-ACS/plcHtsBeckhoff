@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.29</ProjectVersion>
+    <ProjectVersion>0.0.0.30</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.29 - BaseElements 0.0.1.2 BasePLC 0.3.4.2 included; FB_CtrlModule moved to BaseElements
+    <Description>0.0.0.30 - BaseElements 0.0.1.5 BasePLC 0.3.4.3 included, Tc2_SerialCom
+
+0.0.0.29 - BaseElements 0.0.1.2 BasePLC 0.3.4.2 included; FB_CtrlModule moved to BaseElements
 
 0.0.0.28 - Added ADS data channel to FB_HPS
 for shirt request from Heatpress
@@ -505,17 +507,14 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     </PlaceholderReference>
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.1.2,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.5,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.4.2,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.4.3,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_EtherCAT,3.3.0.0,Beckhoff Automation GmbH">
       <Namespace>Tc2_EtherCAT</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc2_SerialCom,3.3.0.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_SerialCom</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_Utilities,3.3.5.0,Beckhoff Automation GmbH">
       <Namespace>Tc2_Utilities</Namespace>

@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="MiddlePRG_1" Id="{d0b780f9-d9b7-47f3-8805-851f8ce5d376}">
     <Declaration><![CDATA[PROGRAM MiddlePRG_1
 VAR
