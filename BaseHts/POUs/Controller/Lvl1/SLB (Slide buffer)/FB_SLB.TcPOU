@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="FB_SLB" Id="{a8d184de-0031-4d57-b755-906e09d6b4da}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_SLB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR
@@ -87,6 +87,374 @@ END_IF;
 
 ]]></ST>
     </Implementation>
+    <Method Name="RefillZones" Id="{0264125e-745d-4440-aecd-3f3663f5c29a}">
+      <Declaration><![CDATA[METHOD RefillZones
+VAR
+	/// Loop variable
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Simulation
+fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiSimIncomingTime_ms);
+IF (CIf.SwCfg.bolSimulation) THEN
+	// Cyclicle input into the top stopperbuffer
+	fbSimulationTimer(); // set time/reset timer
+	IF fbSimulationTimer.Q = TRUE THEN
+		fbSimulationTimer.IN := FALSE;
+		a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolBufferFull.intern := TRUE;
+		IF a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.Cfg.bolHasBufferFullSensor = FALSE THEN
+			a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolHangerDetected.intern := TRUE;
+		END_IF
+	ELSE
+		fbSimulationTimer.IN := TRUE;
+		a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolBufferFull.intern := FALSE;
+	END_IF
+			
+	// bring hanger down to next stopperbuffer if top one is open
+	ii:=usiNumOfBufferZones-1;
+	WHILE ii>0 DO	
+		IF ((a_pBufferZoneChildSIF[ii]^.Out.bolRetract.intern = TRUE) AND (abolRESimRetract[ii] = FALSE)) THEN
+			IF (a_pBufferZoneChildSIF[ii]^.Cur.bolHangerDetected = TRUE) THEN
+				a_pBufferZoneChildSIF[ii-1]^.In.bolBufferFull.intern := TRUE;
+				abolRESimRetract[ii] := TRUE;
+				IF a_pBufferZoneChildSIF[ii-1]^.Cfg.bolHasBufferFullSensor = FALSE THEN
+					a_pBufferZoneChildSIF[ii-1]^.In.bolHangerDetected.intern := TRUE;
+				END_IF
+			END_IF
+		ELSIF (a_pBufferZoneChildSIF[ii]^.Out.bolRetract.intern = FALSE) AND (abolRESimRetract[ii] = TRUE) THEN
+			a_pBufferZoneChildSIF[ii-1]^.In.bolBufferFull.intern := FALSE;
+			abolRESimRetract[ii] := FALSE;
+		END_IF
+		ii := ii - 1;
+	END_WHILE			
+END_IF
+	
+	
+
+
+// Method refill all zones
+CASE SubStateMachineRefill OF		
+			
+	// Check space in buffer X
+	//-------------------------------
+	0:
+		// Check if number of hangers "per Pulse" have space in the next buffer
+		// Condition: (zone[X].NumOfHangers + zone[ X + 1] .NumOfHangersPerPuls) < zone[X].MaxCapacity   			
+(*		IF (((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse)
+			< a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
+*)		IF ((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer < a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND 
+			(a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
+			
+			// Send release command to buffer zone X+1
+			a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;	
+			SubStateMachineRefill:= 1;						
+		ELSE
+			// Check if a further zone exist?
+			IF (intIndexRefill < (usiNumOfBufferZones-2)) THEN
+				// Inc. index for next zone
+				intIndexRefill:= intIndexRefill+1;
+			ELSE
+				// Restart at zone 1  
+				intIndexRefill:= 0;
+			END_IF
+		END_IF
+	
+	// Check if zone X+1 is released
+	//-------------------------------
+	1:
+		IF(a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intState = STB_CmdState.cSTA_RELEASE)THEN
+			// Send stop command to buffer zone X+1
+			a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intACmd:= cCMD_STOP;					
+			SubStateMachineRefill:= 2;
+			// Counter correction if no counter at inside of Buffer
+			IF a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.bolHasBufferFullSensor = FALSE THEN
+				a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer := a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse;
+			END_IF
+		END_IF	
+	
+	// Check if zone X+1 is stopped
+	//-------------------------------
+	2:
+		IF(a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intState = cSTA_STOP)THEN
+			udiTimeInStateRefill_ms:= 0;
+			SubStateMachineRefill:= 3;					
+		END_IF
+
+	// Break
+	//-------------------------------
+	3:	
+		// Increment time in state	
+		udiTimeInStateRefill_ms:= udiTimeInStateRefill_ms + me.FUBInfo.udiSample_ms;
+		IF (udiTimeInStateRefill_ms > SIf.Par.udiIntervalBufferFilling_ms) THEN
+			// Back to first state
+			SubStateMachineRefill:= 0;	
+		END_IF
+		
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCmdState" Id="{0ddc56b1-5d31-46cc-b52b-bfed6de117fb}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+			SLB_CmdState.cCMD_RELEASE_ALL: 
+				getCmdState := 'cCMD_RELEASE_ALL';
+		END_CASE;
+	ELSE
+	
+	// states
+		CASE intCmdState OF
+			SLB_CmdState.cSTA_RELEASE_ALLBusy: 
+				getCmdState := 'cSTA_RELEASE_ALLBusy';
+			SLB_CmdState.cSTA_RELEASE_ALL: 
+				getCmdState := 'cSTA_RELEASE_ALL';
+		
+			// SUB States
+			cSTA_SUB_WAIT_FOR_CMD:
+				getCmdState := 'cSTA_SUB_WAIT_FOR_CMD';
+			cSTA_SUB_SEND_RELEASE:
+				getCmdState := 'cSTA_SUB_SEND_RELEASE';
+			cSTA_SUB_SEND_STOP:
+				getCmdState := 'cSTA_SUB_SEND_STOP';
+			cSTA_SUB_BREAK:
+				getCmdState := 'cSTA_SUB_BREAK';
+						
+		END_CASE;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="NumOfHangers" Id="{0f3cb782-bd9d-4f2b-b176-7d0728a76bab}">
+      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{26bc69bc-d765-4bc9-98c5-cb2b9118f79d}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="CalcSumNumOfHangers" Id="{18166955-e879-4f17-af78-50f08c22b3ef}">
+      <Declaration><![CDATA[METHOD PROTECTED CalcSumNumOfHangers : DINT
+VAR
+	ii: INT;
+	dinSumNumOfHangers: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method calculate the sum of hangers in all zones and return the result.
+
+//Init
+CalcSumNumOfHangers:= 0;
+dinSumNumOfHangers:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
+	// Build sum of all zones		
+	dinSumNumOfHangers:= dinSumNumOfHangers + a_pBufferZoneChildSIF[ii]^.Cur.dinNumOfHangersInBuffer; 	
+END_FOR
+
+// Return result
+CalcSumNumOfHangers:= dinSumNumOfHangers;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{26b6ea33-6bd4-43d7-9606-369cc642d144}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+	cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();				
+    SLB_CmdState.cSTA_RELEASE_ALLBusy: 
+        THIS^.sta_RELEASE_ALLBusy();
+    SLB_CmdState.cSTA_RELEASE_ALL: 
+        THIS^.sta_RELEASE_ALL();
+END_CASE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{2bd9f202-c6c3-4049-b6ee-a2bc07f7f910}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := SLB_CmdState.cCMD_RELEASE_ALL;
+CIf.Job.aCmdList[ii].strName := 'Release All';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := STB_CmdState.cCMD_RELEASE;  //Used as trigger command in state RUN_Busy
+CIf.Job.aCmdList[ii].strName := 'Release';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+
+
+// set name of class/typ
+CIf.Info.strType := 'FB_SLB'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[1].strText := 'Invalid child pointer';
+SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[2].strText := 'Invalid configuration. Slide buffer needs min. 1 buffer zone'; 
+SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[3].strText := 'All buffer zones full';
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// parameter
+SIf.Par.udiIntervalBufferEmptying_ms:= 200;
+SIf.Par.udiIntervalBufferFilling_ms:= 2000;
+SIf.Par.udiSimIncomingTime_ms := 20000;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="MaxCapacity" Id="{3d5a92ab-770e-4087-bc42-77a16bb532c1}">
+      <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{70ca1a29-1776-4a10-b693-7e313f67ad1d}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="AddBufferZone" Id="{400a77b5-ebb3-4a5b-b274-817a2967e906}">
+      <Declaration><![CDATA[METHOD AddBufferZone
+VAR_INPUT
+	p_BufferZone: POINTER TO FB_STB;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Method add the pointer address of the buffer zone child controller to the array list.
+IF (usiNumOfBufferZones <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add buffer zone child controller to list
+	a_pBufferZoneChildCtrl[usiNumOfBufferZones] := p_BufferZone;
+	// Inc. number of buffer zones
+	usiNumOfBufferZones:= usiNumOfBufferZones+1;
+	// Check if the pointer is valid
+	IF (p_BufferZone<>0) THEN
+		usiNumOfValidPointerToZone:= usiNumOfValidPointerToZone+1;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkAllZonesEmpty" Id="{46cc0c29-dd9a-4738-9c34-36aa71ffb4d4}">
+      <Declaration><![CDATA[METHOD PROTECTED checkAllZonesEmpty : BOOL
+VAR
+	ii: INT;
+	usiNumOfEmptyZones: USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method check if all zones are empty. If yes, return TRUE
+
+//Init
+checkAllZonesEmpty:= FALSE;
+usiNumOfEmptyZones:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
+	// Check number of hangers in buffer zone X <= 0	
+	IF (a_pBufferZoneChildSIF[ii]^.Cur.dinNumOfHangersInBuffer <= 0) THEN
+		usiNumOfEmptyZones:= usiNumOfEmptyZones+1;		
+	END_IF
+END_FOR
+
+// All zones empty
+IF (usiNumOfEmptyZones = usiNumOfBufferZones) THEN
+	checkAllZonesEmpty:= TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildAlmClass" Id="{4832a6f0-f587-4960-9943-f4d218659e28}">
+      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
+// check child alarm classes
+// set me alarm class active if at least one child has an EOFF
+IF CheckAllChildAlmClass(E_AlmClass.EOFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.OFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.STOP) THEN // FB_SLB needs alarm class STOP
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
+ELSE
+	IF (me.Alarm.bolfp) THEN
+		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
+		me.Alarm.bolfp := FALSE;
+	END_IF
+END_IF
+
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs in the case of a parent EOFF or me=OFF or EOFF
+IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) THEN
+	SetAllChildAlmClass(CIf.Job.eParent_ActivAlmClass);
+ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
+	SetAllChildAlmClass(CIf.Job.eMe_ActivAlmClass);
+ELSE
+	// no important alarm for child active
+	SetAllChildAlmClass(E_AlmClass.NONE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="Always" Id="{4ac7e5ab-0d72-4b9e-97d3-edab9776c128}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
@@ -144,43 +512,368 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{26b6ea33-6bd4-43d7-9606-369cc642d144}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+    <Method Name="sta_STOP" Id="{587ce8ca-32e3-4ccb-b94f-26a838e810fa}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;
+	END_IF
 
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-    cSTA_STOPBusy: 
-        THIS^.sta_STOPBusy();
-    cSTA_STOP: 
-        THIS^.sta_STOP();
-	cSTA_RUNBusy: 
-        THIS^.sta_RUNBusy();
-    cSTA_RUN: 
-        THIS^.sta_RUN();				
-    SLB_CmdState.cSTA_RELEASE_ALLBusy: 
-        THIS^.sta_RELEASE_ALLBusy();
-    SLB_CmdState.cSTA_RELEASE_ALL: 
-        THIS^.sta_RELEASE_ALL();
-END_CASE;]]></ST>
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+	
+		// State Change Condition	
+		IF (me.intCmd = cCMD_RUN) THEN 
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		ELSIF(me.intCmd = SLB_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := SLB_CmdState.cSTA_RELEASE_ALLBusy;
+		END_IF
+	END_IF
+
+//-------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{d9a81861-d929-4de2-ae9a-f35e78e939aa}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+    <Method Name="sta_RELEASE_ALL" Id="{64b2fd50-ed78-480e-b847-c2e294b837f2}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
+		;
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+
+		// State Change Condition
+		IF ((me.intCmd=cCMD_STOP) OR (me.intCmd=cCMD_RUN)) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{741896c7-dfde-412a-a471-e458320cdfcf}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		// Init for refill sequence
+		intIndexRefill:= 0;
+		SubStateMachineRefill:=0;
+	
+		// Initialize sub state machine
+		me.SubStateMachine.intState:= cSTA_SUB_WAIT_FOR_CMD; 
+		me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;
+	END_IF
+
+	
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+	
+		// State Change Condition	
+		IF (TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;		
+		END_IF
+
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildValid" Id="{74835029-f01f-4049-8b1e-02d32e954671}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF ((usiNumOfBufferZones = usiNumOfValidPointerToZone) AND (usiNumOfBufferZones>=Const_SLB.cusiMinAddedChilds)) THEN
+	checkChildValid:= TRUE;
+ELSE
+	checkChildValid:= FALSE;
+	
+	// Invalid child pointer
+	IF (usiNumOfBufferZones <> usiNumOfValidPointerToZone) THEN
+		// SIf.Alm[1].strText := 'Invalid child pointer'; 
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+	
+ 	// Invalid configuration
+	IF (usiNumOfBufferZones<Const_SLB.cusiMinAddedChilds) THEN
+		// SIf.Alm[2].strText := 'Invalid configuration. Slide buffer needs min. 1 buffer zone'; 
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+	
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CalcMaxCapacity" Id="{8082d4c5-f45d-4fbd-80a3-c3846f0860c6}">
+      <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
+VAR
+	ii: INT;
+	dinSumMaxCapacity: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method calculate the sum of max. capacities in all zones and return the result.
+
+//Init
+CalcMaxCapacity:= 0;
+dinSumMaxCapacity:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
+	// Build sum of all zones		
+	dinSumMaxCapacity:= dinSumMaxCapacity + a_pBufferZoneChildSIF[ii]^.Cfg.dinMaxCapacity; 	
+END_FOR
+
+// Return result
+CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CtrlInit" Id="{80f434e8-26ce-4a65-95e8-ebcc6e3c0c62}">
+      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.CtrlInit();
+
+// Initialize all lines
+// Method initialize all line child controller.
+FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO	
+	a_pBufferZoneChildCIF[ii] := THIS^.AddChild(a_pBufferZoneChildCtrl[ii]^);
+	a_pBufferZoneChildSIF[ii] := a_pBufferZoneChildCtrl[ii]^.getCtrlSIf();
+END_FOR
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="BufferFull" Id="{8590e97b-8cfb-49a1-a425-eeba7eb2fdf3}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{9f18e0fe-2f20-479d-87fa-ceda52e56587}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= SIf.Cur.bolAllBuffersFull;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="sta_STOPBusy" Id="{89c34d93-df4e-4632-94c7-f3f250c6a002}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		// send command STOP to all existing buffer zone child controller.
+		THIS^.CmdToAllZones(cCMD_STOP);
+
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+				
+		// State Change Condition
+		// Check if all STOPPED
+		IF (THIS^.checkStateAllZones(cSTA_STOP)) THEN
+			me.StateMachine.intStateNext := cSTA_STOP;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_OFF" Id="{92d28f0c-41ee-4cdc-9452-6c56272bf50d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Reset total counter
+		SIf.Cur.dinHangersPassedTotal:= 0;
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF (me.intCmd=cCMD_STOP) THEN
+				me.StateMachine.intStateNext := cSTA_STOPBusy;
+			ELSIF (me.intCmd=cCMD_RUN) THEN 
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			ELSIF(me.intCmd=SLB_CmdState.cCMD_RELEASE_ALL) THEN
+				me.StateMachine.intStateNext := SLB_CmdState.cSTA_RELEASE_ALLBusy;
+			END_IF
+		END_IF
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCtrlSIf" Id="{9523b858-6ee1-48ed-bede-1ec8bd701936}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_SLB
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoInBridge" Id="{9b466cf6-7798-42ea-afe7-1a07666040e5}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
 
-// ... no physical outputs
+// ... no physical inputs
 
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	// check interlocks to prevent damages
-	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+	;
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUN" Id="{a4fd6660-0207-4c56-b7db-9c51f5d405bf}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
 		;
 	END_IF
-END_IF]]></ST>
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		//----------------------------------------------------------------------
+		// Substates to let pass hanger(S) from zone 1
+		// Triggered by command "Release" (common job interface)
+		//----------------------------------------------------------------------		
+		CASE me.SubStateMachine.intState OF	
+			cSTA_SUB_WAIT_FOR_CMD:
+				// Wait for command release
+				IF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN
+					CIf.Job.intACmd:=cSTA_DONE;
+					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE;		
+				END_IF
+					
+			cSTA_SUB_SEND_RELEASE:				
+				// Send release command to buffer zone 1
+				a_pBufferZoneChildCIF[0]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;
+							
+				// State Change Condition
+				IF(a_pBufferZoneChildCIF[0]^.Job.intState = STB_CmdState.cSTA_RELEASE)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_STOP;					
+				END_IF		
+
+			cSTA_SUB_SEND_STOP:
+				// Send stop command to buffer zone 1
+				a_pBufferZoneChildCIF[0]^.Job.intACmd:= cCMD_STOP;	
+				
+				// State Change Condition
+				IF(a_pBufferZoneChildCIF[0]^.Job.intState = cSTA_STOP)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;																
+				END_IF	
+		
+			cSTA_SUB_BREAK:
+				//..not used	
+		
+		END_CASE
+				
+		
+		//----------------------------------------------------------------------
+		// Continuous refill of all zones
+		//----------------------------------------------------------------------
+		
+		// Only execute method if more than one buffer zones exist!
+		// Note: Slide buffer controller can also used with only one buffer.
+		IF (usiNumOfBufferZones>1) THEN				
+			THIS^.RefillZones();
+		END_IF
+			
+			
+		// Sub state machine general handling
+		me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+		CIf.Job.strSubState := THIS^.getCmdState(intCmdState:=me.SubStateMachine.intState,bolState:=TRUE);
+		IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateNext) THEN
+			me.SubStateMachine.intState := me.SubStateMachine.intStateNext;  // set next state for next cycle
+			me.SubStateMachine.udiTimeInState_ms := 0; // reset timer
+			// log state change -> open point
+		ELSE
+			// increment time in state	
+			me.SubStateMachine.udiTimeInState_ms := me.SubStateMachine.udiTimeInState_ms + me.FUBInfo.udiSample_ms;
+		END_IF
+	
+		
+		// State Change Condition
+		IF ((me.intCmd=cCMD_STOP) AND (me.SubStateMachine.intState=cSTA_SUB_WAIT_FOR_CMD))THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF ((me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) AND (me.SubStateMachine.intState=cSTA_SUB_WAIT_FOR_CMD))THEN
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{a7067b04-143c-4533-a2e8-173ec3dfe03f}">
@@ -299,120 +992,37 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOPBusy" Id="{89c34d93-df4e-4632-94c7-f3f250c6a002}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-		// send command STOP to all existing buffer zone child controller.
-		THIS^.CmdToAllZones(cCMD_STOP);
-
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-			
-				
-		// State Change Condition
-		// Check if all STOPPED
-		IF (THIS^.checkStateAllZones(cSTA_STOP)) THEN
-			me.StateMachine.intStateNext := cSTA_STOP;
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_STOP" Id="{587ce8ca-32e3-4ccb-b94f-26a838e810fa}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-	
-		// State Change Condition	
-		IF (me.intCmd = cCMD_RUN) THEN 
-			me.StateMachine.intStateNext := cSTA_RUNBusy;
-		ELSIF(me.intCmd = SLB_CmdState.cCMD_RELEASE_ALL) THEN
-			me.StateMachine.intStateNext := SLB_CmdState.cSTA_RELEASE_ALLBusy;
-		END_IF
-	END_IF
-
-//-------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="getCtrlSIf" Id="{9523b858-6ee1-48ed-bede-1ec8bd701936}">
-      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_SLB
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="CalcSumNumOfHangers" Id="{18166955-e879-4f17-af78-50f08c22b3ef}">
-      <Declaration><![CDATA[METHOD PROTECTED CalcSumNumOfHangers : DINT
+    <Method Name="CmdToAllZones" Id="{b7c9f43d-dd34-4392-86a0-69d6a470e6d4}">
+      <Declaration><![CDATA[METHOD PROTECTED CmdToAllZones
+VAR_INPUT
+	cCMD: INT;
+END_VAR
 VAR
 	ii: INT;
-	dinSumNumOfHangers: DINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Method calculate the sum of hangers in all zones and return the result.
-
-//Init
-CalcSumNumOfHangers:= 0;
-dinSumNumOfHangers:= 0;
-
-// Loop over all childs
-FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
-	// Build sum of all zones		
-	dinSumNumOfHangers:= dinSumNumOfHangers + a_pBufferZoneChildSIF[ii]^.Cur.dinNumOfHangersInBuffer; 	
+        <ST><![CDATA[// Method send input command to all existing buffer zone child controller.
+FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO	
+	a_pBufferZoneChildCIF[ii]^.Job.intACmd:= cCMD;
 END_FOR
 
-// Return result
-CalcSumNumOfHangers:= dinSumNumOfHangers;]]></ST>
+
+]]></ST>
       </Implementation>
     </Method>
-    <Method Name="AddBufferZone" Id="{400a77b5-ebb3-4a5b-b274-817a2967e906}">
-      <Declaration><![CDATA[METHOD AddBufferZone
-VAR_INPUT
-	p_BufferZone: POINTER TO FB_STB;
-END_VAR
+    <Method Name="IoOutBridge" Id="{d9a81861-d929-4de2-ae9a-f35e78e939aa}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[
-// Method add the pointer address of the buffer zone child controller to the array list.
-IF (usiNumOfBufferZones <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	// Add buffer zone child controller to list
-	a_pBufferZoneChildCtrl[usiNumOfBufferZones] := p_BufferZone;
-	// Inc. number of buffer zones
-	usiNumOfBufferZones:= usiNumOfBufferZones+1;
-	// Check if the pointer is valid
-	IF (p_BufferZone<>0) THEN
-		usiNumOfValidPointerToZone:= usiNumOfValidPointerToZone+1;
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+
+// ... no physical outputs
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		;
 	END_IF
 END_IF]]></ST>
       </Implementation>
@@ -478,616 +1088,6 @@ IF (usiNumOfFullZones = usiNumOfBufferZones) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{a4fd6660-0207-4c56-b7db-9c51f5d405bf}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		//----------------------------------------------------------------------
-		// Substates to let pass hanger(S) from zone 1
-		// Triggered by command "Release" (common job interface)
-		//----------------------------------------------------------------------		
-		CASE me.SubStateMachine.intState OF	
-			cSTA_SUB_WAIT_FOR_CMD:
-				// Wait for command release
-				IF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN
-					CIf.Job.intACmd:=cSTA_DONE;
-					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE;		
-				END_IF
-					
-			cSTA_SUB_SEND_RELEASE:				
-				// Send release command to buffer zone 1
-				a_pBufferZoneChildCIF[0]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;
-							
-				// State Change Condition
-				IF(a_pBufferZoneChildCIF[0]^.Job.intState = STB_CmdState.cSTA_RELEASE)THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_STOP;					
-				END_IF		
-
-			cSTA_SUB_SEND_STOP:
-				// Send stop command to buffer zone 1
-				a_pBufferZoneChildCIF[0]^.Job.intACmd:= cCMD_STOP;	
-				
-				// State Change Condition
-				IF(a_pBufferZoneChildCIF[0]^.Job.intState = cSTA_STOP)THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;																
-				END_IF	
-		
-			cSTA_SUB_BREAK:
-				//..not used	
-		
-		END_CASE
-				
-		
-		//----------------------------------------------------------------------
-		// Continuous refill of all zones
-		//----------------------------------------------------------------------
-		
-		// Only execute method if more than one buffer zones exist!
-		// Note: Slide buffer controller can also used with only one buffer.
-		IF (usiNumOfBufferZones>1) THEN				
-			THIS^.RefillZones();
-		END_IF
-			
-			
-		// Sub state machine general handling
-		me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
-		CIf.Job.strSubState := THIS^.getCmdState(intCmdState:=me.SubStateMachine.intState,bolState:=TRUE);
-		IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateNext) THEN
-			me.SubStateMachine.intState := me.SubStateMachine.intStateNext;  // set next state for next cycle
-			me.SubStateMachine.udiTimeInState_ms := 0; // reset timer
-			// log state change -> open point
-		ELSE
-			// increment time in state	
-			me.SubStateMachine.udiTimeInState_ms := me.SubStateMachine.udiTimeInState_ms + me.FUBInfo.udiSample_ms;
-		END_IF
-	
-		
-		// State Change Condition
-		IF ((me.intCmd=cCMD_STOP) AND (me.SubStateMachine.intState=cSTA_SUB_WAIT_FOR_CMD))THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		ELSIF ((me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) AND (me.SubStateMachine.intState=cSTA_SUB_WAIT_FOR_CMD))THEN
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkAllZonesEmpty" Id="{46cc0c29-dd9a-4738-9c34-36aa71ffb4d4}">
-      <Declaration><![CDATA[METHOD PROTECTED checkAllZonesEmpty : BOOL
-VAR
-	ii: INT;
-	usiNumOfEmptyZones: USINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method check if all zones are empty. If yes, return TRUE
-
-//Init
-checkAllZonesEmpty:= FALSE;
-usiNumOfEmptyZones:= 0;
-
-// Loop over all childs
-FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
-	// Check number of hangers in buffer zone X <= 0	
-	IF (a_pBufferZoneChildSIF[ii]^.Cur.dinNumOfHangersInBuffer <= 0) THEN
-		usiNumOfEmptyZones:= usiNumOfEmptyZones+1;		
-	END_IF
-END_FOR
-
-// All zones empty
-IF (usiNumOfEmptyZones = usiNumOfBufferZones) THEN
-	checkAllZonesEmpty:= TRUE;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_OFF" Id="{92d28f0c-41ee-4cdc-9452-6c56272bf50d}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		;		
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Reset total counter
-		SIf.Cur.dinHangersPassedTotal:= 0;
-		
-		// State Change Condition
-		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
-			IF (me.intCmd=cCMD_STOP) THEN
-				me.StateMachine.intStateNext := cSTA_STOPBusy;
-			ELSIF (me.intCmd=cCMD_RUN) THEN 
-				me.StateMachine.intStateNext := cSTA_RUNBusy;
-			ELSIF(me.intCmd=SLB_CmdState.cCMD_RELEASE_ALL) THEN
-				me.StateMachine.intStateNext := SLB_CmdState.cSTA_RELEASE_ALLBusy;
-			END_IF
-		END_IF
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="CalcMaxCapacity" Id="{8082d4c5-f45d-4fbd-80a3-c3846f0860c6}">
-      <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
-VAR
-	ii: INT;
-	dinSumMaxCapacity: DINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method calculate the sum of max. capacities in all zones and return the result.
-
-//Init
-CalcMaxCapacity:= 0;
-dinSumMaxCapacity:= 0;
-
-// Loop over all childs
-FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO
-	// Build sum of all zones		
-	dinSumMaxCapacity:= dinSumMaxCapacity + a_pBufferZoneChildSIF[ii]^.Cfg.dinMaxCapacity; 	
-END_FOR
-
-// Return result
-CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="CtrlInit" Id="{80f434e8-26ce-4a65-95e8-ebcc6e3c0c62}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
-VAR
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.CtrlInit();
-
-// Initialize all lines
-// Method initialize all line child controller.
-FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO	
-	a_pBufferZoneChildCIF[ii] := THIS^.AddChild(a_pBufferZoneChildCtrl[ii]^);
-	a_pBufferZoneChildSIF[ii] := a_pBufferZoneChildCtrl[ii]^.getCtrlSIf();
-END_FOR
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkChildValid" Id="{74835029-f01f-4049-8b1e-02d32e954671}">
-      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF ((usiNumOfBufferZones = usiNumOfValidPointerToZone) AND (usiNumOfBufferZones>=Const_SLB.cusiMinAddedChilds)) THEN
-	checkChildValid:= TRUE;
-ELSE
-	checkChildValid:= FALSE;
-	
-	// Invalid child pointer
-	IF (usiNumOfBufferZones <> usiNumOfValidPointerToZone) THEN
-		// SIf.Alm[1].strText := 'Invalid child pointer'; 
-		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-	END_IF
-	
- 	// Invalid configuration
-	IF (usiNumOfBufferZones<Const_SLB.cusiMinAddedChilds) THEN
-		// SIf.Alm[2].strText := 'Invalid configuration. Slide buffer needs min. 1 buffer zone'; 
-		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-	END_IF
-	
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="CmdToAllZones" Id="{b7c9f43d-dd34-4392-86a0-69d6a470e6d4}">
-      <Declaration><![CDATA[METHOD PROTECTED CmdToAllZones
-VAR_INPUT
-	cCMD: INT;
-END_VAR
-VAR
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method send input command to all existing buffer zone child controller.
-FOR ii:=0 TO usiNumOfBufferZones-1 BY 1 DO	
-	a_pBufferZoneChildCIF[ii]^.Job.intACmd:= cCMD;
-END_FOR
-
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RELEASE_ALL" Id="{64b2fd50-ed78-480e-b847-c2e294b837f2}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-
-		// State Change Condition
-		IF ((me.intCmd=cCMD_STOP) OR (me.intCmd=cCMD_RUN)) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoInBridge" Id="{9b466cf6-7798-42ea-afe7-1a07666040e5}">
-      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-
-// ... no physical inputs
-
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	;
-ELSE
-	//simulation of global IO
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="RefillZones" Id="{0264125e-745d-4440-aecd-3f3663f5c29a}">
-      <Declaration><![CDATA[METHOD RefillZones
-VAR
-	/// Loop variable
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Simulation
-fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiSimIncomingTime_ms);
-IF (CIf.SwCfg.bolSimulation) THEN
-	// Cyclicle input into the top stopperbuffer
-	fbSimulationTimer(); // set time/reset timer
-	IF fbSimulationTimer.Q = TRUE THEN
-		fbSimulationTimer.IN := FALSE;
-		a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolBufferFull.intern := TRUE;
-		IF a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.Cfg.bolHasBufferFullSensor = FALSE THEN
-			a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolHangerDetected.intern := TRUE;
-		END_IF
-	ELSE
-		fbSimulationTimer.IN := TRUE;
-		a_pBufferZoneChildSIF[usiNumOfBufferZones-1]^.In.bolBufferFull.intern := FALSE;
-	END_IF
-			
-	// bring hanger down to next stopperbuffer if top one is open
-	ii:=usiNumOfBufferZones-1;
-	WHILE ii>0 DO	
-		IF ((a_pBufferZoneChildSIF[ii]^.Out.bolRetract.intern = TRUE) AND (abolRESimRetract[ii] = FALSE)) THEN
-			IF (a_pBufferZoneChildSIF[ii]^.Cur.bolHangerDetected = TRUE) THEN
-				a_pBufferZoneChildSIF[ii-1]^.In.bolBufferFull.intern := TRUE;
-				abolRESimRetract[ii] := TRUE;
-				IF a_pBufferZoneChildSIF[ii-1]^.Cfg.bolHasBufferFullSensor = FALSE THEN
-					a_pBufferZoneChildSIF[ii-1]^.In.bolHangerDetected.intern := TRUE;
-				END_IF
-			END_IF
-		ELSIF (a_pBufferZoneChildSIF[ii]^.Out.bolRetract.intern = FALSE) AND (abolRESimRetract[ii] = TRUE) THEN
-			a_pBufferZoneChildSIF[ii-1]^.In.bolBufferFull.intern := FALSE;
-			abolRESimRetract[ii] := FALSE;
-		END_IF
-		ii := ii - 1;
-	END_WHILE			
-END_IF
-	
-	
-
-
-// Method refill all zones
-CASE SubStateMachineRefill OF		
-			
-	// Check space in buffer X
-	//-------------------------------
-	0:
-		// Check if number of hangers "per Pulse" have space in the next buffer
-		// Condition: (zone[X].NumOfHangers + zone[ X + 1] .NumOfHangersPerPuls) < zone[X].MaxCapacity   			
-(*		IF (((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse)
-			< a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
-*)		IF ((a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer < a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.dinMaxCapacity) AND 
-			(a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.dinNumOfHangersInBuffer <> 0) AND (a_pBufferZoneChildSIF[intIndexRefill+1]^.Cur.bolHangerDetected = TRUE)) THEN
-			
-			// Send release command to buffer zone X+1
-			a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;	
-			SubStateMachineRefill:= 1;						
-		ELSE
-			// Check if a further zone exist?
-			IF (intIndexRefill < (usiNumOfBufferZones-2)) THEN
-				// Inc. index for next zone
-				intIndexRefill:= intIndexRefill+1;
-			ELSE
-				// Restart at zone 1  
-				intIndexRefill:= 0;
-			END_IF
-		END_IF
-	
-	// Check if zone X+1 is released
-	//-------------------------------
-	1:
-		IF(a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intState = STB_CmdState.cSTA_RELEASE)THEN
-			// Send stop command to buffer zone X+1
-			a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intACmd:= cCMD_STOP;					
-			SubStateMachineRefill:= 2;
-			// Counter correction if no counter at inside of Buffer
-			IF a_pBufferZoneChildSIF[intIndexRefill]^.Cfg.bolHasBufferFullSensor = FALSE THEN
-				a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer := a_pBufferZoneChildSIF[intIndexRefill]^.Cur.dinNumOfHangersInBuffer + a_pBufferZoneChildSIF[intIndexRefill+1]^.Cfg.uinNumOfHangersPerPulse;
-			END_IF
-		END_IF	
-	
-	// Check if zone X+1 is stopped
-	//-------------------------------
-	2:
-		IF(a_pBufferZoneChildCIF[intIndexRefill+1]^.Job.intState = cSTA_STOP)THEN
-			udiTimeInStateRefill_ms:= 0;
-			SubStateMachineRefill:= 3;					
-		END_IF
-
-	// Break
-	//-------------------------------
-	3:	
-		// Increment time in state	
-		udiTimeInStateRefill_ms:= udiTimeInStateRefill_ms + me.FUBInfo.udiSample_ms;
-		IF (udiTimeInStateRefill_ms > SIf.Par.udiIntervalBufferFilling_ms) THEN
-			// Back to first state
-			SubStateMachineRefill:= 0;	
-		END_IF
-		
-END_CASE]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="FB_init" Id="{2bd9f202-c6c3-4049-b6ee-a2bc07f7f910}">
-      <Declaration><![CDATA[METHOD FB_init : BOOL
-VAR_INPUT
-	///if TRUE, the retain variables are initialized (warm start / cold start)
-	bInitRetains: BOOL;
-	///if TRUE, the instance afterwards gets moved into the copy code (online change)
-	bInCopyCode: BOOL;
-END_VAR
-VAR
-	ii: UINT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
-// to manually change in new FUB implementation!!!
-// define valid commands for this controller
-FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
-	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
-		// found first empty array element
-		EXIT;
-	END_IF
-END_FOR
-
-CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
-CIf.Job.aCmdList[ii].strName := 'Stop'; 
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
-CIf.Job.aCmdList[ii].strName := 'Run';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := SLB_CmdState.cCMD_RELEASE_ALL;
-CIf.Job.aCmdList[ii].strName := 'Release All';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := STB_CmdState.cCMD_RELEASE;  //Used as trigger command in state RUN_Busy
-CIf.Job.aCmdList[ii].strName := 'Release';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-
-
-// set name of class/typ
-CIf.Info.strType := 'FB_SLB'; 
-
-// set alarm class
-SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[1].strText := 'Invalid child pointer';
-SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[2].strText := 'Invalid configuration. Slide buffer needs min. 1 buffer zone'; 
-SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
-SIf.Alm[3].strText := 'All buffer zones full';
-
-//*******************************************************************************
-// initial values
-//*******************************************************************************
-
-// software configuration
-CIf.SwCfg.bolExist := TRUE;
-CIf.SwCfg.bolSimulation := FALSE;
-
-// parameter
-SIf.Par.udiIntervalBufferEmptying_ms:= 200;
-SIf.Par.udiIntervalBufferFilling_ms:= 2000;
-SIf.Par.udiSimIncomingTime_ms := 20000;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RUNBusy" Id="{741896c7-dfde-412a-a471-e458320cdfcf}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-		// Init for refill sequence
-		intIndexRefill:= 0;
-		SubStateMachineRefill:=0;
-	
-		// Initialize sub state machine
-		me.SubStateMachine.intState:= cSTA_SUB_WAIT_FOR_CMD; 
-		me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;
-	END_IF
-
-	
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-			
-	
-		// State Change Condition	
-		IF (TRUE) THEN
-			me.StateMachine.intStateNext := cSTA_RUN;		
-		END_IF
-
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="getCmdState" Id="{0ddc56b1-5d31-46cc-b52b-bfed6de117fb}">
-      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
-VAR_INPUT
-	intCmdState: INT;
-	bolState: BOOL;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
-IF (getCmdState='') THEN // global not defined get local
-	// get string cmd/state string information in runtime
-	IF (bolState=FALSE) THEN
-		// cmd's
-		CASE intCmdState OF
-			SLB_CmdState.cCMD_RELEASE_ALL: 
-				getCmdState := 'cCMD_RELEASE_ALL';
-		END_CASE;
-	ELSE
-	
-	// states
-		CASE intCmdState OF
-			SLB_CmdState.cSTA_RELEASE_ALLBusy: 
-				getCmdState := 'cSTA_RELEASE_ALLBusy';
-			SLB_CmdState.cSTA_RELEASE_ALL: 
-				getCmdState := 'cSTA_RELEASE_ALL';
-		
-			// SUB States
-			cSTA_SUB_WAIT_FOR_CMD:
-				getCmdState := 'cSTA_SUB_WAIT_FOR_CMD';
-			cSTA_SUB_SEND_RELEASE:
-				getCmdState := 'cSTA_SUB_SEND_RELEASE';
-			cSTA_SUB_SEND_STOP:
-				getCmdState := 'cSTA_SUB_SEND_STOP';
-			cSTA_SUB_BREAK:
-				getCmdState := 'cSTA_SUB_BREAK';
-						
-		END_CASE;
-	END_IF
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkChildAlmClass" Id="{4832a6f0-f587-4960-9943-f4d218659e28}">
-      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
-// check child alarm classes
-// set me alarm class active if at least one child has an EOFF
-IF CheckAllChildAlmClass(E_AlmClass.EOFF) THEN
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
-	me.Alarm.bolfp := TRUE;
-ELSIF CheckAllChildAlmClass(E_AlmClass.OFF) THEN
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
-	me.Alarm.bolfp := TRUE;
-ELSIF CheckAllChildAlmClass(E_AlmClass.STOP) THEN // FB_SLB needs alarm class STOP
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
-	me.Alarm.bolfp := TRUE;
-ELSE
-	IF (me.Alarm.bolfp) THEN
-		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
-		me.Alarm.bolfp := FALSE;
-	END_IF
-END_IF
-
-//------------------------------------------------------------------------------------------------------
-// set alarm class parent of childs
-//------------------------------------------------------------------------------------------------------
-// set alarm class parent of childs in the case of a parent EOFF or me=OFF or EOFF
-IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) THEN
-	SetAllChildAlmClass(CIf.Job.eParent_ActivAlmClass);
-ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
-	SetAllChildAlmClass(CIf.Job.eMe_ActivAlmClass);
-ELSE
-	// no important alarm for child active
-	SetAllChildAlmClass(E_AlmClass.NONE);
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="MaxCapacity" Id="{3d5a92ab-770e-4087-bc42-77a16bb532c1}">
-      <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
-]]></Declaration>
-      <Get Name="Get" Id="{70ca1a29-1776-4a10-b693-7e313f67ad1d}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="NumOfHangers" Id="{0f3cb782-bd9d-4f2b-b176-7d0728a76bab}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
-]]></Declaration>
-      <Get Name="Get" Id="{26bc69bc-d765-4bc9-98c5-cb2b9118f79d}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Property Name="BufferFull" Id="{8590e97b-8cfb-49a1-a425-eeba7eb2fdf3}">
-      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{9f18e0fe-2f20-479d-87fa-ceda52e56587}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[BufferFull:= SIf.Cur.bolAllBuffersFull;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
     <ObjectProperties />
   </POU>
 </TcPlcObject>

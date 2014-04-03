@@ -27,6 +27,21 @@
     <Compile Include="GVLs\Io.TcGVL">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\Const_HFE.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\FB_HFE.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\FB_ICL.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -73,6 +88,7 @@
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl1\" />
     <Folder Include="POUs\Controller\Lvl2\" />
+    <Folder Include="POUs\Controller\Lvl2\HFE" />
     <Folder Include="POUs\Controller\Lvl3\" />
     <Folder Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\" />
     <Folder Include="POUs\Program\" />
@@ -82,29 +98,11 @@
     <LibraryReference Include="Base_Elements,0.0.1.6,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.31,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.32,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.4.4,Vistaprint">
       <Namespace>Base_PLC</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc2_EtherCAT,3.3.2.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_EtherCAT</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc2_Standard,3.3.0.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_Standard</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc2_System,3.3.5.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_System</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc2_Utilities,3.3.7.0,Beckhoff Automation GmbH">
-      <Namespace>Tc2_Utilities</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc3_Interfaces,3.3.0.0,Beckhoff Automation GmbH">
-      <Namespace>Tc3_Interfaces</Namespace>
-    </LibraryReference>
-    <LibraryReference Include="Tc3_MemMan,3.3.1.0,Beckhoff Automation GmbH">
-      <Namespace>Tc3_MemMan</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc3_Module,3.3.5.0,Beckhoff Automation GmbH">
       <Namespace>Tc3_Module</Namespace>

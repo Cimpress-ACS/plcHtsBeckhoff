@@ -34,6 +34,7 @@ VAR
 	fbSBI_10: FB_STB;
 	fbSLB_8: FB_SLB;
 	fbSEP_8: FB_STB;
+	fbHFE_1: FB_HFE;
 	
 END_VAR
 ]]></Declaration>
@@ -468,6 +469,8 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	fbMER_8.In_bolPinDetected := In_bol_9_0_B15_Charging_impulse;	
 	fbMER_8();
 	
+	// HFE_1
+	fbHFE_1();
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
     </Implementation>

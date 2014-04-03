@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.31</ProjectVersion>
+    <ProjectVersion>0.0.0.32</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.30 - BaseElements 0.0.1.5 BasePLC 0.3.4.3 included, Tc2_SerialCom
+    <Description>0.0.0.32 - HFE from Lvl1 to Lvl2 and reworked
+
+0.0.0.30 - BaseElements 0.0.1.5 BasePLC 0.3.4.3 included, Tc2_SerialCom
 
 0.0.0.29 - BaseElements 0.0.1.2 BasePLC 0.3.4.2 included; FB_CtrlModule moved to BaseElements
 
@@ -295,18 +297,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_JobDone_DtChn.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl1\HFE %28Hanger Feed%29\FB_HFE.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\HFE %28Hanger Feed%29\T_Ctrl_SIf_HFE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\HFE %28Hanger Feed%29\T_Ctrl_SIf_HFE_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl1\HFE %28Hanger Feed%29\T_Ctrl_SIf_HFE_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\Const_SLB.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -374,6 +364,24 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl2\FOL %28Folder%29\T_Ctrl_SIf_FOL_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\Const_HFE.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\FB_HFE.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Par.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl2\HPS %28Heat Press Shirt Station%29\Const_HPS.TcGVL">
@@ -475,12 +483,12 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="POUs\Controller\Lvl0\PLS %28PickToLight System%29\" />
     <Folder Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\" />
     <Folder Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\" />
-    <Folder Include="POUs\Controller\Lvl1\HFE %28Hanger Feed%29\" />
     <Folder Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\" />
     <Folder Include="POUs\Controller\Lvl2\" />
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl2\COS %28Control Station%29\" />
     <Folder Include="POUs\Controller\Lvl2\FOL %28Folder%29\" />
+    <Folder Include="POUs\Controller\Lvl2\HFE\" />
     <Folder Include="POUs\Controller\Lvl2\HPS %28Heat Press Shirt Station%29\" />
     <Folder Include="POUs\Controller\Lvl2\MER %28Merger%29\" />
     <Folder Include="POUs\Controller\Lvl3" />

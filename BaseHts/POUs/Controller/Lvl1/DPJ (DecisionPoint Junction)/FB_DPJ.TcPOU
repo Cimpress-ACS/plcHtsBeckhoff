@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="FB_DPJ" Id="{eb1b81b5-c81e-43c4-a18f-a6032b26b9da}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_DPJ EXTENDS FB_CtrlBase
 VAR_INPUT
@@ -126,60 +126,6 @@ IF (me.bolActivate)  AND (p_fbRFW<>0) AND (THIS^.checkChildPointer()) THEN // cy
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="sta_STOP" Id="{f43ac9b8-a3b6-4c01-bcb3-3b1f6814ff8b}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
-		
-		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
-		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
-		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
-		IF dinPositionRFID_um > 0 THEN
-			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
-		END_IF
-		// Check in the same loop if any job is active
-		bolNoJobActive := TRUE;
-		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
-			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
-				bolNoJobActive := FALSE;
-				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
-			END_IF
-		END_FOR	
-
-		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
-				
-		IF (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
-		END_IF;
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
     <Method Name="FB_init" Id="{0123a615-b6ed-4328-8fde-ea84d8ef5a71}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
@@ -266,17 +212,37 @@ SIf.Cfg.bolStopAtPassLastJunction := FALSE; // Normaly just info
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{d9eb6d28-4d05-486c-bf9f-3e9c77921b94}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+    <Method Name="checkStateAllMultiChild" Id="{085ecd3a-2ffd-4f11-b261-2c7f09b5b09c}">
+      <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
+VAR_INPUT
+	cSTA: INT;
+END_VAR
+VAR
+	ii: INT;
+	usiNumOfCheckedChilds: USINT;
+END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	// check interlocks to prevent damages
-	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
-	
-		;
+        <ST><![CDATA[// Method check input state of all zones
+
+//Init
+checkStateAllMultiChild:= FALSE;
+usiNumOfCheckedChilds:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
+	// Check state
+	// Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+	// Parent controller need state STOP that automatic stop sequence can work for all other childs.
+	IF (a_pMultiChildCIF[ii]^.Job.intState = cSTA) OR ((a_pMultiChildCIF[ii]^.Job.intState = cSTA_ERROR) AND (cSTA = cSTA_STOP)) THEN
+		usiNumOfCheckedChilds:= usiNumOfCheckedChilds+1;
 	END_IF
+
+END_FOR
+
+// All states equal the input state
+IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
+	checkStateAllMultiChild:= TRUE;
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -316,140 +282,41 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="StateMachine" Id="{cfd0dc08-ae10-4d9a-b1db-8ad33bc4b1e7}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+    <Method Name="checkChildAlmClass" Id="{1a458747-bf8a-432e-b91a-dbacf18a0879}">
+      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-    cSTA_RUNBusy: 
-        THIS^.sta_RUNBusy();
-    cSTA_RUN: 
-        THIS^.sta_RUN();
-    cSTA_STOPBusy: 
-        THIS^.sta_STOPBusy();
-    cSTA_STOP: 
-        THIS^.sta_STOP();
-END_CASE;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkChildPointer" Id="{79304374-32b3-4858-aec3-f77b58b32028}">
-      <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF (usiNumOfMultiChild = usiNumOfValidPointerMultiChild) THEN
-	checkChildPointer:= TRUE;
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
+// check child alarm classes
+IF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.EOFF)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.OFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.OFF)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.STOP) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.STOP)) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
 ELSE
-	checkChildPointer:= FALSE;
+	IF (me.Alarm.bolfp) THEN
+		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
+		me.Alarm.bolfp := FALSE;
+	END_IF
 END_IF
 
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_PON" Id="{2e7eb100-331a-4b18-84aa-666584a4ac85}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		;
-		
-		
-		// State Change Condition
-		IF(me.intCmd=cCMD_OFF) OR (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_OFFBusy;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="SetAlmClassAllMultiChild" Id="{82faa679-35f5-44a9-b5e9-9f179c319f5c}">
-      <Declaration><![CDATA[METHOD PROTECTED SetAlmClassAllMultiChild
-VAR_INPUT
-	In_AlmClass: E_AlmClass;
-END_VAR
-VAR
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// Method set alarm class parent to all existing buffer zone child controller.
-FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
-	a_pMultiChildCIF[ii]^.Job.eParent_ActivAlmClass:= In_AlmClass;	
-END_FOR]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RUNBusy" Id="{9764949e-3463-4a90-821f-9c708116dd9f}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-
-		
-		fbSimulationTimer.IN := FALSE;
-		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiTimeOutRead_ms);
-		fbSimulationTimer(); // set time/reset timer
-		fbSimulationTimer.IN := TRUE; // start timer
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			fbSimulationTimer(); // simulation time
-			IF (fbSimulationTimer.Q) THEN
-				;
-			END_IF
-		END_IF
-		
-		// Cyclicle action
-		pRFW_CIF^.Job.intACmd := cCMD_RUN;
-
-		// State Change Condition
-		IF (pRFW_CIF^.Job.intState = cSTA_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_RUN;
-		ELSIF (me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs
+IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eParent_ActivAlmClass=E_AlmClass.OFF) THEN
+	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eParent_ActivAlmClass;
+	THIS^.SetAlmClassAllMultiChild(CIf.Job.eParent_ActivAlmClass);
+ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
+	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eMe_ActivAlmClass;
+	THIS^.SetAlmClassAllMultiChild(CIf.Job.eMe_ActivAlmClass);
+ELSE
+	// no important alarm for child active
+	pRFW_CIF^.Job.eParent_ActivAlmClass := E_AlmClass.NONE;
+	THIS^.SetAlmClassAllMultiChild(E_AlmClass.NONE);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="sta_RUN" Id="{211c8ab3-3387-4155-bcc4-90dd5f241656}">
@@ -637,6 +504,120 @@ END_FOR]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
+    <Method Name="sta_PON" Id="{2e7eb100-331a-4b18-84aa-666584a4ac85}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_OFF) OR (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_STOPBusy" Id="{44c5babe-2996-45e9-9eff-25cf8d6e33bf}">
+      <Declaration><![CDATA[METHOD sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			IF SIf.Cfg.bolSimSpeedInternal THEN
+				SIf.Cur.dinTransportPosition_um := (SIf.Cur.dinTransportPosition_um + UDINT_TO_DINT(676 * me.FUBInfo.udiSample_ms)); // Speed TLPsort = 0.676 m/s = 676 um/ms
+				SIf.Cur.dinTransportspeed_um_s := (676 * 1000);
+			END_IF
+			IF pRFW_SIF^.Cur.stData.uliTagID <> uliRFID_Tag_old THEN
+				SIf.In.bolHangerDetector.intern := TRUE;
+				dinPositionRFID_um := 0;
+			ELSE
+				SIf.In.bolHangerDetector.intern := FALSE;
+			END_IF
+		END_IF
+		
+		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
+		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
+		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
+		IF dinPositionRFID_um > 0 THEN
+			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
+		END_IF
+		// Check in the same loop if any job is active
+		bolNoJobActive := TRUE;
+		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+(*			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+*)			IF ((aTblDecision[uinLoopRFID].eState = WayToJunction) OR (aTblDecision[uinLoopRFID].eState = OnJunction) OR
+			(aTblDecision[uinLoopRFID].eState = Processed) OR (aTblDecision[uinLoopRFID].eState = DriveOut)) THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+		END_FOR	
+
+		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
+				
+		IF bolNoJobActive = TRUE THEN
+			// send command OFF to all existing multi child controller. (Junctions)
+			THIS^.CmdToAllMultiChild(cCMD_OFF);
+		END_IF		
+		
+		
+		// State Change Condition
+		// OFF done in always state
+		IF (THIS^.checkStateAllMultiChild(cSTA_OFF)) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOP;	
+		ELSIF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+		END_IF;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
     <Method Name="checkAlmClassAllMultiChild" Id="{56e66066-5442-4b4e-a813-e75ebb61e8e5}">
       <Declaration><![CDATA[METHOD PROTECTED checkAlmClassAllMultiChild : BOOL
 VAR_INPUT
@@ -660,6 +641,309 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 		checkAlmClassAllMultiChild:= TRUE;
 	END_IF
 END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Always" Id="{763c0064-5ad7-4645-8e69-a09db5209eda}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+VAR
+	fbGetSystemTime: GETSYSTEMTIME;
+	stfileTime: T_FILETIME;
+	intI: INT;
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
+	//me.StateMachine.intStateNext := cSTA_OFFBusy;
+	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
+END_IF
+
+SUPER^.Always();
+
+// ---------------------------------------------------------------------------------
+// check child me and set parent alarm class
+checkChildAlmClass();
+
+
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+fbGetSystemTime(timeLoDW=>stfileTime.dwLowDateTime, timeHiDW=>stfileTime.dwHighDateTime);
+dtActualTime := FILETIME_TO_DT( stfileTime );
+dtDeleteTime := DINT_TO_DT(DT_TO_DINT(dtActualTime) - UDINT_TO_DINT(SIf.Par.udiTimeMaxJob_s));	
+
+// Cyclicel Hashtable work
+FOR intI:=0 TO cintMaxDecisions DO
+
+	// Delete old jobs by time 	
+	IF  (aTblDecision[intI].dtTimeJob < dtDeleteTime) THEN
+		IF aTblDecision[intI].eState = E_DecisionState.Finished THEN			
+			// Delete done job
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';
+		ELSIF aTblDecision[intI].eState = E_DecisionState.Wait THEN
+			// Job not startet, set error
+			// Set Alarm: SIf.Alm[4].strText := 'Job Timeout, delete Job';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,intI,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			// Clear Job										
+			aTblDecision[intI].eState := E_DecisionState.none;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';				
+		END_IF
+	END_IF
+	
+	
+	// Delete jobs where the hanger crossed the last junction but did not get a target number assigned by line control.
+	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget <= 0)) THEN
+		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';	
+		END_IF
+	END_IF
+
+	// Write an Error when the hanger crossed the last junction but did not get finished
+	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget > 0)) THEN
+		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
+			IF (SIf.Cfg.bolStopAtPassLastJunction = TRUE) THEN	// E_AlmClass.STOP
+				// SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,13,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			ELSE // E_AlmClass.INFO
+				// SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,12,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
+			aTblDecision[intI].eState := 0;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';	
+		END_IF
+	END_IF
+	
+	// Check if a hanger passed the junction to send a message to line
+	IF (aTblDecision[intI].eState = E_DecisionState.DriveOut) THEN
+		IF (SIf.Cfg.bolDtChToLine_send = TRUE) THEN			
+			IF fbDtChnToLine_JobDone.Creat(In_strTimestamp:= DT_TO_STRING(dtActualTime),In_stDecision := aTblDecision[intI].stDecision,) = 1 THEN
+				IF SIf.Cur.dinCurrentItemCount > 0 THEN
+					SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+				END_IF
+				 aTblDecision[intI].eState := E_DecisionState.Finished;
+			ELSE		
+				// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			END_IF
+		ELSE
+			IF SIf.Cur.dinCurrentItemCount > 0 THEN
+				SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+			END_IF
+			aTblDecision[intI].eState := E_DecisionState.Finished;
+		END_IF
+	END_IF	
+
+END_FOR
+
+// Count Hangers in Controller
+// Hanger In
+IF SIf.In.bolCounterIn.intern = TRUE AND bolRECounterIn = FALSE THEN
+	bolRECounterIn := TRUE;
+	SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount + 1;
+ELSIF SIf.In.bolCounterIn.intern = FALSE THEN
+	bolRECounterIn := FALSE;
+END_IF
+// Hanger Out
+IF SIf.In.bolCounterOut.intern = TRUE AND bolRECounterOut = FALSE THEN
+	bolRECounterOut := TRUE;
+	IF SIf.Cur.dinCurrentItemCount > 0 THEN
+		SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
+	END_IF
+ELSIF SIf.In.bolCounterOut.intern = FALSE THEN
+	bolRECounterOut := FALSE;
+END_IF
+
+// Current Value Mapping internal
+SIf.Cur.dinMaxCapacity := SIf.Cfg.dinMaxCapacity;
+SIf.Cfg.intCountJunctions := usiNumOfMultiChild;
+
+// Current Value Mapping to Childs
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildSIF[ii]^.Cur.dinTransportPosition_um := SIf.Cur.dinTransportPosition_um;
+	a_pMultiChildSIF[ii]^.Cur.dinTransportspeed_um_s := SIf.Cur.dinTransportspeed_um_s;
+
+END_FOR
+
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	// Communication to the Line Controll over Data Channel
+	THIS^.DtChnToPLC_Decision();
+	fbDtChnToLine_JobDone.bolResetError := CIf.Job.bolAlmReset;
+	fbDtChnToLine_JobDone.pSIf := ADR(SIf);
+	fbDtChnToLine_JobDone();
+	IF fbDtChnToLine_JobDone.intError <> 0 THEN
+		// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,fbDtChnToLine_JobDone.intError,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+END_IF
+
+// ----------------------------------------------------------------------------------
+// Conditions Always
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildPointer" Id="{79304374-32b3-4858-aec3-f77b58b32028}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (usiNumOfMultiChild = usiNumOfValidPointerMultiChild) THEN
+	checkChildPointer:= TRUE;
+ELSE
+	checkChildPointer:= FALSE;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="SetAlmClassAllMultiChild" Id="{82faa679-35f5-44a9-b5e9-9f179c319f5c}">
+      <Declaration><![CDATA[METHOD PROTECTED SetAlmClassAllMultiChild
+VAR_INPUT
+	In_AlmClass: E_AlmClass;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method set alarm class parent to all existing buffer zone child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildCIF[ii]^.Job.eParent_ActivAlmClass:= In_AlmClass;	
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CmdToAllMultiChild" Id="{8a4fc957-df6e-4c01-8fea-11c8d4edad29}">
+      <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
+VAR_INPUT
+	cCMD: INT;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method send input command to all existing multi child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	a_pMultiChildCIF[ii]^.Job.intACmd:= cCMD;
+END_FOR
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_ERROR" Id="{91eadbec-8215-433c-9d58-edadbf8fe729}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{9764949e-3463-4a90-821f-9c708116dd9f}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+
+		
+		fbSimulationTimer.IN := FALSE;
+		fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udiTimeOutRead_ms);
+		fbSimulationTimer(); // set time/reset timer
+		fbSimulationTimer.IN := TRUE; // start timer
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN
+				;
+			END_IF
+		END_IF
+		
+		// Cyclicle action
+		pRFW_CIF^.Job.intACmd := cCMD_RUN;
+
+		// State Change Condition
+		IF (pRFW_CIF^.Job.intState = cSTA_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;
+		ELSIF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="DtChnToPLC_Decision" Id="{b2d4a345-44d9-40c1-884b-0a110db4a2bd}">
@@ -960,41 +1244,25 @@ CASE intStatemachine OF
 END_CASE]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_ERROR" Id="{91eadbec-8215-433c-9d58-edadbf8fe729}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+    <Method Name="AddJunction" Id="{c3e0e466-d161-4d66-af3b-d6d96ae3bb4e}">
+      <Declaration><![CDATA[METHOD AddJunction
+VAR_INPUT
+	p_MultiChild: POINTER TO FB_JUN;
+END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
+        <ST><![CDATA[
+// Method add the pointer address of the buffer zone child controller to the array list.
+IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add buffer zone child controller to list
+	a_pMultiChildCtrl[usiNumOfMultiChild] := p_MultiChild;
+	// Inc. number of buffer zones
+	usiNumOfMultiChild:= usiNumOfMultiChild+1;
+	// Check if the pointer is valid
+	IF (p_MultiChild<>0) THEN
+		usiNumOfValidPointerMultiChild:= usiNumOfValidPointerMultiChild+1;
 	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		;
-		
-		
-		// State Change Condition
-		IF (CIf.Job.bolAlmReset = TRUE) THEN
-			me.StateMachine.intStateNext := cSTA_ERRORQuit;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="CtrlInit" Id="{c3e233aa-416f-4d17-8ddc-ae38fd8987f3}">
@@ -1052,37 +1320,55 @@ END_FOR
 SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
       </Implementation>
     </Method>
-    <Method Name="checkStateAllMultiChild" Id="{085ecd3a-2ffd-4f11-b261-2c7f09b5b09c}">
-      <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
-VAR_INPUT
-	cSTA: INT;
-END_VAR
-VAR
-	ii: INT;
-	usiNumOfCheckedChilds: USINT;
-END_VAR
+    <Method Name="StateMachine" Id="{cfd0dc08-ae10-4d9a-b1db-8ad33bc4b1e7}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Method check input state of all zones
+        <ST><![CDATA[SUPER^.StateMachine();
 
-//Init
-checkStateAllMultiChild:= FALSE;
-usiNumOfCheckedChilds:= 0;
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+    cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+END_CASE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoInBridge" Id="{d20c16c4-74d2-4e7c-9ee7-c0381f843f0a}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+SIf.In.bolHangerDetector.map := THIS^.In_bolHangerDetector;
+SIf.In.bolCounterIn.map := THIS^.In_bolCounterIn;
+SIf.In.bolCounterOut.map := THIS^.In_bolCounterOut;
 
-// Loop over all childs
-FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
-	// Check state
-	// Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
-	// Parent controller need state STOP that automatic stop sequence can work for all other childs.
-	IF (a_pMultiChildCIF[ii]^.Job.intState = cSTA) OR ((a_pMultiChildCIF[ii]^.Job.intState = cSTA_ERROR) AND (cSTA = cSTA_STOP)) THEN
-		usiNumOfCheckedChilds:= usiNumOfCheckedChilds+1;
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetector));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterIn));
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterOut));
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoOutBridge" Id="{d9eb6d28-4d05-486c-bf9f-3e9c77921b94}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+	
+		;
 	END_IF
-
-END_FOR
-
-// All states equal the input state
-IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
-	checkStateAllMultiChild:= TRUE;
 END_IF]]></ST>
       </Implementation>
     </Method>
@@ -1127,269 +1413,6 @@ END_IF]]></ST>
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_STOPBusy" Id="{44c5babe-2996-45e9-9eff-25cf8d6e33bf}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			IF SIf.Cfg.bolSimSpeedInternal THEN
-				SIf.Cur.dinTransportPosition_um := (SIf.Cur.dinTransportPosition_um + UDINT_TO_DINT(676 * me.FUBInfo.udiSample_ms)); // Speed TLPsort = 0.676 m/s = 676 um/ms
-				SIf.Cur.dinTransportspeed_um_s := (676 * 1000);
-			END_IF
-			IF pRFW_SIF^.Cur.stData.uliTagID <> uliRFID_Tag_old THEN
-				SIf.In.bolHangerDetector.intern := TRUE;
-				dinPositionRFID_um := 0;
-			ELSE
-				SIf.In.bolHangerDetector.intern := FALSE;
-			END_IF
-		END_IF
-		
-		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
-		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
-		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
-		IF dinPositionRFID_um > 0 THEN
-			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
-		END_IF
-		// Check in the same loop if any job is active
-		bolNoJobActive := TRUE;
-		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
-(*			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
-				bolNoJobActive := FALSE;
-				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
-			END_IF
-*)			IF ((aTblDecision[uinLoopRFID].eState = WayToJunction) OR (aTblDecision[uinLoopRFID].eState = OnJunction) OR
-			(aTblDecision[uinLoopRFID].eState = Processed) OR (aTblDecision[uinLoopRFID].eState = DriveOut)) THEN
-				bolNoJobActive := FALSE;
-				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
-			END_IF
-		END_FOR	
-
-		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
-				
-		IF bolNoJobActive = TRUE THEN
-			// send command OFF to all existing multi child controller. (Junctions)
-			THIS^.CmdToAllMultiChild(cCMD_OFF);
-		END_IF		
-		
-		
-		// State Change Condition
-		// OFF done in always state
-		IF (THIS^.checkStateAllMultiChild(cSTA_OFF)) THEN
-			me.StateMachine.intStateNext :=  cSTA_STOP;	
-		ELSIF (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
-		END_IF;
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Always" Id="{763c0064-5ad7-4645-8e69-a09db5209eda}">
-      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
-VAR
-	fbGetSystemTime: GETSYSTEMTIME;
-	stfileTime: T_FILETIME;
-	intI: INT;
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
-	//me.StateMachine.intStateNext := cSTA_OFFBusy;
-	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
-END_IF
-
-SUPER^.Always();
-
-// ---------------------------------------------------------------------------------
-// check child me and set parent alarm class
-checkChildAlmClass();
-
-
-// ----------------------------------------------------------------------------------
-// cyclic actions outside of statemachine
-fbGetSystemTime(timeLoDW=>stfileTime.dwLowDateTime, timeHiDW=>stfileTime.dwHighDateTime);
-dtActualTime := FILETIME_TO_DT( stfileTime );
-dtDeleteTime := DINT_TO_DT(DT_TO_DINT(dtActualTime) - UDINT_TO_DINT(SIf.Par.udiTimeMaxJob_s));	
-
-// Cyclicel Hashtable work
-FOR intI:=0 TO cintMaxDecisions DO
-
-	// Delete old jobs by time 	
-	IF  (aTblDecision[intI].dtTimeJob < dtDeleteTime) THEN
-		IF aTblDecision[intI].eState = E_DecisionState.Finished THEN			
-			// Delete done job
-			aTblDecision[intI].eState := 0;
-			aTblDecision[intI].dinActPos_um := 0;
-			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
-			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
-			aTblDecision[intI].stDecision.dinTarget := 0;
-			aTblDecision[intI].stDecision.uliRFID := 0;
-			aTblDecision[intI].stDecision.strID := '';
-		ELSIF aTblDecision[intI].eState = E_DecisionState.Wait THEN
-			// Job not startet, set error
-			// Set Alarm: SIf.Alm[4].strText := 'Job Timeout, delete Job';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,intI,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			// Clear Job										
-			aTblDecision[intI].eState := E_DecisionState.none;
-			aTblDecision[intI].dinActPos_um := 0;
-			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
-			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
-			aTblDecision[intI].stDecision.dinTarget := 0;
-			aTblDecision[intI].stDecision.uliRFID := 0;
-			aTblDecision[intI].stDecision.strID := '';				
-		END_IF
-	END_IF
-	
-	
-	// Delete jobs where the hanger crossed the last junction but did not get a target number assigned by line control.
-	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget <= 0)) THEN
-		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
-			aTblDecision[intI].eState := 0;
-			aTblDecision[intI].dinActPos_um := 0;
-			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
-			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
-			aTblDecision[intI].stDecision.dinTarget := 0;
-			aTblDecision[intI].stDecision.uliRFID := 0;
-			aTblDecision[intI].stDecision.strID := '';	
-		END_IF
-	END_IF
-
-	// Write an Error when the hanger crossed the last junction but did not get finished
-	IF ((aTblDecision[intI].dinActPos_um > (SIf.Cur.dinDistanceToFarthestJunction + SIf.Par.dinDistanceOffsetUntilDelJob_um)) AND (aTblDecision[intI].stDecision.dinTarget > 0)) THEN
-		IF (aTblDecision[intI].eState = E_DecisionState.WayToJunction) THEN			
-			IF (SIf.Cfg.bolStopAtPassLastJunction = TRUE) THEN	// E_AlmClass.STOP
-				// SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,13,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			ELSE // E_AlmClass.INFO
-				// SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,12,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			END_IF
-			aTblDecision[intI].eState := 0;
-			aTblDecision[intI].dinActPos_um := 0;
-			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
-			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
-			aTblDecision[intI].stDecision.dinTarget := 0;
-			aTblDecision[intI].stDecision.uliRFID := 0;
-			aTblDecision[intI].stDecision.strID := '';	
-		END_IF
-	END_IF
-	
-	// Check if a hanger passed the junction to send a message to line
-	IF (aTblDecision[intI].eState = E_DecisionState.DriveOut) THEN
-		IF (SIf.Cfg.bolDtChToLine_send = TRUE) THEN			
-			IF fbDtChnToLine_JobDone.Creat(In_strTimestamp:= DT_TO_STRING(dtActualTime),In_stDecision := aTblDecision[intI].stDecision,) = 1 THEN
-				IF SIf.Cur.dinCurrentItemCount > 0 THEN
-					SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
-				END_IF
-				 aTblDecision[intI].eState := E_DecisionState.Finished;
-			ELSE		
-				// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			END_IF
-		ELSE
-			IF SIf.Cur.dinCurrentItemCount > 0 THEN
-				SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
-			END_IF
-			aTblDecision[intI].eState := E_DecisionState.Finished;
-		END_IF
-	END_IF	
-
-END_FOR
-
-// Count Hangers in Controller
-// Hanger In
-IF SIf.In.bolCounterIn.intern = TRUE AND bolRECounterIn = FALSE THEN
-	bolRECounterIn := TRUE;
-	SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount + 1;
-ELSIF SIf.In.bolCounterIn.intern = FALSE THEN
-	bolRECounterIn := FALSE;
-END_IF
-// Hanger Out
-IF SIf.In.bolCounterOut.intern = TRUE AND bolRECounterOut = FALSE THEN
-	bolRECounterOut := TRUE;
-	IF SIf.Cur.dinCurrentItemCount > 0 THEN
-		SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
-	END_IF
-ELSIF SIf.In.bolCounterOut.intern = FALSE THEN
-	bolRECounterOut := FALSE;
-END_IF
-
-// Current Value Mapping internal
-SIf.Cur.dinMaxCapacity := SIf.Cfg.dinMaxCapacity;
-SIf.Cfg.intCountJunctions := usiNumOfMultiChild;
-
-// Current Value Mapping to Childs
-FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
-	a_pMultiChildSIF[ii]^.Cur.dinTransportPosition_um := SIf.Cur.dinTransportPosition_um;
-	a_pMultiChildSIF[ii]^.Cur.dinTransportspeed_um_s := SIf.Cur.dinTransportspeed_um_s;
-
-END_FOR
-
-IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
-	// Communication to the Line Controll over Data Channel
-	THIS^.DtChnToPLC_Decision();
-	fbDtChnToLine_JobDone.bolResetError := CIf.Job.bolAlmReset;
-	fbDtChnToLine_JobDone.pSIf := ADR(SIf);
-	fbDtChnToLine_JobDone();
-	IF fbDtChnToLine_JobDone.intError <> 0 THEN
-		// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
-		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,fbDtChnToLine_JobDone.intError,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-	END_IF
-END_IF
-
-// ----------------------------------------------------------------------------------
-// Conditions Always
-// overrule error always from base -> no EOFF State!! in EOFF go to OFF
-IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
-	IF (me.StateMachine.intState=cSTA_OFF) THEN
-		me.StateMachine.intStateNext := cSTA_OFF;
-	ELSE // stay in OFF
-		me.StateMachine.intStateNext := cSTA_OFFBusy;
-	END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoInBridge" Id="{d20c16c4-74d2-4e7c-9ee7-c0381f843f0a}">
-      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-SIf.In.bolHangerDetector.map := THIS^.In_bolHangerDetector;
-SIf.In.bolCounterIn.map := THIS^.In_bolCounterIn;
-SIf.In.bolCounterOut.map := THIS^.In_bolCounterOut;
-
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetector));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterIn));
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolCounterOut));
-ELSE
-	//simulation of global IO
-END_IF
-]]></ST>
       </Implementation>
     </Method>
     <Method Name="sta_ERRORQuit" Id="{e6bf1171-bd60-4db5-ac74-ac920ef481f6}">
@@ -1438,81 +1461,58 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="CmdToAllMultiChild" Id="{8a4fc957-df6e-4c01-8fea-11c8d4edad29}">
-      <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
-VAR_INPUT
-	cCMD: INT;
-END_VAR
-VAR
-	ii: INT;
-END_VAR
+    <Method Name="sta_STOP" Id="{f43ac9b8-a3b6-4c01-bcb3-3b1f6814ff8b}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// Method send input command to all existing multi child controller.
-FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
-	a_pMultiChildCIF[ii]^.Job.intACmd:= cCMD;
-END_FOR
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
 
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="AddJunction" Id="{c3e0e466-d161-4d66-af3b-d6d96ae3bb4e}">
-      <Declaration><![CDATA[METHOD AddJunction
-VAR_INPUT
-	p_MultiChild: POINTER TO FB_JUN;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[
-// Method add the pointer address of the buffer zone child controller to the array list.
-IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	// Add buffer zone child controller to list
-	a_pMultiChildCtrl[usiNumOfMultiChild] := p_MultiChild;
-	// Inc. number of buffer zones
-	usiNumOfMultiChild:= usiNumOfMultiChild+1;
-	// Check if the pointer is valid
-	IF (p_MultiChild<>0) THEN
-		usiNumOfValidPointerMultiChild:= usiNumOfValidPointerMultiChild+1;
 	END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="checkChildAlmClass" Id="{1a458747-bf8a-432e-b91a-dbacf18a0879}">
-      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
-// check child alarm classes
-IF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.EOFF)) THEN
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
-	me.Alarm.bolfp := TRUE;
-ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.OFF) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.OFF)) THEN
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
-	me.Alarm.bolfp := TRUE;
-ELSIF (pRFW_CIF^.Job.eMe_ActivAlmClass=E_AlmClass.STOP) OR (THIS^.checkAlmClassAllMultiChild(E_AlmClass.STOP)) THEN
-	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
-	me.Alarm.bolfp := TRUE;
-ELSE
-	IF (me.Alarm.bolfp) THEN
-		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
-		me.Alarm.bolfp := FALSE;
-	END_IF
-END_IF
 
-//------------------------------------------------------------------------------------------------------
-// set alarm class parent of childs
-IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eParent_ActivAlmClass=E_AlmClass.OFF) THEN
-	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eParent_ActivAlmClass;
-	THIS^.SetAlmClassAllMultiChild(CIf.Job.eParent_ActivAlmClass);
-ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
-	pRFW_CIF^.Job.eParent_ActivAlmClass := CIf.Job.eMe_ActivAlmClass;
-	THIS^.SetAlmClassAllMultiChild(CIf.Job.eMe_ActivAlmClass);
-ELSE
-	// no important alarm for child active
-	pRFW_CIF^.Job.eParent_ActivAlmClass := E_AlmClass.NONE;
-	THIS^.SetAlmClassAllMultiChild(E_AlmClass.NONE);
-END_IF]]></ST>
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// Increase the position of every Hanger in the hashtable, if it is on the way to junction
+		dinTransportDifferenz_um := SIf.Cur.dinTransportPosition_um - dinTransportPosition_old_um;
+		// Increase actual Position of the hanger at the RFID Reader Position if hanger there
+		IF dinPositionRFID_um > 0 THEN
+			dinPositionRFID_um := dinPositionRFID_um + dinTransportDifferenz_um;
+		END_IF
+		// Check in the same loop if any job is active
+		bolNoJobActive := TRUE;
+		FOR uinLoopRFID := 0 TO INT_TO_UINT(cintMaxDecisions) DO
+			IF aTblDecision[uinLoopRFID].dinActPos_um > 0 THEN
+				bolNoJobActive := FALSE;
+				aTblDecision[uinLoopRFID].dinActPos_um := aTblDecision[uinLoopRFID].dinActPos_um + dinTransportDifferenz_um;
+			END_IF
+		END_FOR	
+
+		dinTransportPosition_old_um := SIf.Cur.dinTransportPosition_um;
+				
+		IF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+		END_IF;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
       </Implementation>
     </Method>
     <ObjectProperties />

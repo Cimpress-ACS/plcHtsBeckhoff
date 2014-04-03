@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="SlowPRG_1" Id="{1880a415-9f7f-4d4a-ad15-2dcfa97d058e}">
     <Declaration><![CDATA[PROGRAM SlowPRG_1
 VAR
@@ -19,6 +19,12 @@ VAR
 	fbICL_1: FB_ICL;
 	fbMER_2: FB_MER;
 	fbMER_3: FB_MER;
+	// ----- HFE ---------
+	fbHFE:	 FB_HFE;
+	fbVLV_1: Base_Elements.FB_VLV;
+	fbVLV_2: Base_Elements.FB_VLV;
+	pTmpSIf_VLV: POINTER TO Base_Elements.T_Ctrl_SIf_VLV;
+	// -------------------
 
 	stSequence : T_Sequence;
 		
@@ -162,6 +168,46 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_MER^.Par.a_LinePar[1].udiMergingTime_ms:= 10000;
 	pTmpSIf_MER^.Par.a_LinePar[1].uinNumOfHangersToMerge:= 0;
 	
+	// xxxxxxxxxxxxxxxxx
+	// ----------
+	// VLV_1
+	// ----------
+	fbVLV_1.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.VLV_1);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_VLV:= fbVLV_1.getCtrlSIf();
+	// ADD Childs
+
+	// VLV - configuration
+	pTmpSIf_VLV^.Cfg.eTyp := E_Typ_VLV.Valve1_Sensor0;
+	
+  	// VLV - parameters	
+	
+	// ----------
+	// VLV_2
+	// ----------
+	fbVLV_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.VLV_2);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_VLV:= fbVLV_1.getCtrlSIf();
+	// ADD Childs
+
+	// VLV - configuration
+	pTmpSIf_VLV^.Cfg.eTyp := E_Typ_VLV.Valve1_Sensor0;
+	
+  	// VLV - parameters	
+	
+	// ----------
+	// HFE
+	// ----------
+	fbHFE.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.HFE);     // init and entry fb_instance in global fb pointer array
+	// ADD Childs
+	fbHFE.p_fbSLB:= g_a_pCtrlInst[E_CtrlId.SLB_2];
+	fbHFE.p_fbTlpDrive:= g_a_pCtrlInst[E_CtrlId.TLP_3];
+	fbHFE.AddJunction(g_a_pCtrlInst[E_CtrlId.VLV_1]);
+	fbHFE.AddJunction(g_a_pCtrlInst[E_CtrlId.VLV_2]);
+
+	// HFE - configuration 	
+	
+  	// HFE - parameters 		
+	
+	// xxxxxxxxxxxxxxxxx
 	// ----------------------------------
 	// Module Controller
 	// ----------------------------------
@@ -247,7 +293,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Add sequence group
 	fbICL_1.AddSeqChild(stSequence);
 
-	// Define sequence parameter
+(*	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_3];
 	stSequence.uinGroupRun:= 4;
 	stSequence.uinGroupStop:= 5;	
@@ -257,7 +303,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	stSequence.intStatusSeqStop:= cSTA_OFF;
 	// Add sequence group
 	fbICL_1.AddSeqChild(stSequence);
-	
+*)	
 	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
 	stSequence.uinGroupRun:= 3;
@@ -467,9 +513,13 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	fbRFW_4();
 	fbRFW_9();
 
-	fbMER_2();
+	//fbMER_2();
 	fbMER_3.In_a_bolJamSensor[1] := In_bol_5_0_B18_TLP_full;	// Add Jam Sensor 5.0-B18
 	fbMER_3();
+	
+	fbHFE();
+	fbVLV_1();
+	fbVLV_2();
 	
 END_IF
 // -----------------------------------------------------------------------------------------------
