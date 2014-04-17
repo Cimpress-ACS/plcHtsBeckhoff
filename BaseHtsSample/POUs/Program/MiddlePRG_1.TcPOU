@@ -5,37 +5,53 @@ VAR
 	bolPlcStartupDone: BOOL := FALSE;
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
-	uinTaskNbr : UINT := 2; // MiddleTask is Task Nr. 2
+	/// MiddleTask is Task Nr. 2
+	uinTaskNbr: UINT := 2;
 	pCtrl_CIf: POINTER TO T_Ctrl_CIf;
 	pTmpSIf_DRV: POINTER TO T_Ctrl_SIf_DRV;
 	pTmpSIf_SLB: POINTER TO T_Ctrl_SIf_SLB;
 	pTmpSIf_STB: POINTER TO T_Ctrl_SIf_STB;
 	pTmpSIf_MER: POINTER TO T_Ctrl_SIf_MER;
+	pTmpSIf_RFW: POINTER TO T_Ctrl_SIf_RFW;
 	jj: INT;
-
 	fbTLC_2: FB_DRV;
 	fbTLP_3: FB_DRV;
-	fbTLP_10: FB_DRV;
+	fbTLP_16: FB_DRV;
 	fbTLP_4: FB_DRV;
 	fbTLP_5: FB_DRV;
-	fbTLK_9: FB_DRV;
-
-	fbMER_8: FB_MER; // configured with mode "MergeIntoTrp", needs faster task
-	
-	fbSLB_2: FB_SLB;
-	fbDSB_2: FB_STB;
-	fbSEP_2: FB_STB;
+	fbTLK_15: FB_DRV;
+	/// configured with mode "MergeIntoTrp", needs faster task
+	fbMER_15: FB_MER;
+	/// DPJ in MiddlePRG
+	fbDPJ_4: FB_DPJ;
+	fbDPJ_15: FB_DPJ;
+	fbRFW_4: FB_RFW;
+	fbRFW_15: FB_RFW;
+	fbSLB_2a: FB_SLB;
+	fbDSB1_2a: FB_STB;
+	fbDSB2_2a: FB_STB;
+	fbSEP_2a: FB_STB;
+	fbSLB_2b: FB_SLB;
+	fbDSB1_2b: FB_STB;
+	fbDSB2_2b: FB_STB;
+	fbSEP_2b: FB_STB;
+	fbSLB_2c: FB_SLB;
+	fbDSB1_2c: FB_STB;
+	fbDSB2_2c: FB_STB;
+	fbSEP_2c: FB_STB;
 	fbBUF_5: FB_SLB;
 	fbSBI_5: FB_STB;
 	fbDBO_5: FB_STB;
 	fbBUF_3: FB_SLB;
 	fbSBI_3: FB_STB;
-	fbBUF_10: FB_SLB;
-	fbSBI_10: FB_STB;
-	fbSLB_8: FB_SLB;
-	fbSEP_8: FB_STB;
-	fbHFE_1: FB_HFE;
-	
+	fbBUF_16: FB_SLB;
+	fbSBI_16: FB_STB;
+	fbSLB_12: FB_SLB;
+	fbSEP_12: FB_STB;
+	fbSLB_13: FB_SLB;
+	fbSEP_13: FB_STB;
+	fbSLB_14: FB_SLB;
+	fbSEP_14: FB_STB;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -61,6 +77,11 @@ Version		Date			Author		Comment
 0.00.5		08.10.2013		VP/RE		Optimizations FAT Bürglistrasse version
 0.00.6		30.10.2013		AVME/DSC	Moved MER_8 to MiddlePRG. Test at the tool.
 0.00.7		18.11.2013		AVME/MRU	Add decrementsensor 3.0-B3 at SBI_3 for test
+0.00.8		12.12.2013		AVME/MRU	Changed 3.0-B3 to 3.0-B5
+										Decrement counter added
+0.00.9		16.12.2013		AVME/MRU	Configuration chnage in SBI10/3/5
+0.00.10		24.01.2014		AVME/MRU	Moved DPJ from SlowPRG
+0.00.11		24.02.2014		AVME/DSC	fbTLP_4 to speed 1.
 
 ___________________________________________________________________________________________________*)
 
@@ -74,6 +95,43 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// ----------------------------------------------------------------------------------------------------------------------
 	//  Incomming Loop
 	// ----------------------------------------------------------------------------------------------------------------------
+
+	// Decision Point 4; To Heat Press
+	fbDPJ_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_4);     	// init and entry fb_instance in global fb pointer array
+	// RFID Reader, element Controller in this Task, Drive in fastest Task class
+	fbRFW_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_4); // init and entry fb_instance in global fb pointer array
+	fbRFW_4.pRFD_SIf := g_a_pFunRFD[1]^.getSIf();
+	pTmpSIf_RFW := fbRFW_4.getCtrlSIf();
+	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
+	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
+	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
+
+	// ADD Childs
+	// RFW
+	fbDPJ_4.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_4];
+	// Junctions are in the Fast task; Pointer from Global Array
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4a]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4b]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_5a]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_5b]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_6a]);
+	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_6b]);
+	
+	// Decision Point 15; To CONTROLSTATION OR 4X4 LOOP
+	fbDPJ_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_15);     	// init and entry fb_instance in global fb pointer array
+	// RFID Reader, element Controller in this Task, Drive in fastest Task class
+	fbRFW_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_15); // init and entry fb_instance in global fb pointer array
+	fbRFW_15.pRFD_SIf := g_a_pFunRFD[2]^.getSIf();
+	pTmpSIf_RFW := fbRFW_15.getCtrlSIf();
+	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
+	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
+	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
+	// ADD Childs
+	// RFW
+	fbDPJ_15.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_15];
+	// Junctions are in the Fast task; Pointer from Global Array
+	fbDPJ_15.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_15a]);
+	fbDPJ_15.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_15b]);
 	
 	// ----------------------------------
 	// All Transports
@@ -88,7 +146,8 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_DRV^.Cfg.usiCountBlockedSupervis := 2;
 	pTmpSIf_DRV^.Cfg.dinPinDistance_um:= 75000; 						//75[mm/puls]
 	pTmpSIf_DRV^.Cfg.dinDistPerPulse_um:= 37700;						// 37.7[mm/puls]
-
+	pTmpSIf_DRV^.Par.int_MaxBrokenPins := 10;
+	
 	// ----------
 	// TLP_3
 	// ----------
@@ -99,10 +158,10 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_DRV^.Cfg.dinDistPerPulse_um:= 28400;						// 28.4[mm/puls]
 	
 	// ----------
-	// TLP_10
+	// TLP_16
 	// ----------
-	fbTLP_10.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.TLP_10);     	// TLP_10 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_DRV := fbTLP_10.getCtrlSIf();
+	fbTLP_16.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.TLP_16);     	// TLP_10 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_DRV := fbTLP_16.getCtrlSIf();
 	pTmpSIf_DRV^.Cfg.eTyp := E_Typ_DRV.TLP;   							// default configuration
 	pTmpSIf_DRV^.Cfg.bolPulseExist := TRUE;
 	pTmpSIf_DRV^.Cfg.dinDistPerPulse_um:= 28400;						// 28.4[mm/puls]
@@ -126,47 +185,68 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_DRV^.Cfg.eTyp := E_Typ_DRV.TLP;   							// default configuration
 
 	// ----------
-	// TLK_9
+	// TLK_15
 	// ----------
-	fbTLK_9.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.TLK_9);     		// TLK_9 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_DRV := fbTLK_9.getCtrlSIf();
+	fbTLK_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.TLK_15);     		// TLK_9 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_DRV := fbTLK_15.getCtrlSIf();
 	pTmpSIf_DRV^.Cfg.eTyp := E_Typ_DRV.TLK;   							// default configuration
 	pTmpSIf_DRV^.Cfg.bolPulseExist := TRUE;
 	pTmpSIf_DRV^.Cfg.bolSpeedVariable := TRUE;
 	pTmpSIf_DRV^.Cfg.dinDistPerPulse_um:= 37700;						// 37.7[mm/puls]
-	//pTmpSIf_DRV^.Cfg.dinPinDistance_um:= 508000;						// 50.8[cm between pins]
-	pTmpSIf_DRV^.Cfg.dinPinDistance_um:= 608000;						// 50.8[cm between pins]     RE:FAT change
+	pTmpSIf_DRV^.Cfg.dinPinDistance_um:= 508000;						// 50.8[cm between pins]
+	pTmpSIf_DRV^.Par.usi_speedLevel := 1;
 	
 	// ----------------------------------
 	// All Buffer Elements
 	// ----------------------------------
 	
 	// ----------
-	// DSB_2
+	// DSB1_2a
 	// ----------
-	fbDSB_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB_2);     		// DSB_2 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_STB := fbDSB_2.getCtrlSIf();
+	fbDSB1_2a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB1_2a);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB1_2a.getCtrlSIf();
 	
-	// DSB_2 - configuration		
+	// DSB1_2a - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
-	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;   				
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
 	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
 										
-	// DSB_2 - parameter	
+	// DSB1_2a - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// DSB2_2a
+	// ----------
+	fbDSB2_2a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB2_2a);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB2_2a.getCtrlSIf();
+	
+	// DSB2_2a - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
+										
+	// DSB2_2a - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
 	
 	// ----------
-	// SEP_2
+	// SEP_2a
 	// ----------
-	fbSEP_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_2);     		// SEP_2 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_STB := fbSEP_2.getCtrlSIf();
+	fbSEP_2a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_2a);     		// SEP_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_2a.getCtrlSIf();
 	
-	// SEP_2 - configuration		
+	// SEP_2a - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B5 
@@ -175,10 +255,128 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= 6;
 	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;									
 	
-	// SEP_2 - parameter	
+	// SEP_2a - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// DSB1_2b
+	// ----------
+	fbDSB1_2b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB1_2b);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB1_2b.getCtrlSIf();
+	
+	// DSB1_2b - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
+										
+	// DSB1_2b - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// DSB2_2b
+	// ----------
+	fbDSB2_2b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB2_2b);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB2_2b.getCtrlSIf();
+	
+	// DSB2_2b - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
+										
+	// DSB2_2b - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
 	
+	// ----------
+	// SEP_2b
+	// ----------
+	fbSEP_2b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_2b);     		// SEP_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_2b.getCtrlSIf();
+	
+	// SEP_2b - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B5 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= 6;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;									
+	
+	// SEP_2b - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// DSB1_2c
+	// ----------
+	fbDSB1_2c.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB1_2c);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB1_2c.getCtrlSIf();
+	
+	// DSB1_2c - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
+										
+	// DSB1_2c - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// DSB2_2c
+	// ----------
+	fbDSB2_2c.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DSB2_2c);     		// DSB_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbDSB2_2c.getCtrlSIf();
+	
+	// DSB2_2c - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B1 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 2;											// Based on: +2.0-Q2								
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
+										
+	// DSB2_2c - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+	
+	// ----------
+	// SEP_2c
+	// ----------
+	fbSEP_2c.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_2c);     		// SEP_2 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_2c.getCtrlSIf();
+	
+	// SEP_2c - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 10;													// Based on: +2.0-B5 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= 6;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;									
+	
+	// SEP_2c - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 500;
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
 	// ----------
 	// SBI_5
 	// ----------	
@@ -188,7 +386,9 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// SBI_5 - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
-	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 20;													//ToDo: Number of hangers between +5.0 B4.0 and +5.0 B18.0
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
+	pTmpSIf_STB^.Cfg.bolDisableBufferDelete := TRUE;										// Disable delete of buffer with sensor
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 100;													// Number of hangers between +5.0 B4.0 and +5.0 B18.0
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 4;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= 6;
@@ -207,6 +407,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// DBO_5 - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := FALSE;   				
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 20;													// Based on: +5.0-B6 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 3;											// Based on: +5.0-Q7																
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
@@ -227,6 +428,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;
 	pTmpSIf_STB^.Cfg.bolHasDecrementSensor:= TRUE;											// Decrement with sensor, not cylinder stroke   				
+	pTmpSIf_STB^.Cfg.bolDisableBufferDelete := TRUE;										// Disable delete of buffer with sensor
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 466;													// Number of hangers between +3.0 Q4.0 and +3.0 B18.0 (7000mm distance / 15mm between hanger to hanger) 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
@@ -238,54 +440,102 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 3000;
 	
 	// ----------
-	// SBI_10
+	// SBI_16
 	// ----------
-	fbSBI_10.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SBI_10);     	// SBI_10 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_STB := fbSBI_10.getCtrlSIf();
-	
-	// SBI_10 - configuration		
+	fbSBI_16.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SBI_16);     	// SBI_10 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSBI_16.getCtrlSIf();
+	// SBI_16 - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.bolHasDecrementSensor := TRUE;											// Add Decrement Sensor
+	pTmpSIf_STB^.Cfg.bolDisableBufferDelete := TRUE;										// Disable delete of buffer with sensor
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 400;													// Number of hangers between +10.0 Q4.0 and +10.0 B8.0 (6000mm distance / 15mm between hanger to hanger) 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= 8;
-	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
-										
-	// SBI_10 - parameter	
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;							
+	// SBI_16 - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 2000;										// Dependent speed of +10.0 M11
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 3000;
 
 	// ----------
-	// SEP_8
+	// SEP_12
 	// ----------		
-	fbSEP_8.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_8);     		// SEP_8 - init and entry fb_instance in global fb pointer array
-	pTmpSIf_STB := fbSEP_8.getCtrlSIf();
-	
-	// SEP_8 - configuration		
+	fbSEP_12.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_12);     		// SEP_8 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_12.getCtrlSIf();
+	// SEP_12 - configuration		
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
-	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;
-										
-	// SEP_8 - parameter	
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;								
+	// SEP_12 - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
-	
+
+	// ----------
+	// SEP_13
+	// ----------		
+	fbSEP_13.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_13);     		// SEP_8 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_13.getCtrlSIf();
+	// SEP_13 - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;			
+	// SEP_13 - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+
+	// ----------
+	// SEP_14
+	// ----------		
+	fbSEP_14.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_14);     		// SEP_8 - init and entry fb_instance in global fb pointer array
+	pTmpSIf_STB := fbSEP_14.getCtrlSIf();
+	// SEP_14 - configuration		
+	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
+	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
+	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
+	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
+	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
+	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;				
+	// SEP_14 - parameter	
+	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
+	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
 	
 	// ----------------------------------
 	// Elementgroups of Slide- Buffers
 	// ----------------------------------
 	
 	// ----------
-	// SLB_2
+	// SLB_2a
 	// ----------	
-	fbSLB_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_2);     		// SLB_2 - init and entry fb_instance in global fb pointer array
-	fbSLB_2.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_2]);				// Add Element as Type Bufferelement
-	fbSLB_2.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB_2]);				// Add Element as Type Bufferelement
+	fbSLB_2a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_2a);     		// SLB_2 - init and entry fb_instance in global fb pointer array
+	fbSLB_2a.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_2a]);				// Add Element as Type Bufferelement
+	fbSLB_2a.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB1_2a]);				// Add Element as Type Bufferelement
+	fbSLB_2a.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB2_2a]);				// Add Element as Type Bufferelement
+
+	// ----------
+	// SLB_2b
+	// ----------	
+	fbSLB_2b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_2b);     		// SLB_2 - init and entry fb_instance in global fb pointer array
+	fbSLB_2b.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_2b]);				// Add Element as Type Bufferelement
+	fbSLB_2b.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB1_2b]);				// Add Element as Type Bufferelement
+	fbSLB_2b.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB2_2b]);				// Add Element as Type Bufferelement
+
+	// ----------
+	// SLB_2c
+	// ----------	
+	fbSLB_2c.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_2c);     		// SLB_2 - init and entry fb_instance in global fb pointer array
+	fbSLB_2c.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_2c]);				// Add Element as Type Bufferelement
+	fbSLB_2c.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB1_2c]);				// Add Element as Type Bufferelement
+	fbSLB_2c.AddBufferZone(g_a_pCtrlInst[E_CtrlId.DSB2_2c]);				// Add Element as Type Bufferelement
 
 	// ----------
 	// BUF_5
@@ -301,41 +551,52 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbBUF_3.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SBI_3]);				// Add Element as Type Bufferelement
 	
 	// ----------
-	// BUF_10
+	// BUF_16
 	// ----------	
-	fbBUF_10.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.BUF_10);     	// BUF_10 - init and entry fb_instance in global fb pointer array
-	fbBUF_10.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SBI_10]);				// Add Element as Type Bufferelement
+	fbBUF_16.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.BUF_16);     	// BUF_10 - init and entry fb_instance in global fb pointer array
+	fbBUF_16.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SBI_16]);				// Add Element as Type Bufferelement
 	
 	// ----------
-	// SLB_8
+	// SLB_12
 	// ----------	
-	fbSLB_8.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_8);     		// SLB_8 - init and entry fb_instance in global fb pointer array
-	fbSLB_8.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_8]);				// Add Element as Type Bufferelement
+	fbSLB_12.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_12);     		// SLB_8 - init and entry fb_instance in global fb pointer array
+	fbSLB_12.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_12]);				// Add Element as Type Bufferelement
 	
+	// ----------
+	// SLB_13
+	// ----------	
+	fbSLB_13.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_13);     		// SLB_8 - init and entry fb_instance in global fb pointer array
+	fbSLB_13.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_13]);				// Add Element as Type Bufferelement
+	
+	// ----------
+	// SLB_14
+	// ----------	
+	fbSLB_14.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_14);     		// SLB_8 - init and entry fb_instance in global fb pointer array
+	fbSLB_14.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_14]);				// Add Element as Type Bufferelement
+		
 	// ----------------------------------
 	// MERGERS
 	// ----------------------------------
 	
 	// ----------
-	// MER_8
+	// MER_15
 	// ----------
-	fbMER_8.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_8);     // init and entry fb_instance in global fb pointer array
-	pTmpSIf_MER:= fbMER_8.getCtrlSIf();
+	fbMER_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_15);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_MER:= fbMER_15.getCtrlSIf();
 	// ADD Childs
-	fbMER_8.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_8]);
-
-	// MER_8 - configuration fix	
+	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_12]);
+	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_13]);
+	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_14]);
+	// MER_15 - configuration fix	
 	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;	
 	pTmpSIf_MER^.Par.dinHangerSensorPosition_um := 770000; 				    // 770 mm  Distance between pin sensor and hanger detected sensor
 	pTmpSIf_MER^.Par.dinPinLenght_um:= 25000; 								// 25 mm								
 	pTmpSIf_MER^.Par.dinSectionLenght_um:= 484000;							// 484 mm
 	pTmpSIf_MER^.Par.dinTrigStartOffset_um:= 1000;							// 1 mm						
 	pTmpSIf_MER^.Par.dinTrigEndOffset_um:= 10000;							// 10 mm							
-	
-  	// MER_8 - parameters fix	
+  	// MER_15 - parameters fix	
 	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 0;
-
-	// MER_8 - init parameters for line control	
+	// MER_15 - init parameters for line control	
 	pTmpSIf_MER^.Par.a_LinePar[0].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeIntoTrp;
 	pTmpSIf_MER^.Par.a_LinePar[0].dinLinePosition_um:= 1900000;				// 1900 mm  Distance between pin sensor and the point where the line comes into the transport system
 
@@ -376,101 +637,168 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	// cyclic controller calls
 	//****************************************************************************************************
 	
+	// DPJ_4
+	fbDPJ_4.In_bolHangerDetector := In_4_0_B7_Hanger_In_Compartement;
+	fbDPJ_4();
+	// DPJ_5
+	fbDPJ_15.In_bolHangerDetector := In_15_0_B1_Hanger_In_TLK_ReadingStation;
+	fbDPJ_15();
+	// RFW_4	
+	fbRFW_4();
+	// RFW_9
+	fbRFW_15();
+	
 	// TLC_2
-	fbTLC_2.In_bolOverload := NOT(In_bol_2_0_A1_Motor_Protection);
-	fbTLC_2.In_bolPulse := In_bol_2_0_B15_Charging_impulse_TLC_TLT;
-	fbTLC_2.In_a_bolBlockedSupvervis[1] := In_bol_2_0_B13_Blocking_monitoring;
-	fbTLC_2.In_a_bolBlockedSupvervis[2] := In_bol_2_0_B16_Blocking_monitoring;
+	fbTLC_2.In_bolOverload := NOT(In_2_0_Motor_Ok_M1);
+	fbTLC_2.In_bolPulse := In_2_0_B45_Clock_Pulse;
+	fbTLC_2.In_a_bolBlockedSupvervis[1] := In_2_0_B18_Blocking_Supervision;
+	fbTLC_2.In_a_bolBlockedSupvervis[2] := In_2_0_B46_Blocking_Supervision;
 	fbTLC_2();
-	Out_bol_2_0_A1_Drive_On := fbTLC_2.Out_bolSpeed_1;
+	Out_2_0_Motor_On_M1 := fbTLC_2.Out_bolSpeed_1;
 
 	// TLP_3
-	fbTLP_3.In_bolOverload := NOT(In_bol_3_0_A1_Motor_Protection);
-	fbTLP_3.In_bolPulse := In_bol_3_0_B7_Charging_impulse_TLK_TLP;
+	fbTLP_3.In_bolOverload := NOT(In_3_0_Motor_Ok_M1);
+	fbTLP_3.In_bolPulse := In_3_0_B7_Clock_Pulse;
 	fbTLP_3();
-	Out_bol_3_0_A1_Drive_On := fbTLP_3.Out_bolSpeed_1;
+	Out_3_0_Motor_On_M1 := fbTLP_3.Out_bolSpeed_1;
 
-	// TLP_10
-	fbTLP_10.In_bolOverload := NOT(In_bol_10_0_A1_Motor_Protection);
-	fbTLP_10.In_bolPulse := In_bol_10_0_B7_Charging_impulse_TLK_TLP_A;
-	fbTLP_10();
-	Out_bol_10_0_A1_Drive_On := fbTLP_10.Out_bolSpeed_1;
+	// TLP_16
+	fbTLP_16.In_bolOverload := NOT(In_16_0_Motor_Ok_M1);
+	fbTLP_16.In_bolPulse := In_16_0_B7_Clock_Pulse;
+	fbTLP_16();
+	Out_16_0_Motor_On_M1 := fbTLP_16.Out_bolSpeed_1;
 
 	// TLP_4
-	fbTLP_4.In_bolOverload := In_bol_4_0_T1_Motor_Protection;
-	fbTLP_4.In_bolPulse := In_bol_4_0_B23_Charging_impulse_TLK_TLP;
+	fbTLP_4.In_bolOverload := In_4_0_Motor_Ok_M1;
+	fbTLP_4.In_bolPulse := In_4_0_B33_Clock_Pulse;
 	fbTLP_4();
-	Out_bol_4_0_K1_Drive_On := fbTLP_4.Out_bolSpeed_1;
-	Out_bol_4_0_K2_Drive_On := fbTLP_4.Out_bolSpeed_2;
+	Out_4_0_Motor_Speed_K1_M1 := fbTLP_4.Out_bolSpeed_1;
+	Out_4_0_Motor_Speed_K2_M1 := fbTLP_4.Out_bolSpeed_2;
 
 	// TLP_5
-	fbTLP_5.In_bolOverload := NOT(In_bol_5_0_A1_Motor_Protection);
+	fbTLP_5.In_bolOverload := NOT(In_5_0_Motor_Ok_M1);
 	fbTLP_5();
-	Out_bol_5_0_A1_Drive_On := fbTLP_5.Out_bolSpeed_1;
+	Out_5_0_Motor_On_M1 := fbTLP_5.Out_bolSpeed_1;
 
 	// TLK_9
-	fbTLK_9.In_bolOverload := In_bol_9_0_T1_Motor_Protection;
-	fbTLK_9.In_bolPulse := In_bol_9_0_B13_Charging_impulse_TLK_TLP_A;
-	fbTLK_9();
-	Out_bol_9_0_K1_Drive_On := fbTLK_9.Out_bolSpeed_1;
-	Out_bol_9_0_K2_Drive_On := fbTLK_9.Out_bolSpeed_2;
+	fbTLK_15.In_bolOverload := In_15_0_Motor_Ok_M1;
+	fbTLK_15.In_bolPulse := In_15_0_B13_Clock_Pulse;
+	fbTLK_15();
+	Out_15_0_Motor_Speed_K1_M1 := fbTLK_15.Out_bolSpeed_1;
+	Out_15_0_Motor_Speed_K2_M1 := fbTLK_15.Out_bolSpeed_2;
 	
-	// SLB_2
-	fbSLB_2();	
-	// DSB_2
-	fbDSB_2.In_bolBufferFull := In_bol_2_0_B1_Doublestopper_full;
-	fbDSB_2.In_bolDecrementCounter:= fbDSB_2.In_bolDecrementCounter;
-	fbDSB_2();
-	Out_bol_2_0_Q2_Doublestopper := fbDSB_2.Out_bolRetract;	
-	// SEP_2
-	fbSEP_2.In_bolHangerDetected := In_bol_2_0_B3_Hanger_in_Seperator;
-	fbSEP_2.In_bolBufferFull := In_bol_2_0_B5_Seperator_full;
-	fbSEP_2();
-	Out_bol_2_0_Q4_Seperator := fbSEP_2.Out_bolRetract;
+	// SLB_2a
+	fbSLB_2a();	
+	// DSB1_2a
+	fbDSB1_2a.In_bolBufferFull := In_2_0_B5_DoubleStopper_Full;
+	fbDSB1_2a.In_bolDecrementCounter:= In_2_0_B3_DoubleStopper_Full;
+	fbDSB1_2a();
+	Out_2_0_Y4_DoubleStopper := fbDSB1_2a.Out_bolRetract;	
+	// DSB2_2a
+	fbDSB2_2a.In_bolBufferFull := In_2_0_B7_DoubleStopper_Full;
+	fbDSB2_2a.In_bolDecrementCounter:= In_2_0_B5_DoubleStopper_Full;
+	fbDSB2_2a();
+	Out_2_0_Y6_DoubleStopper := fbDSB2_2a.Out_bolRetract;	
+	// SEP_2a
+	fbSEP_2a.In_bolHangerDetected := In_2_0_B2_Hanger_In_Separator;
+	fbSEP_2a.In_bolBufferFull := In_2_0_B3_DoubleStopper_Full;
+	fbSEP_2a();
+	Out_2_0_Y1_Separator := fbSEP_2a.Out_bolRetract;
+
+	// SLB_2b
+	fbSLB_2b();	
+	// DSB1_2b
+	fbDSB1_2b.In_bolBufferFull := In_2_0_B15_DoubleStopper_Full;
+	fbDSB1_2b.In_bolDecrementCounter:= In_2_0_B13_DoubleStopper_Full;
+	fbDSB1_2b();
+	Out_2_0_Y14_DoubleStopper := fbDSB1_2b.Out_bolRetract;	
+	// DSB2_2b
+	fbDSB2_2b.In_bolBufferFull := In_2_0_B17_DoubleStopper_Full;
+	fbDSB2_2b.In_bolDecrementCounter:= In_2_0_B15_DoubleStopper_Full;
+	fbDSB2_2b();
+	Out_2_0_Y16_DoubleStopper := fbDSB2_2b.Out_bolRetract;	
+	// SEP_2b
+	fbSEP_2b.In_bolHangerDetected := In_2_0_B12_Hanger_In_Separator;
+	fbSEP_2b.In_bolBufferFull := In_2_0_B13_DoubleStopper_Full;
+	fbSEP_2b();
+	Out_2_0_Y11_DoubleStopper := fbSEP_2b.Out_bolRetract;
 			
+	// SLB_2c
+	fbSLB_2c();	
+	// DSB1_2c
+	fbDSB1_2c.In_bolBufferFull := In_2_0_B25_DoubleStopper_Full;
+	fbDSB1_2c.In_bolDecrementCounter:= In_2_0_B23_DoubleStopper_Full;
+	fbDSB1_2c();
+	Out_2_0_Y24_DoubleStopper := fbDSB1_2c.Out_bolRetract;	
+	// DSB2_2c
+	fbDSB2_2c.In_bolBufferFull := In_2_0_B27_DoubleStopper_Full;
+	fbDSB2_2c.In_bolDecrementCounter:= In_2_0_B25_DoubleStopper_Full;
+	fbDSB2_2c();
+	Out_2_0_Y26_DoubleStopper := fbDSB2_2c.Out_bolRetract;	
+	// SEP_2c
+	fbSEP_2c.In_bolHangerDetected := In_2_0_B22_Hanger_In_Separator;
+	fbSEP_2c.In_bolBufferFull := In_2_0_B23_DoubleStopper_Full;
+	fbSEP_2c();
+	Out_2_0_Y21_DoubleStopper := fbSEP_2c.Out_bolRetract;
+	
 	// BUF_5
 	fbBUF_5();	
 	// SBI_5
-	fbSBI_5.In_bolBufferFull := In_bol_5_0_B18_TLP_full;
-	fbSBI_5.In_bolHangerDetected := In_bol_5_0_B4_Hanger_at_pilotStopper;
+	fbSBI_5.In_bolBufferFull := In_4_0_B18a_TLP_Full;
+	fbSBI_5.In_bolHangerDetected := In_5_0_B4_Hanger_At_PreStopper;
+	fbSBI_5.In_bolDecrementCounter := In_5_0_B6_DoubleStopper_Full;
 	fbSBI_5();
-	Out_bol_5_0_Q5_Pilotstopper := fbSBI_5.Out_bolRetract;
+	Out_5_0_Y5_PreStopper := fbSBI_5.Out_bolRetract;
     // DBO_5
-	fbDBO_5.In_bolBufferFull := In_bol_5_0_B6_Doublestopper_full;
+	fbDBO_5.In_bolBufferFull := In_5_0_B6_DoubleStopper_Full;
+	fbDBO_5.In_bolDecrementCounter := In_2_0_B8_Hanger_In_TLC;
 	fbDBO_5();
-	Out_bol_5_0_Q7_Doublestopper := fbDBO_5.Out_bolRetract;
+	Out_5_0_Y7_DoubleStopper := fbDBO_5.Out_bolRetract;
 		
 	// BUF_3
 	fbBUF_3();
 	// SBI_3
-	fbSBI_3.In_bolHangerDetected := In_bol_3_0_B3_Hanger_at_pilotStopper;
-	fbSBI_3.In_bolBufferFull := In_bol_3_0_B18_TLP_full;
-	fbSBI_3.In_bolDecrementCounter := In_bol_3_0_B3_Hanger_at_pilotStopper;	// Decrement with sensor, not cylinder stroke
+	fbSBI_3.In_bolHangerDetected := In_3_0_B3_Hanger_At_PreStopper;
+	fbSBI_3.In_bolBufferFull := In_2_0_B18a_TLP_Full;
+	fbSBI_3.In_bolDecrementCounter := In_3_0_B5_Hanger_At_PreStopper;		// Decrement with sensor, not cylinder stroke
 	fbSBI_3();
-	Out_bol_3_0_Q4_Pilotstopper := fbSBI_3.Out_bolRetract;
+	Out_3_0_Y4_PreStopper := fbSBI_3.Out_bolRetract;
 
-	// BUF_10
-	fbBUF_10();
+	// BUF_16
+	fbBUF_16();
 	// SBI_10
-	fbSBI_10.In_bolHangerDetected := In_bol_10_0_B3_Hanger_at_pilotStopper;
-	fbSBI_10.In_bolBufferFull := In_bol_10_0_B8_TLP_50percent_full;
-	fbSBI_10();
-	Out_bol_10_0_Q4_Pilotstopper := fbSBI_10.Out_bolRetract;
+	fbSBI_16.In_bolHangerDetected := In_16_0_B3_Hanger_At_PreStopper;
+	fbSBI_16.In_bolBufferFull := In_16_0_B8_TLP_50Percent_Full;
+	fbSBI_16.In_bolDecrementCounter := In_16_0_B5_Hanger_At_PreStopper;
+	fbSBI_16();
+	Out_16_0_Y4_PreStopper := fbSBI_16.Out_bolRetract;
 	
-	// SLB_8
-	fbSLB_8();
-	fbSEP_8.In_bolHangerDetected:= In_bol_8_0_B1_Hanger_in_Seperator;
-	fbSEP_8.In_bolBufferFull := In_bol_8_0_B6_Seperator_full;
-	fbSEP_8();
-	Out_bol_8_0_Q7_Seperator := fbSEP_8.Out_bolRetract;
+	// SLB_12
+	fbSLB_12();
+	fbSEP_12.In_bolHangerDetected:= In_12_0_B8_Hanger_At_Separator;
+	fbSEP_12.In_bolBufferFull := In_12_0_B6_Separator_Full;
+	fbSEP_12();
+	Out_12_0_Y7_Separator := fbSEP_12.Out_bolRetract;
 	
-	// MER_8
-	fbMER_8.In_bolHangerDetected := In_bol_9_0_B16_Hanger_in_station;
-	fbMER_8.In_bolPinDetected := In_bol_9_0_B15_Charging_impulse;	
-	fbMER_8();
+	// SLB_13
+	fbSLB_13();
+	fbSEP_13.In_bolHangerDetected:= In_13_0_B8_Hanger_At_Separator;
+	fbSEP_13.In_bolBufferFull := In_13_0_B6_Separator_Full;
+	fbSEP_13();
+	Out_13_0_Y7_Separator := fbSEP_13.Out_bolRetract;
 	
-	// HFE_1
-	fbHFE_1();
+	// SLB_14
+	fbSLB_14();
+	fbSEP_14.In_bolHangerDetected:= In_14_0_B8_Hanger_At_Separator;
+	fbSEP_14.In_bolBufferFull := In_14_0_B6_Separator_Full;
+	fbSEP_14();
+	Out_14_0_Y7_Separator := fbSEP_14.Out_bolRetract;
+	
+	// MER_15
+	fbMER_15.In_bolHangerDetected := In_15_0_B2_Hanger_In_TLK;
+	fbMER_15.In_bolPinDetected := In_15_0_B15_Loading_Pulse;	
+	fbMER_15();
+	
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>
     </Implementation>

@@ -1,28 +1,18 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <GVL Name="Global" Id="{c27aced4-be9c-4dab-babe-a5494623c001}">
     <Declaration><![CDATA[VAR_GLOBAL
 	/// instance array of all controller instances
 	g_a_pCtrlInst: ARRAY[0..E_CtrlId.E_CtrlIdMax] OF POINTER TO fb_CtrlBase;
 	/// common interface array of all controllers (main use for PLC)
 	g_a_pCtrlCIf: ARRAY[0..E_CtrlId.E_CtrlIdMax] OF POINTER TO T_Ctrl_CIf;
-	// common access variabel for UI
-	g_p_fbAlm_Man: POINTER TO FB_Alm_Man; 
-
+	/// common access variabel for UI
+	g_p_fbAlm_Man: POINTER TO FB_Alm_Man;
 	/// Global array for function with different childs in faster cycles
 	g_a_pFunRFD: ARRAY[0..9] OF POINTER TO FB_RFR;
-		// 0 = RFW_1	Loading Station
-		// 1 = RFW_4	Decision Point Incoming Loop Heat press
-		// 2 = RFW_9	Decision Point Incoming Loop TLK
-		// 3 = RFW_12	Decision Point InCell Binning 
-		// 4 = RFW_19	Label Module 
-		// 5 = RFW_20	Folder Module
-		// 4 = RFW_4	Decision Point Incoming Loop  
-	g_uinStartProzess : UINT; // For StartUp order
-  	
-END_VAR
-
-VAR_GLOBAL CONSTANT
-	c_uinCntTaskClass : UINT := 3;	// Count of Task Classes
+	/// For StartUp order
+	g_uinStartProzess: UINT;
+	/// Count of Task Classes
+	c_uinCntTaskClass: UINT := 3;
 END_VAR]]></Declaration>
     <ObjectProperties>﻿<XmlArchive>
   <Data>

@@ -90,7 +90,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{3f57e16b-6d71-4944-be5c-e9c8de0f6536}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -126,7 +125,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{4cac0705-f681-4002-849f-c39a6b418233}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -142,7 +140,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	//THIS^.Out_Clamping := SIf.Out.bolClamping.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddJunction" Id="{51307a6c-c362-433e-bbf7-2151e7518882}">
       <Declaration><![CDATA[METHOD AddJunction
@@ -164,7 +161,6 @@ IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{63992788-f9ee-4ff3-9214-1a46ff8d92d1}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -180,7 +176,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUNBusy();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{7c1dfef0-3e88-43e9-8666-9a2e0a755ef9}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -196,7 +191,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Refill" Id="{856b054f-7e87-4de9-9a2e-27c51c04afdb}">
       <Declaration><![CDATA[METHOD Refill
@@ -259,7 +253,6 @@ CASE intSubState[intNbOfLDS] OF
 END_CASE
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{8e502808-14af-414c-8759-358c0334fa54}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -318,7 +311,6 @@ SIf.Cfg.uintNbOfLDS := 1;
 // actual values
 //SIf.Cur.dinCounter := 0;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{a16c069c-703e-4c01-a3c2-7b1c06e300e1}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -354,7 +346,6 @@ SIf.Cfg.uintNbOfLDS := 1;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{a3c64f4c-52a8-4cfc-85f0-6d9ced2eacf0}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -373,7 +364,7 @@ END_VAR
 		//fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_pulseTimeout_ms/10);
 		//fbSimulationTimer(); // set time/reset timer
 		//fbSimulationTimer.IN := TRUE; // start timer
-		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+		FOR intNbOfLDS := 0 TO cintMaxStation DO
 			intSubState[intNbOfLDS] := 500;	// Init Refill Substate
 		END_FOR
 	END_IF
@@ -397,7 +388,7 @@ END_VAR
 		//IF NOT(pSLB_SIf^.Cur.bolBufferFull) THEN
 		//	pStopperBuffer_CIf^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
 		//END_IF
-		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+		FOR intNbOfLDS := 0 TO cintMaxStation DO
 			IF (SIf.Par.a_bolEnableJunction[intNbOfLDS]) AND (a_pMultiChildCtrl[intNbOfLDS]<>0) THEN
 				Refill(intNbOfLDS);
 			END_IF
@@ -418,7 +409,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{beb142c5-b4c7-438e-ac62-70a65f3bfa37}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -442,7 +432,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	a_pMultiChildSIF[ii]:= a_pMultiChildCtrl[ii]^.getCtrlSIf();
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{d67f7c09-3c51-43c4-95fd-99f3d6f44728}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HFE
@@ -450,7 +439,6 @@ END_FOR]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{f7d28a1a-3d0a-4c73-9cd1-02a1f80ddb25}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -476,7 +464,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

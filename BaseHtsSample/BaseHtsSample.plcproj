@@ -27,21 +27,6 @@
     <Compile Include="GVLs\Io.TcGVL">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl2\HFE\Const_HFE.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\HFE\FB_HFE.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\HFE\T_Ctrl_SIf_HFE_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\FB_ICL.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -88,7 +73,6 @@
     <Folder Include="POUs\Controller\Driver" />
     <Folder Include="POUs\Controller\Lvl1\" />
     <Folder Include="POUs\Controller\Lvl2\" />
-    <Folder Include="POUs\Controller\Lvl2\HFE" />
     <Folder Include="POUs\Controller\Lvl3\" />
     <Folder Include="POUs\Controller\Lvl3\ICL %28IncomingLoop%29\" />
     <Folder Include="POUs\Program\" />

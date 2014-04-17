@@ -5,32 +5,23 @@ VAR
 	bolPlcStartupDone: BOOL := FALSE;
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
-	uinTaskNbr : UINT := 3; // SlowTask is Task Nr 3
-	pTmpSIf_RFW: POINTER TO T_Ctrl_SIf_RFW;
+	/// SlowTask is Task Nr 3
+	uinTaskNbr: UINT := 3;
 	pTmpSIf_MER: POINTER TO T_Ctrl_SIf_MER;
-	jj:INT;
-	bolCtrlRst: BOOL;		// Global alarm reset for ICL
-	bolSimulateAll: BOOL; // Switches all controllers in ICL to simulation with pos. edge
+	jj: INT;
+	/// Global alarm reset for ICL
+	bolCtrlRst: BOOL;
+	/// Switches all controllers in ICL to simulation with pos. edge
+	bolSimulateAll: BOOL;
 	bolSimulationActive: BOOL;
-	fbDPJ_4: FB_DPJ;
-	fbDPJ_9: FB_DPJ;
-	fbRFW_4: FB_RFW;
-	fbRFW_9: FB_RFW;
 	fbICL_1: FB_ICL;
 	fbMER_2: FB_MER;
 	fbMER_3: FB_MER;
-	// ----- HFE ---------
-	fbHFE:	 FB_HFE;
-	fbVLV_1: Base_Elements.FB_VLV;
-	fbVLV_2: Base_Elements.FB_VLV;
-	pTmpSIf_VLV: POINTER TO Base_Elements.T_Ctrl_SIf_VLV;
-	// -------------------
-
-	stSequence : T_Sequence;
-		
-	fbAlm_Man: FB_Alm_Man; // alarm manager
-	
-END_VAR]]></Declaration>
+	stSequence: T_Sequence;
+	/// alarm manager
+	fbAlm_Man: FB_Alm_Man;
+END_VAR
+]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	
@@ -60,12 +51,13 @@ Version		Date			Author		Comment
 0.00.11		18.11.2013		AVME/MRU	Jam Sensor 5.0-B18 for MER3 added
 0.00.12		02.12.2013		AVME/MRU	BaseHts added, StartUp improved
 0.00.13		04.12.2013		AVME/MRU	BaseHts updated, GeneralError connected
-0.00.14		07.01.2014		AVME/MRU	Moved all controllers to BaseHts/BaseElements
-0.00.15		08.01.2014		AVME/MRU	Update BasePlc 0.3.3.7, BaseElements 0.0.0.17
+										MER3 new jam input 4.0-B1
+0.00.14		12.12.2013		AVME/MRU	MER3 new jam input 3.0-B17
+0.00.15		07.01.2014		AVME/MRU	Moved controllers to BaseHts/BaseElements
 0.00.16		13.01.2014		AVME/MRU	Add AddIBufferFullChilds for infos to LineControl
-0.00.17		08.01.2014		AVME/MRU	Update BaseHts 0.0.0.20, BaseElements 0.0.0.20
-
-
+0.00.17		20.01.2014		AVME/MRU	New BaseHts 0.0.0.18
+0.00.18		22.01.2014		AVME/MRU	New BaseHts 0.0.0.19, New Jamsensor for MER_2
+										Moved DPJ to MiddlePRG
 
 ___________________________________________________________________________________________________*)
 
@@ -80,41 +72,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// ----------------------------------------------------------------------------------------------------------------------
 	// Incomming Loop
 	// ----------------------------------------------------------------------------------------------------------------------
-	// Decision Point 4; To Heat Press
-	fbDPJ_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_4);     	// init and entry fb_instance in global fb pointer array
-	// RFID Reader, element Controller in this Task, Drive in fastest Task class
-	fbRFW_4.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_4); // init and entry fb_instance in global fb pointer array
-	fbRFW_4.pRFD_SIf := g_a_pFunRFD[1]^.getSIf();
-	pTmpSIf_RFW := fbRFW_4.getCtrlSIf();
-	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
-	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
-	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
-	
-	// ADD Childs
-	// RFW
-	fbDPJ_4.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_4];
-	// Junctions are in the Fast task; Pointer from Global Array
-	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4a]);
-	fbDPJ_4.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_4b]);
-	
-	// Decision Point 9; To CONTROLSTATION OR 4X4 LOOP
-	// Decision Point
-	fbDPJ_9.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.DPJ_9);     	// init and entry fb_instance in global fb pointer array
-	// RFID Reader, element Controller in this Task, Drive in fastest Task class
-	fbRFW_9.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.RFW_9); // init and entry fb_instance in global fb pointer array
-	fbRFW_9.pRFD_SIf := g_a_pFunRFD[2]^.getSIf();
-	pTmpSIf_RFW := fbRFW_9.getCtrlSIf();
-	pTmpSIf_RFW^.Cfg.eTyp := E_Typ_RFW.RF382R;
-	pTmpSIf_RFW^.Cfg.stNetId := '192.168.2.123.1.1'; //PLC NetId
-	pTmpSIf_RFW^.Cfg.uinSlaveAddr := 1024; //Io card Ethercat adress 
-	
-	// ADD Childs
-	// RFW
-	fbDPJ_9.p_fbRFW := g_a_pCtrlInst[E_CtrlId.RFW_9];
-	// Junctions are in the Fast task; Pointer from Global Array
-	fbDPJ_9.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_9a]);
-	fbDPJ_9.AddJunction(g_a_pCtrlInst[E_CtrlId.JUN_9b]);
-			
+
 	// ----------------------------------
 	// MERGERS
 	// ----------------------------------
@@ -126,10 +84,13 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_MER:= fbMER_2.getCtrlSIf();
 	// Add Childs as Lines
 	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_5]);
-	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_2]);
+	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_2a]);
+	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_2b]);
+	fbMER_2.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_2c]);
 	
 	// MER_2 - configuration fix	
 	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;
+	pTmpSIf_MER^.Cfg.usiCountJamSensors:= 2;	// Add Jam Sensor 3.0-B17 / 3.0-B18
 	
   	// MER_2 - parameters fix	
 	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 4000;
@@ -150,11 +111,11 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_MER:= fbMER_3.getCtrlSIf();
 	// ADD Childs
 	fbMER_3.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_3]);
-	fbMER_3.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_10]);
+	fbMER_3.AddLine(g_a_pCtrlInst[E_CtrlId.BUF_16]);
 
 	// MER_3 - configuration fix	
 	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;
-	pTmpSIf_MER^.Cfg.usiCountJamSensors:= 1;	// Add Jam Sensor 5.0-B18
+	pTmpSIf_MER^.Cfg.usiCountJamSensors:= 2;	// Add Jam Sensor 5.0-B18, 4.0-B01
 	
   	// MER_3 - parameters fix	
 	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 6000;
@@ -168,46 +129,6 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	pTmpSIf_MER^.Par.a_LinePar[1].udiMergingTime_ms:= 10000;
 	pTmpSIf_MER^.Par.a_LinePar[1].uinNumOfHangersToMerge:= 0;
 	
-	// xxxxxxxxxxxxxxxxx
-	// ----------
-	// VLV_1
-	// ----------
-	fbVLV_1.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.VLV_1);     // init and entry fb_instance in global fb pointer array
-	pTmpSIf_VLV:= fbVLV_1.getCtrlSIf();
-	// ADD Childs
-
-	// VLV - configuration
-	pTmpSIf_VLV^.Cfg.eTyp := E_Typ_VLV.Valve1_Sensor0;
-	
-  	// VLV - parameters	
-	
-	// ----------
-	// VLV_2
-	// ----------
-	fbVLV_2.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.VLV_2);     // init and entry fb_instance in global fb pointer array
-	pTmpSIf_VLV:= fbVLV_1.getCtrlSIf();
-	// ADD Childs
-
-	// VLV - configuration
-	pTmpSIf_VLV^.Cfg.eTyp := E_Typ_VLV.Valve1_Sensor0;
-	
-  	// VLV - parameters	
-	
-	// ----------
-	// HFE
-	// ----------
-	fbHFE.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.HFE);     // init and entry fb_instance in global fb pointer array
-	// ADD Childs
-	fbHFE.p_fbSLB:= g_a_pCtrlInst[E_CtrlId.SLB_2];
-	fbHFE.p_fbTlpDrive:= g_a_pCtrlInst[E_CtrlId.TLP_3];
-	fbHFE.AddJunction(g_a_pCtrlInst[E_CtrlId.VLV_1]);
-	fbHFE.AddJunction(g_a_pCtrlInst[E_CtrlId.VLV_2]);
-
-	// HFE - configuration 	
-	
-  	// HFE - parameters 		
-	
-	// xxxxxxxxxxxxxxxxx
 	// ----------------------------------
 	// Module Controller
 	// ----------------------------------
@@ -272,7 +193,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_10];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_16];
 	stSequence.uinGroupRun:= 6;
 	stSequence.uinGroupStop:= 3;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
@@ -293,7 +214,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Add sequence group
 	fbICL_1.AddSeqChild(stSequence);
 
-(*	// Define sequence parameter
+	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_3];
 	stSequence.uinGroupRun:= 4;
 	stSequence.uinGroupStop:= 5;	
@@ -303,7 +224,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	stSequence.intStatusSeqStop:= cSTA_OFF;
 	// Add sequence group
 	fbICL_1.AddSeqChild(stSequence);
-*)	
+	
 	// Define sequence parameter
 	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLP_4];
 	stSequence.uinGroupRun:= 3;
@@ -327,7 +248,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbICL_1.AddSeqChild(stSequence);
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLK_9];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.TLK_15];
 	stSequence.uinGroupRun:= 1;
 	stSequence.uinGroupStop:= 8;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
@@ -349,7 +270,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbICL_1.AddSeqChild(stSequence);
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.DPJ_9];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.DPJ_15];
 	stSequence.uinGroupRun:= 7;
 	stSequence.uinGroupStop:= 2;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
@@ -382,7 +303,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbICL_1.AddSeqChild(stSequence);
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_8];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_15];
 	stSequence.uinGroupRun:= 8;
 	stSequence.uinGroupStop:= 1;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
@@ -406,21 +327,24 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Add buffer elements
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_2]); 
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_3]); 
-	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_8]); 
+	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_15]); 
 
 	// Add infos to LineControl (BufferFull -> No more hanger needed)
-	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB_2]);
-	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_8]); 
-
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2a]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2b]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2c]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_12]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_13]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_14]); 
 	
 	// Add pointers
 	fbICL_1.p_fbDPJ_4 := g_a_pCtrlInst[E_CtrlId.DPJ_4];
-	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_9];
-	fbICL_1.p_fbMER_8 := g_a_pCtrlInst[E_CtrlId.MER_8];
+	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_15];
+	fbICL_1.p_fbMER_8 := g_a_pCtrlInst[E_CtrlId.MER_15];
 	fbICL_1.p_fbCHD_4 := g_a_pCtrlInst[E_CtrlId.CHD_4];
 	fbICL_1.p_fbTLP_4 := g_a_pCtrlInst[E_CtrlId.TLP_4];
-	fbICL_1.p_fbTLP_10 := g_a_pCtrlInst[E_CtrlId.TLP_10];
-	fbICL_1.p_fbTLK_9 := g_a_pCtrlInst[E_CtrlId.TLK_9];
+	fbICL_1.p_fbTLP_10 := g_a_pCtrlInst[E_CtrlId.TLP_16];
+	fbICL_1.p_fbTLK_9 := g_a_pCtrlInst[E_CtrlId.TLK_15];
 
 	g_uinStartProzess := g_uinStartProzess + 1;	// For StartUp order
 
@@ -506,20 +430,12 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	(* ToDO: DSC   fbICL_1.In_bolNoGeneralError :=;   *)
 	fbICL_1();
 	
-	fbDPJ_4.In_bolHangerDetector := In_bol_4_0_B7_Hanger_in_station;
-	fbDPJ_4();
-	fbDPJ_9.In_bolHangerDetector := In_bol_9_0_B1_Hanger_in_TLK_Reader;
-	fbDPJ_9();
-	fbRFW_4();
-	fbRFW_9();
-
-	//fbMER_2();
-	fbMER_3.In_a_bolJamSensor[1] := In_bol_5_0_B18_TLP_full;	// Add Jam Sensor 5.0-B18
+	fbMER_2.In_a_bolJamSensor[1] := In_2_0_B17a_DischareAcknowledged;	// Add Jam Sensor 3.0-B17
+	fbMER_2.In_a_bolJamSensor[2] := In_2_0_B18a_TLP_Full;			// Add Jam Sensor 3.0-B18
+	fbMER_2();
+	fbMER_3.In_a_bolJamSensor[1] := In_4_0_B18a_TLP_Full;			// Add Jam Sensor 5.0-B18
+	fbMER_3.In_a_bolJamSensor[2] := In_4_0_B17a_Discharge_Acknowledged;	// Add Jam Sensor 4.0-B01
 	fbMER_3();
-	
-	fbHFE();
-	fbVLV_1();
-	fbVLV_2();
 	
 END_IF
 // -----------------------------------------------------------------------------------------------

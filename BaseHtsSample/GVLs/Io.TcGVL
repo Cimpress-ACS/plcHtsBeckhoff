@@ -1,80 +1,333 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <GVL Name="Io" Id="{b9a7a763-3d86-4131-a391-a6dc6b5b6be9}">
     <Declaration><![CDATA[VAR_GLOBAL
-	In_bol_2_0_B1_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
-	Out_bol_2_0_Q2_Doublestopper AT %Q* : BOOL; //DOPPELSTOPPER
-	In_bol_2_0_B3_Hanger_in_Seperator AT %I* : BOOL; //BUEGEL IN VEREINZELUNG
-	Out_bol_2_0_Q4_Seperator AT %Q* : BOOL; //VEREINZELUNG
-	In_bol_2_0_B5_Seperator_full AT %I* : BOOL; //VOLLMELDUNG VEREINZELUNG
-	In_bol_2_0_B6_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_2_0_B7_Hanger_in_TLC AT %I* : BOOL; //BUEGEL IN TLC FOERDERER
-	Out_bol_2_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_2_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_2_0_B13_Blocking_monitoring AT %I* : BOOL; //BLOCKIERUEBERWACHUNG
-	In_bol_2_0_B15_Charging_impulse_TLC_TLT AT %I* : BOOL; //LADEIMPULS TLC/TLT FEINTAKT A
-	In_bol_2_0_B16_Blocking_monitoring AT %I* : BOOL; //BLOCKIERUEBERWACHUNG
-	In_bol_3_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_3_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
-	Out_bol_3_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_3_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_3_0_B3_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
-	Out_bol_3_0_Q4_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
-	In_bol_3_0_B5_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
-	In_bol_3_0_B7_Charging_impulse_TLK_TLP AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
-	In_bol_4_0_B1_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_4_0_B2_Inconsistent_Hanger AT %I* : BOOL; //SCHIEFE BUEGEL
-	In_bol_4_0_B3_Empty_Hanger_Control AT %I* : BOOL; //LEERBUEGELERKENNUNG
-	In_bol_4_0_B4_Double_Hanger_Control AT %I* : BOOL; //DOPPELBUEGELERKENNUNG
-	Out_bol_4_0_Q5_Blow_Valve_light_sensor AT %Q* : BOOL; //BLASLUFTVENTIL FUER LICHTSCHRANKE
-	Out_bol_4_0_Q6_Junction AT %Q* : BOOL; //WEICHE
-	In_bol_4_0_B7_Hanger_in_station AT %I* : BOOL; //BUEGEL IM FACH
-	In_bol_4_0_B8_Cam_TLP_in_position AT %I* : BOOL; //MITNEHMER TLP IN POSITION
-	Out_bol_4_0_Q11_Junction AT %Q* : BOOL; //WEICHE
-	In_bol_4_0_B12_Load_acknowledge AT %I* : BOOL; //EINLAUFQUITTUNG
-	Out_bol_4_0_Q14_Junction AT %Q* : BOOL; //WEICHE
-	In_bol_4_0_B15_Load_acknowledge AT %I* : BOOL; //EINLAUFQUITTUNG
-	In_bol_4_0_B16_Slide_full AT %I* : BOOL; //VOLLMELDUNG GLEITSCHIENE
-	In_bol_4_0_B17_Adjustment_sensor AT %I* : BOOL; //JUSTAGESENSOR
-	Out_bol_4_0_K1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	Out_bol_4_0_K2_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_4_0_T1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_4_0_B23_Charging_impulse_TLK_TLP AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT
-	In_bol_5_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_5_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
-	Out_bol_5_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_5_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_5_0_B3_Blocking_done AT %I* : BOOL; //BLOCKBILDUNG IST ERREICHT
-	In_bol_5_0_B4_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
-	Out_bol_5_0_Q5_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
-	In_bol_5_0_B6_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
-	Out_bol_5_0_Q7_Doublestopper AT %Q* : BOOL; //DOPPELSTOPPER
-	In_bol_8_0_B4_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_8_0_B6_Seperator_full AT %I* : BOOL; //VOLLMELDUNG VEREINZELUNG
-	In_bol_8_0_B1_Hanger_in_Seperator AT %I* : BOOL; //BUEGEL IN VEREINZELUNG
-	Out_bol_8_0_Q7_Seperator AT %Q* : BOOL; //VEREINZELUNG
-	In_bol_9_0_B1_Hanger_in_TLK_Reader AT %I* : BOOL; //BUEGEL IN TLK LESETOR
-	In_bol_9_0_B2_Hanger_in_TLK AT %I* : BOOL; //BUEGEL IN TLK
-	Out_bol_9_0_Q3_Junction AT %Q* : BOOL; //WEICHE
-	Out_bol_9_0_Q4_Junction AT %Q* : BOOL; //WEICHE
-	Out_bol_9_0_K1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	Out_bol_9_0_K2_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_9_0_T1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_9_0_B13_Charging_impulse_TLK_TLP_A AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
-	In_bol_9_0_B14_Charging_impulse_TLK_TLP_B AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT B
-	In_bol_9_0_B15_Charging_impulse AT %I* : BOOL; //LADEIMPULS
-	In_bol_9_0_B16_Hanger_in_station AT %I* : BOOL; //BUEGEL IM FACH
-	In_bol_10_0_B17_Leave_acknowledge AT %I* : BOOL; //AUSLAUFQUITTUNG
-	In_bol_10_0_B18_TLP_full AT %I* : BOOL; //VOLLMELDUNG TLP
-	Out_bol_10_0_A1_Drive_On AT %Q* : BOOL; //ANTRIEB EIN
-	In_bol_10_0_A1_Motor_Protection AT %I* : BOOL; //MOTORSCHUTZ AUSGELOEST
-	In_bol_10_0_B3_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
-	Out_bol_10_0_Q4_Pilotstopper AT %Q* : BOOL; //VORSTOPPER
-	In_bol_10_0_B5_Hanger_at_pilotStopper AT %I* : BOOL; //BUEGEL VOR VORSTOPPER
-	In_bol_10_0_B7_Charging_impulse_TLK_TLP_A AT %I* : BOOL; //LADEIMPULS TLK/TLP FEINTAKT A
-	In_bol_10_0_B8_TLP_50percent_full AT %I* : BOOL; //VOLLMELDUNG 50% TLP
-	In_bol_11_0_B1_Doublestopper_full AT %I* : BOOL; //VOLLMELDUNG DOPPELSTOPPER
-	In_bol_X_S1_Emergency_Stop AT %I* : BOOL; //Emergency stop from safety PLC
+(*	///VOLLMELDUNG DOPPELSTOPPER
+	In_bol_2_0_B1_Doublestopper_full AT %I*: BOOL;
+	///DOPPELSTOPPER
+	Out_bol_2_0_Q2_Doublestopper AT %Q*: BOOL;
+	///BUEGEL IN VEREINZELUNG
+	In_bol_2_0_B3_Hanger_in_Seperator AT %I*: BOOL;
+	///VEREINZELUNG
+	Out_bol_2_0_Q4_Seperator AT %Q*: BOOL;
+	///VOLLMELDUNG VEREINZELUNG
+	In_bol_2_0_B5_Seperator_full AT %I*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_2_0_B6_Leave_acknowledge AT %I*: BOOL;
+	///BUEGEL IN TLC FOERDERER
+	In_bol_2_0_B7_Hanger_in_TLC AT %I*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_2_0_A1_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_2_0_A1_Motor_Protection AT %I*: BOOL;
+	///BLOCKIERUEBERWACHUNG
+	In_bol_2_0_B13_Blocking_monitoring AT %I*: BOOL;
+	///LADEIMPULS TLC/TLT FEINTAKT A
+	In_bol_2_0_B15_Charging_impulse_TLC_TLT AT %I*: BOOL;
+	///BLOCKIERUEBERWACHUNG
+	In_bol_2_0_B16_Blocking_monitoring AT %I*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_3_0_B17_Leave_acknowledge AT %I*: BOOL;
+	///VOLLMELDUNG TLP
+	In_bol_3_0_B18_TLP_full AT %I*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_3_0_A1_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_3_0_A1_Motor_Protection AT %I*: BOOL;
+	///BUEGEL VOR VORSTOPPER
+	In_bol_3_0_B3_Hanger_at_pilotStopper AT %I*: BOOL;
+	///VORSTOPPER
+	Out_bol_3_0_Q4_Pilotstopper AT %Q*: BOOL;
+	///BUEGEL VOR VORSTOPPER
+	In_bol_3_0_B5_Hanger_at_pilotStopper AT %I*: BOOL;
+	///LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_3_0_B7_Charging_impulse_TLK_TLP AT %I*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_4_0_B1_Leave_acknowledge AT %I*: BOOL;
+	///SCHIEFE BUEGEL
+	In_bol_4_0_B2_Inconsistent_Hanger AT %I*: BOOL;
+	///LEERBUEGELERKENNUNG
+	In_bol_4_0_B3_Empty_Hanger_Control AT %I*: BOOL;
+	///DOPPELBUEGELERKENNUNG
+	In_bol_4_0_B4_Double_Hanger_Control AT %I*: BOOL;
+	///BLASLUFTVENTIL FUER LICHTSCHRANKE
+	Out_bol_4_0_Q5_Blow_Valve_light_sensor AT %Q*: BOOL;
+	///WEICHE
+	Out_bol_4_0_Q6_Junction AT %Q*: BOOL;
+	///BUEGEL IM FACH
+	In_bol_4_0_B7_Hanger_in_station AT %I*: BOOL;
+	///MITNEHMER TLP IN POSITION
+	In_bol_4_0_B8_Cam_TLP_in_position AT %I*: BOOL;
+	///WEICHE
+	Out_bol_4_0_Q11_Junction AT %Q*: BOOL;
+	///EINLAUFQUITTUNG
+	In_bol_4_0_B12_Load_acknowledge AT %I*: BOOL;
+	///WEICHE
+	Out_bol_4_0_Q14_Junction AT %Q*: BOOL;
+	///EINLAUFQUITTUNG
+	In_bol_4_0_B15_Load_acknowledge AT %I*: BOOL;
+	///VOLLMELDUNG GLEITSCHIENE
+	In_bol_4_0_B16_Slide_full AT %I*: BOOL;
+	///JUSTAGESENSOR
+	In_bol_4_0_B17_Adjustment_sensor AT %I*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_4_0_K1_Drive_On AT %Q*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_4_0_K2_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_4_0_T1_Motor_Protection AT %I*: BOOL;
+	///LADEIMPULS TLK/TLP FEINTAKT
+	In_bol_4_0_B23_Charging_impulse_TLK_TLP AT %I*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_5_0_B17_Leave_acknowledge AT %I*: BOOL;
+	///VOLLMELDUNG TLP
+	In_bol_5_0_B18_TLP_full AT %I*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_5_0_A1_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_5_0_A1_Motor_Protection AT %I*: BOOL;
+	///BLOCKBILDUNG IST ERREICHT
+	In_bol_5_0_B3_Blocking_done AT %I*: BOOL;
+	///BUEGEL VOR VORSTOPPER
+	In_bol_5_0_B4_Hanger_at_pilotStopper AT %I*: BOOL;
+	///VORSTOPPER
+	Out_bol_5_0_Q5_Pilotstopper AT %Q*: BOOL;
+	///VOLLMELDUNG DOPPELSTOPPER
+	In_bol_5_0_B6_Doublestopper_full AT %I*: BOOL;
+	///DOPPELSTOPPER
+	Out_bol_5_0_Q7_Doublestopper AT %Q*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_8_0_B4_Leave_acknowledge AT %I*: BOOL;
+	///VOLLMELDUNG VEREINZELUNG
+	In_bol_8_0_B6_Seperator_full AT %I*: BOOL;
+	///BUEGEL IN VEREINZELUNG
+	In_bol_8_0_B1_Hanger_in_Seperator AT %I*: BOOL;
+	///VEREINZELUNG
+	Out_bol_8_0_Q7_Seperator AT %Q*: BOOL;
+	///BUEGEL IN TLK LESETOR
+	In_bol_9_0_B1_Hanger_in_TLK_Reader AT %I*: BOOL;
+	///BUEGEL IN TLK
+	In_bol_9_0_B2_Hanger_in_TLK AT %I*: BOOL;
+	///WEICHE
+	Out_bol_9_0_Q3_Junction AT %Q*: BOOL;
+	///WEICHE
+	Out_bol_9_0_Q4_Junction AT %Q*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_9_0_K1_Drive_On AT %Q*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_9_0_K2_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_9_0_T1_Motor_Protection AT %I*: BOOL;
+	///LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_9_0_B13_Charging_impulse_TLK_TLP_A AT %I*: BOOL;
+	///LADEIMPULS TLK/TLP FEINTAKT B
+	In_bol_9_0_B14_Charging_impulse_TLK_TLP_B AT %I*: BOOL;
+	///LADEIMPULS
+	In_bol_9_0_B15_Charging_impulse AT %I*: BOOL;
+	///BUEGEL IM FACH
+	In_bol_9_0_B16_Hanger_in_station AT %I*: BOOL;
+	///AUSLAUFQUITTUNG
+	In_bol_10_0_B17_Leave_acknowledge AT %I*: BOOL;
+	///VOLLMELDUNG TLP
+	In_bol_10_0_B18_TLP_full AT %I*: BOOL;
+	///ANTRIEB EIN
+	Out_bol_10_0_A1_Drive_On AT %Q*: BOOL;
+	///MOTORSCHUTZ AUSGELOEST
+	In_bol_10_0_A1_Motor_Protection AT %I*: BOOL;
+	///BUEGEL VOR VORSTOPPER
+	In_bol_10_0_B3_Hanger_at_pilotStopper AT %I*: BOOL;
+	///VORSTOPPER
+	Out_bol_10_0_Q4_Pilotstopper AT %Q*: BOOL;
+	///BUEGEL VOR VORSTOPPER
+	In_bol_10_0_B5_Hanger_at_pilotStopper AT %I*: BOOL;
+	///LADEIMPULS TLK/TLP FEINTAKT A
+	In_bol_10_0_B7_Charging_impulse_TLK_TLP_A AT %I*: BOOL;
+	///VOLLMELDUNG 50% TLP
+	In_bol_10_0_B8_TLP_50percent_full AT %I*: BOOL;
+	///VOLLMELDUNG DOPPELSTOPPER
+	In_bol_11_0_B1_Doublestopper_full AT %I*: BOOL;
+*)	///Emergency stop from safety PLC
+	In_bol_X_S1_Emergency_Stop AT %I*: BOOL;
+	
+	/// Windsor Layout starts here
+	// ECC-DI2 (MRU added)
+	In_2_0_Motor_Ok_M1 AT %I*: BOOL;
+	In_3_0_Motor_Ok_M1 AT %I*: BOOL;
+	In_5_0_Motor_Ok_M1 AT %I*: BOOL;
+	// ECC-DI3 (MRU added)
+	In_16_0_Motor_Ok_M1 AT %I*: BOOL;
+	// ECC-DO61 (MRU added)
+	Out_2_0_Motor_On_M1 AT %Q*: BOOL;
+	Out_3_0_Motor_On_M1 AT %Q*: BOOL;
+	Out_5_0_Motor_On_M1 AT %Q*: BOOL;	
+	Out_16_0_Motor_On_M1 AT %Q*: BOOL;	
+	// ST13 (MRU added)
+	Out_2_0_Y1_Separator AT %Q*: BOOL;
+	In_2_0_B2_Hanger_In_Separator AT %I*: BOOL;
+	In_2_0_B3_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y4_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B5_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y6_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B7_DoubleStopper_Full AT %I*: BOOL;
+	In_2_0_B8_Hanger_In_TLC AT %I*: BOOL;
+	// ST14 (MRU added)
+	Out_2_0_Y11_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B12_Hanger_In_Separator AT %I*: BOOL;
+	In_2_0_B13_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y14_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B15_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y16_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B17_DoubleStopper_Full AT %I*: BOOL;
+	In_2_0_B18_Blocking_Supervision AT %I*: BOOL;
+	// ST15 (MRU added)
+	Out_2_0_Y21_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B22_Hanger_In_Separator AT %I*: BOOL;
+	In_2_0_B23_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y24_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B25_DoubleStopper_Full AT %I*: BOOL;
+	Out_2_0_Y26_DoubleStopper AT %Q*: BOOL;
+	In_2_0_B27_DoubleStopper_Full AT %I*: BOOL;
+	// ST16 (MRU added)
+	In_2_0_Q1_MaintenanceSwitch_Off AT %I*: BOOL;
+	In_2_0_B45_Clock_Pulse AT %I*: BOOL;
+	In_2_0_B46_Blocking_Supervision AT %I*: BOOL;
+	In_2_0_B17a_DischareAcknowledged AT %I*: BOOL;
+	In_2_0_B18a_TLP_Full AT %I*: BOOL;
+	/// ST17 
+	In_3_0_Q1_MaintenanceSwitch_Off AT %I* : BOOL; 
+	In_3_0_B3_Hanger_At_PreStopper AT %I* : BOOL; 
+	Out_3_0_Y4_PreStopper AT %Q* : BOOL; 
+	In_3_0_B5_Hanger_At_PreStopper AT %I* : BOOL; 
+	Out_3_0_Y6_PreStopper AT %Q* : BOOL; 
+	In_3_0_B7_Clock_Pulse AT %I* : BOOL; 
+	/// ST19
+	In_4_0_B1_Dischare_Acknowledged AT %I* : BOOL; 
+	In_4_0_B2_LeaningHangers AT %I* : BOOL; 
+	In_4_0_B3_Empty_Hanger_Detection AT %I* : BOOL; 
+	In_4_0_B4_Crossed_Hanger_Detection AT %I* : BOOL; 
+	Out_4_0_Y5_Blowing_Light_Barrier AT %Q* : BOOL; 
+	Out_4_0_Y6_Junction AT %Q* : BOOL; 
+	In_4_0_B7_Hanger_In_Compartement AT %I* : BOOL; 
+	In_4_0_B8_TLP_In_Position AT %I* : BOOL; 
+	/// ST22
+	Out_4_0_Y11_Junction AT %Q* : BOOL; 
+	In_4_0_B12_Hanger_Acknowledged AT %I* : BOOL; 
+	Out_4_0_Y14_Junction AT %Q* : BOOL; 
+	In_4_0_B15_Hanger_Acknowledged AT %I* : BOOL; 
+	In_4_0_B16_Rail_Full AT %I* : BOOL; 
+	/// ST30
+	Out_4_0_Y21_Junction AT %Q* : BOOL; 
+	In_4_0_B22_Hanger_Acknowledged AT %I* : BOOL; 
+	Out_4_0_Y23_Junction AT %Q* : BOOL; 
+	In_4_0_B24_Hanger_Acknowledged AT %I* : BOOL; 
+	Out_4_0_Y25_Junction AT %Q* : BOOL; 
+	In_4_0_B26_Hanger_Acknowledged AT %I* : BOOL; 
+	Out_4_0_Y27_Junction AT %Q* : BOOL; 
+	In_4_0_B28_Hanger_Acknowledged AT %I* : BOOL; 
+	/// ST33
+	Out_4_0_Motor_Speed_K1_M1 AT %Q* : BOOL; 
+	In_4_0_Motor_Ok_M1 AT %I* : BOOL; 
+	In_4_0_B33_Clock_Pulse AT %I* : BOOL;
+	In_4_0_B34_Ajustment AT %I* : BOOL; 
+	Out_4_0_Motor_Speed_K2_M1 AT %Q* : BOOL; 
+	In_4_0_Q1_MaintenanceSwitch_Off AT %I* : BOOL; 
+	In_4_0_B17a_Discharge_Acknowledged AT %I* : BOOL; 
+	In_4_0_B18a_TLP_Full AT %I* : BOOL; 
+	/// ST05
+	In_5_0_Q1_MaintenanceSwitch_Off AT %I* : BOOL; 
+	In_5_0_B3_Batch_Full AT %I* : BOOL; 
+	In_5_0_B4_Hanger_At_PreStopper AT %I* : BOOL; 
+	Out_5_0_Y5_PreStopper AT %Q* : BOOL; 
+	In_5_0_B6_DoubleStopper_Full AT %I* : BOOL; 
+	Out_5_0_Y7_DoubleStopper AT %I* : BOOL; 
+	/// ST24 (MRU copied to HPS)
+	In_6_0_B1_DoubleStopper_Full AT %I* : BOOL; 
+	In_6_0_B3_Separator_Full AT %I* : BOOL; 
+	In_6_0_B4_Hanger_In_Separator AT %I* : BOOL; 
+	In_6_0_B6_Hanger_In_RotationUnit AT %I* : BOOL; 
+	Out_6_0_Y2_DoubleStopper AT %Q* : BOOL; 
+	Out_6_0_Y5_Separator AT %Q* : BOOL; 
+	Out_6_0_Y7_RotationUnit AT %Q* : BOOL; 
+	Out_6_0_Y8_HangerRelease AT %Q* : BOOL; 
+	// ST25 (MRU copied to HPS)
+	In_7_0_B2_DoubleStopper_Full AT %I* : BOOL; 
+	In_7_0_B4_DoubleStopper_Full AT %I* : BOOL; 
+	In_7_0_B6_HangerInSeparator AT %I* : BOOL; 
+	Out_7_0_Y3_DoubleStopper AT %Q* : BOOL; 
+	Out_7_0_Y5_DoubleStopper AT %Q* : BOOL; 
+	Out_7_0_Y7_Separator AT %Q* : BOOL; 
+	/// ST28 (MRU copied to HPS)
+	In_8_0_B1_DoubleStopper_Full AT %I* : BOOL; 
+	In_8_0_B3_Separator_Full AT %I* : BOOL; 
+	In_8_0_B4_Hanger_In_Separator AT %I* : BOOL; 
+	In_8_0_B6_Hanger_In_RotationUnit AT %I* : BOOL; 
+	Out_8_0_Y2_DoubleStopper AT %Q* : BOOL; 
+	Out_8_0_Y5_Separator AT %Q* : BOOL; 
+	Out_8_0_Y7_RotationUnit AT %Q* : BOOL; 
+	Out_8_0_Y8_HangerRelease AT %Q* : BOOL; 
+	/// ST29 (MRU copied to HPS)
+	In_9_0_B2_DoubleStopper_Full AT %I* : BOOL; 
+	In_9_0_B4_DoubleStopper_Full AT %I* : BOOL; 
+	In_9_0_B6_HangerInSeparator AT %I* : BOOL; 
+	Out_9_0_Y3_DoubleStopper AT %Q* : BOOL; 
+	Out_9_0_Y5_DoubleStopper AT %Q* : BOOL; 
+	Out_9_0_Y7_Separator AT %Q* : BOOL; 
+	/// ST31 (MRU copied to HPS)
+	In_10_0_B1_DoubleStopper_Full AT %I* : BOOL; 
+	In_10_0_B3_Separator_Full AT %I* : BOOL; 
+	In_10_0_B4_Hanger_In_Separator AT %I* : BOOL; 
+	In_10_0_B6_Hanger_In_RotationUnit AT %I* : BOOL; 
+	Out_10_0_Y2_DoubleStopper AT %Q* : BOOL; 
+	Out_10_0_Y5_Separator AT %Q* : BOOL; 
+	Out_10_0_Y7_RotationUnit AT %Q* : BOOL; 
+	Out_10_0_Y8_HangerRelease AT %Q* : BOOL; 
+	/// ST32 (MRU copied to HPS)
+	In_11_0_B2_DoubleStopper_Full AT %I* : BOOL; 
+	In_11_0_B4_DoubleStopper_Full AT %I* : BOOL; 
+	In_11_0_B6_HangerInSeparator AT %I* : BOOL; 
+	Out_11_0_Y3_DoubleStopper AT %Q* : BOOL; 
+	Out_11_0_Y5_DoubleStopper AT %Q* : BOOL; 
+	Out_11_0_Y7_Separator AT %Q* : BOOL; 
+	/// ST37
+	In_15_0_B1_Hanger_In_TLK_ReadingStation AT %I* : BOOL;
+	In_15_0_B2_Hanger_In_TLK AT %I* : BOOL;
+	Out_15_Y3_Junction AT %Q* : BOOL;
+	Out_15_Y4_Junction AT %Q* : BOOL;
+	In_15_0_B15a_Dischare_Acknowledged AT %I* : BOOL;
+	In_15_0_B16a_TLP_Full AT %I* : BOOL;
+	In_15_0_B17a_Dischare_Acknowledged AT %I* : BOOL;
+	In_15_0_B18a_TLP_Full AT %I* : BOOL;
+	/// ST35
+	Out_15_0_Motor_Speed_K1_M1 AT %Q* : BOOL;
+	In_15_0_Motor_Ok_M1 AT %I* : BOOL;
+	In_15_0_B13_Clock_Pulse AT %I* : BOOL;
+	In_15_0_B14_Clock_Pulse AT %I* : BOOL;
+	In_15_0_B15_Loading_Pulse AT %I* : BOOL;
+	In_15_0_B16_Hanger_In_Compartement AT %I* : BOOL;
+	Out_15_0_Motor_Speed_K2_M1 AT %Q* : BOOL;
+	In_15_0_Q1_MaintenanceSwitch_Off AT %I* : BOOL;
+	/// ST18
+	In_16_0_Q1_MaintenanceSwitch_Off AT %I* : BOOL;
+	In_16_0_B3_Hanger_At_PreStopper AT %I* : BOOL;
+	Out_16_0_Y4_PreStopper AT %Q* : BOOL;
+	In_16_0_B5_Hanger_At_PreStopper AT %I* : BOOL;
+	Out_16_0_Y6_PreStopper AT %Q* : BOOL;
+	In_16_0_B7_Clock_Pulse AT %I* : BOOL;
+	In_16_0_B8_TLP_50Percent_Full AT %I* : BOOL;
 
+	///ST21
+	In_12_0_B6_Separator_Full AT %I* : BOOL;
+	Out_12_0_Y7_Separator AT %Q* : BOOL;
+	In_12_0_B8_Hanger_At_Separator AT %I* : BOOL;
+	///ST27
+	In_13_0_B6_Separator_Full AT %I* : BOOL;
+	Out_13_0_Y7_Separator AT %Q* : BOOL;
+	In_13_0_B8_Hanger_At_Separator AT %I* : BOOL;
+	///ST34
+	In_14_0_B6_Separator_Full AT %I* : BOOL;
+	Out_14_0_Y7_Separator AT %Q* : BOOL;
+	In_14_0_B8_Hanger_At_Separator AT %I* : BOOL;
+
+	
 END_VAR]]></Declaration>
     <ObjectProperties />
   </GVL>

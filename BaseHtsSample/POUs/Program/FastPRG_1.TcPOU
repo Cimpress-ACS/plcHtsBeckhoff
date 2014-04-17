@@ -1,8 +1,7 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="FastPRG_1" Id="{b624d175-54f8-4f4a-ae3e-53272a249758}">
     <Declaration><![CDATA[PROGRAM FastPRG_1
 VAR
-	
 	bolPlcStartupDone: BOOL := FALSE;
 	bolHostInitDone: BOOL := FALSE;
 	bolInitDone: BOOL := FALSE;
@@ -11,21 +10,22 @@ VAR
 	pTmpSIf_JUN: POINTER TO T_Ctrl_SIf_JUN;
 	intState: INT;
 	bolSetCmd: BOOL;
-	jj:INT;
+	jj: INT;
 	bolCtrlRst: BOOL;
-
-	// Decision Point Heat Presses
+	/// Decision Point Heat Presses
 	fbRFD_4: FB_RFR;
 	fbJUN_4a: FB_JUN;
 	fbJUN_4b: FB_JUN;
-
-	// Decision Point TLK
-	fbRFD_9: FB_RFR;
-	fbJUN_9a: FB_JUN;
-	fbJUN_9b: FB_JUN;
+	fbJUN_5a: FB_JUN;
+	fbJUN_5b: FB_JUN;
+	fbJUN_6a: FB_JUN;
+	fbJUN_6b: FB_JUN;
+	/// Decision Point TLK
+	fbRFD_15: FB_RFR;
+	fbJUN_15a: FB_JUN;
+	fbJUN_15b: FB_JUN;
 	fbCHD_4: FB_CHD;
 	pTmpSIf_CHD: POINTER TO T_Ctrl_SIf_CHD;
-	
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -38,7 +38,7 @@ END_VAR
 ¦___________________________________________________________________________________________________
 
 Function desription:
-call of all controller (FUB) for the slow task class.
+call of all controller (FUB) for the fast task class.
 
 
 History:
@@ -49,7 +49,7 @@ Version		Date			Author		Comment
 0.00.3		08.10.2013		VP/RE		Optimizations FAT Bürglistrasse version
 0.00.4		24.10.2013		AVME/MRU	CHD added, New BASE_PLC 0.3.3.0
 0.00.5		18.11.2013		AVME/MRU	CHD Parameter changed
-
+0.00.6		30.01.2013		VP/RE		JUN parameter changed
 ___________________________________________________________________________________________________*)
 
 // -----------------------------------------------------------------------------------------------
@@ -64,25 +64,79 @@ IF (NOT bolPlcStartupDone) THEN
 
 	fbJUN_4a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_4a);                   // init and entry fb_instance in global fb pointer array
 	pTmpSIf_JUN := fbJUN_4a.getCtrlSIf();
-	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;
-	pTmpSIf_JUN^.Par.dinPosition_um := 2355000;
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 2340000;
 	
 	fbJUN_4b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_4b);                  // init and entry fb_instance in global fb pointer array
 	pTmpSIf_JUN := fbJUN_4b.getCtrlSIf();
-	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
 	pTmpSIf_JUN^.Par.dinPosition_um := 3055000;
 
+	fbJUN_5a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_5a);                   // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_5a.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 2340000;
+	
+	fbJUN_5b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_5b);                  // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_5b.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 3055000;
+	
+	fbJUN_6a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_6a);                   // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_6a.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 2340000;
+	
+	fbJUN_6b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_6b);                  // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_6b.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 200000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 3055000;
+	
 	// Decision Point TLK
-	g_a_pFunRFD[2] := ADR(fbRFD_9);
+	g_a_pFunRFD[2] := ADR(fbRFD_15);
 
-	fbJUN_9a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_9a);  // init and entry fb_instance in global fb pointer array
-	pTmpSIf_JUN := fbJUN_9a.getCtrlSIf();
-	pTmpSIf_JUN^.Par.dinPosition_um := 6140000;   									// 4.10.2013 Measured
+	fbJUN_15a.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_15a);  // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_15a.getCtrlSIf();
 	pTmpSIf_JUN^.Cfg.dinTargetNr := 1;
-	fbJUN_9b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_9b); // init and entry fb_instance in global fb pointer array
-	pTmpSIf_JUN := fbJUN_9b.getCtrlSIf();
-	pTmpSIf_JUN^.Par.dinPosition_um := 7240000;   									// 4.10.2013 Measured
-	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 350000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 6140000;
+	
+
+	fbJUN_15b.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.JUN_15b); // init and entry fb_instance in global fb pointer array
+	pTmpSIf_JUN := fbJUN_15b.getCtrlSIf();
+	pTmpSIf_JUN^.Cfg.dinTargetNr := 2;	
+	pTmpSIf_JUN^.Par.udiOpenTime_ms:= 20;
+	pTmpSIf_JUN^.Par.udiCloseTime_ms:= 10;
+	pTmpSIf_JUN^.Par.udiPassTime_ms:= 4000;
+	pTmpSIf_JUN^.Par.dinOpenWay_um:= 350000;
+	pTmpSIf_JUN^.Par.dinPosition_um := 7240000;
 	
 	// ----------
 	// CHD_4
@@ -138,36 +192,53 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	//****************************************************************************************************
 	// Decision Point Heat Presses
 	fbRFD_4();
-	fbJUN_4a.In_bolPassed := In_bol_4_0_B12_Load_acknowledge;
+	fbJUN_4a.In_bolPassed := In_4_0_B12_Hanger_Acknowledged;
 	fbJUN_4a();
-	Out_bol_4_0_Q11_Junction := fbJUN_4a.Out_bolOpen;
+	Out_4_0_Y11_Junction := fbJUN_4a.Out_bolOpen;
 	
-	fbJUN_4b.In_bolPassed := In_bol_4_0_B15_Load_acknowledge;
+	fbJUN_4b.In_bolPassed := In_4_0_B15_Hanger_Acknowledged;
 	fbJUN_4b();
-	Out_bol_4_0_Q14_Junction := fbJUN_4b.Out_bolOpen;
+	Out_4_0_Y14_Junction := fbJUN_4b.Out_bolOpen;
 
-	// Decision Point TLK
-	fbRFD_9();
-	fbJUN_9a.In_bolPassed := In_bol_10_0_B17_Leave_acknowledge;
-	fbJUN_9a();
-	Out_bol_9_0_Q3_Junction := fbJUN_9a.Out_bolOpen;
+	fbJUN_5a.In_bolPassed := In_4_0_B22_Hanger_Acknowledged;
+	fbJUN_5a();
+	Out_4_0_Y21_Junction := fbJUN_5a.Out_bolOpen;
 	
-	fbJUN_9b.In_bolPassed := In_bol_11_0_B1_Doublestopper_full;
-	fbJUN_9b();
-	Out_bol_9_0_Q4_Junction := fbJUN_9b.Out_bolOpen;
+	fbJUN_5b.In_bolPassed := In_4_0_B24_Hanger_Acknowledged;
+	fbJUN_5b();
+	Out_4_0_Y23_Junction := fbJUN_5b.Out_bolOpen;
+	
+	fbJUN_6a.In_bolPassed := In_4_0_B26_Hanger_Acknowledged;
+	fbJUN_6a();
+	Out_4_0_Y25_Junction := fbJUN_6a.Out_bolOpen;
+	
+	fbJUN_6b.In_bolPassed := In_4_0_B28_Hanger_Acknowledged;
+	fbJUN_6b();
+	Out_4_0_Y27_Junction := fbJUN_6b.Out_bolOpen;
+	
+	// Decision Point TLK
+	fbRFD_15();
+	fbJUN_15a.In_bolPassed := In_15_0_B15a_Dischare_Acknowledged;
+	fbJUN_15a();
+	Out_15_Y3_Junction := fbJUN_15a.Out_bolOpen;
+	
+	fbJUN_15b.In_bolPassed := In_15_0_B17a_Dischare_Acknowledged;
+	fbJUN_15b();
+	Out_15_Y4_Junction := fbJUN_15b.Out_bolOpen;
 
 	// Inputs
-	fbCHD_4.In_bolDoubleHanger := In_bol_4_0_B4_Double_Hanger_Control;
-	fbCHD_4.In_bolPassed := In_bol_4_0_B16_Slide_full;
-	fbCHD_4.In_bolEmptyHanger := In_bol_4_0_B3_Empty_Hanger_Control;
+	fbCHD_4.In_bolDoubleHanger := In_4_0_B4_Crossed_Hanger_Detection;
+	fbCHD_4.In_bolPassed := In_4_0_B16_Rail_Full;
+	fbCHD_4.In_bolEmptyHanger := In_4_0_B3_Empty_Hanger_Detection;
 	// Function call
 	fbCHD_4();
 	// Outputs
-	Out_bol_4_0_Q6_Junction := fbCHD_4.Out_bolOpen;
-	Out_bol_4_0_Q5_Blow_Valve_light_sensor := fbCHD_4.Out_bolBlow;
+	Out_4_0_Y6_Junction := fbCHD_4.Out_bolOpen;
+	Out_4_0_Y5_Blowing_Light_Barrier := fbCHD_4.Out_bolBlow;
 
 END_IF
-// -----------------------------------------------------------------------------------------------]]></ST>
+// -----------------------------------------------------------------------------------------------
+]]></ST>
     </Implementation>
     <ObjectProperties />
   </POU>
