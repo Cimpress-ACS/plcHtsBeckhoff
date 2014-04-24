@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <GVL Name="JUN_CmdState" Id="{796f3f05-5fcb-44bd-b7aa-00bdd310cb60}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="JUN_CmdState" Id="{3183c6cb-75a7-4796-9860-bf47362efb7f}">
     <Declaration><![CDATA[VAR_GLOBAL CONSTANT
 	///ctrl commands definitions
 	///specific commands >200 - every command has to be a even number

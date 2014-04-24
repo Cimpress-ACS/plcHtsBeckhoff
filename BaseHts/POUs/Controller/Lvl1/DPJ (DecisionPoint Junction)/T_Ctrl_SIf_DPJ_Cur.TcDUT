@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_DPJ_Cur" Id="{77ff0026-ec5f-4604-9b2d-3b022f869346}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_DPJ_Cur" Id="{80265293-0cfa-4da3-bbee-fd7ce6bf9785}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_Cur :
 STRUCT
 	///[um] actual position from the transport written from Parent

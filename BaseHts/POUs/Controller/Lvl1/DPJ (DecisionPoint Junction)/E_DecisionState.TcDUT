@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="E_DecisionState" Id="{08bbaa38-9218-40bc-a121-237580c93e96}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="E_DecisionState" Id="{7266c7fa-7dd8-476c-90b1-afa9d4adfbc2}">
     <Declaration><![CDATA[TYPE E_DecisionState :
 (
 	none := 0,

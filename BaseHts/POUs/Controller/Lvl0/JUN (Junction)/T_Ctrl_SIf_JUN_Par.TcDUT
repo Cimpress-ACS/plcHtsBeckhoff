@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_JUN_Par" Id="{e976f34d-c29c-4dfb-a714-29a72bb65427}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_JUN_Par" Id="{67bbe0eb-41be-4728-9a6c-f063216e8076}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_Par :
 STRUCT
 	///[ms] until junction is open

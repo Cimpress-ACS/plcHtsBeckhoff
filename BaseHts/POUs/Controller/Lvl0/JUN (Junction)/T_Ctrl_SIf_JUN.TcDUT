@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_JUN" Id="{aaa5c7e3-6e57-4d71-ad61-d917a700ab9a}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_JUN" Id="{eb4389b9-8f51-44e0-bda9-b23c6b6aca25}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN :
 STRUCT
 	///configuration

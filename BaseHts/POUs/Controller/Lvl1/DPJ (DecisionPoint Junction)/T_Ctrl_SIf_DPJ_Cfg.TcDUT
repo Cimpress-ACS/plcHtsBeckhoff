@@ -1,22 +1,25 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_DPJ_Cfg" Id="{8a194cfb-1783-4732-a0ad-3ad500056b32}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_DPJ_Cfg" Id="{d7661a24-be9c-4ff5-b856-9d96261ddfc0}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_Cfg :
 STRUCT
 	eTyp: E_Typ_JUN;
-	// Maximale buffer capacity
+	/// Maximale buffer capacity
 	dinMaxCapacity: DINT;
-	// Number of junctions
+	/// Number of junctions
 	intCountJunctions: INT;
-	// Decisionpoint has a Hangerdetection sensor for exactly position reading
+	/// Decisionpoint has a Hangerdetection sensor for exactly position reading
 	bolHangerDetectionExist: BOOL;
-	// Send every Done Job to Line controller
+	/// Send every Done Job to Line controller
 	bolDtChToLine_send: BOOL;
-	// Simulation of the Speed internal, do not read Pos and speed from Transport
+	/// Simulation of the Speed internal, do not read Pos and speed from Transport
 	bolSimSpeedInternal: BOOL;
-	// Stop when Hanger passed the last instead of selected junction, else just Info
+	/// Stop when Hanger passed the last instead of selected junction, else just Info
 	bolStopAtPassLastJunction: BOOL;
-	// Number of elements in aTblDecision
+	/// Number of elements in aTblDecision
 	intMaxDecisions: INT;
+	/// Simulate line control data channels
+	bolSimDtChLine: BOOL;
+	bolSimEnableDtChToPLC: BOOL;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

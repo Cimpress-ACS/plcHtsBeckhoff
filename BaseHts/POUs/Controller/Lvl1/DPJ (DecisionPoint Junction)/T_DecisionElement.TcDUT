@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_DecisionElement" Id="{74d105ff-d289-4d1f-a275-132c4cc87dde}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_DecisionElement" Id="{919cc13b-0266-48dd-8415-fa596d13866d}">
     <Declaration><![CDATA[TYPE T_DecisionElement :
 STRUCT
 	stDecision: T_Decision;

@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.32</ProjectVersion>
+    <ProjectVersion>0.0.0.33</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.32 - HFE from Lvl1 to Lvl2 and reworked
+    <Description>0.0.0.33 - JUN / DPJ replaced with version from Shirtstream
+
+0.0.0.32 - HFE from Lvl1 to Lvl2 and reworked
 
 0.0.0.30 - BaseElements 0.0.1.5 BasePLC 0.3.4.3 included, Tc2_SerialCom
 
@@ -295,6 +297,9 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_JobDone_DtChn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\T_SimDtChn.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\Const_SLB.TcGVL">

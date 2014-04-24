@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_JUN_OutfeedCheck" Id="{8e593e39-ae22-475f-af8f-facb0848c23e}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_JUN_OutfeedCheck" Id="{93a96653-1394-42fc-928f-a8c0d7caf7e5}">
     <Declaration><![CDATA[TYPE T_JUN_OutfeedCheck :
 STRUCT
 	/// Time for check

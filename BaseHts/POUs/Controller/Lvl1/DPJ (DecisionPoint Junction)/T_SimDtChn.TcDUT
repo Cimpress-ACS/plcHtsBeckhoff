@@ -1,10 +1,13 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_JobDone_DtChn" Id="{d4cbfe30-9368-4b83-a592-da21af2a2222}">
-    <Declaration><![CDATA[TYPE T_JobDone_DtChn :
+  <DUT Name="T_SimDtChn" Id="{0658eb28-9a3a-4f86-878a-a5f5d18c5a01}">
+    <Declaration><![CDATA[TYPE T_SimDtChn :
 STRUCT
 	stDecision: T_Decision;
+	intJob: INT;
 	strTimestamp: STRING(24);
 	intDataState: INT;
+	/// 0=undef, 1=SimDataPLCToLineDone, 2=SimDataLineToPLCInWork
+	intInternalSimState: USINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

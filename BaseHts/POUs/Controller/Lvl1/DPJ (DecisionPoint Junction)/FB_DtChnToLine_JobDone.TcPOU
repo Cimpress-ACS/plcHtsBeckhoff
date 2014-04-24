@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <POU Name="FB_DtChnToLine_JobDone" Id="{6ea25c33-1296-4b68-9f30-d53698c6ef8f}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_DtChnToLine_JobDone" Id="{71232ca6-e241-4f50-a926-190534bba615}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_DtChnToLine_JobDone
 VAR_INPUT
 	bolResetError: BOOL;
@@ -77,6 +77,10 @@ ELSE
 	intError := cERR_NoSIF;
 END_IF
 
+// 
+
+
+
 CASE intStatemachine OF
 	cSTA_SUB_Data_Init:
 		IF pSIf^.DtChnToLine.stJobDone.intDataState = cDataState_DONE THEN
@@ -138,7 +142,7 @@ CASE intStatemachine OF
 			
 END_CASE]]></ST>
     </Implementation>
-    <Method Name="Creat" Id="{06fb16f0-1626-4ca5-a65c-aa001c462432}">
+    <Method Name="Creat" Id="{e7a502e3-ee2b-452b-913f-06089279cbb5}">
       <Declaration><![CDATA[METHOD Creat : INT
 VAR_INPUT
 	In_strTimestamp: STRING(24);

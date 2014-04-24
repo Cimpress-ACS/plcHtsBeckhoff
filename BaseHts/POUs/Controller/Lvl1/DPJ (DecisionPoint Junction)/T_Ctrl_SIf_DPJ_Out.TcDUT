@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_DPJ_Out" Id="{8becf3e6-0f98-4313-b532-b03091fa597f}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_DPJ_Out" Id="{8ae2f99f-84fd-4d19-b992-50e4eef96ee1}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_DPJ_Out :
 STRUCT
 	///switch valve retract

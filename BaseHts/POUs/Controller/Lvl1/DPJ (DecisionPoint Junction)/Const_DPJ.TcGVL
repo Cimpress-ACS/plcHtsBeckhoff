@@ -1,7 +1,8 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <GVL Name="Const_DPJ" Id="{2971188a-813f-40a9-b781-3a3cc8b8dc05}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="Const_DPJ" Id="{f4f7fcb7-3d4c-4b0d-9783-33f888966e82}">
     <Declaration><![CDATA[VAR_GLOBAL CONSTANT
-	cintMaxDecisions: INT := 100; // Reduced, was 300
+	/// Reduced, was 300
+	cintMaxDecisions: INT := 100;
 END_VAR]]></Declaration>
     <ObjectProperties />
   </GVL>
