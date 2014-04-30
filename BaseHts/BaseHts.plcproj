@@ -215,33 +215,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Compile Include="POUs\Controller\Lvl0\PLS %28PickToLight System%29\T_Ctrl_SIf_PLS_Par.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\FB_STB.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\STB_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Ilk.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Out.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\T_Ctrl_SIf_STB_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\Const_DPJ.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -437,42 +410,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Compile Include="POUs\Controller\Lvl2\HPS %28Heat Press Shirt Station%29\T_NewCharge_DtChn.TcDUT">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\Const_MER.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_AUTO_MODE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\E_Typ_MER_MODE.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\FB_MER.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\MER_CmdState.TcGVL">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cfg.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Cur.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_In.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Ctrl_SIf_MER_Par.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_Line.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="POUs\Controller\Lvl2\MER %28Merger%29\T_MER_Buffer_Sections.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Version\Global_Version.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -486,7 +423,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="POUs\Controller\Lvl0\JUN %28Junction%29\" />
     <Folder Include="POUs\Controller\Lvl0\LAI %28Labler Interface%29\" />
     <Folder Include="POUs\Controller\Lvl0\PLS %28PickToLight System%29\" />
-    <Folder Include="POUs\Controller\Lvl0\STB %28Stopper buffer%29\" />
     <Folder Include="POUs\Controller\Lvl1\DPJ %28DecisionPoint Junction%29\" />
     <Folder Include="POUs\Controller\Lvl1\SLB %28Slide buffer%29\" />
     <Folder Include="POUs\Controller\Lvl2\" />
@@ -495,7 +431,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="POUs\Controller\Lvl2\FOL %28Folder%29\" />
     <Folder Include="POUs\Controller\Lvl2\HFE\" />
     <Folder Include="POUs\Controller\Lvl2\HPS %28Heat Press Shirt Station%29\" />
-    <Folder Include="POUs\Controller\Lvl2\MER %28Merger%29\" />
     <Folder Include="POUs\Controller\Lvl3" />
     <Folder Include="POUs\Controller\Lvl1" />
     <Folder Include="POUs\Utility Functions\" />
@@ -592,8 +527,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <SubObject Include="FB_LST_1.sta_OFFBusy" />
     <SubObject Include="FB_LST_1.sta_PON" />
     <SubObject Include="FB_LST_1.sta_PONBusy" />
-    <SubObject Include="FB_MER.BufferFull" />
-    <SubObject Include="FB_MER.BufferFull.Get" />
     <SubObject Include="FB_PTL.CtrlInit" />
     <SubObject Include="FB_PTL.FB_init" />
     <SubObject Include="FB_PTL.getCmdState" />
@@ -607,8 +540,6 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <SubObject Include="FB_PTL.sta_OFFBusy" />
     <SubObject Include="FB_PTL.sta_PON" />
     <SubObject Include="FB_PTL.sta_PONBusy" />
-    <SubObject Include="FB_STB.BufferFull" />
-    <SubObject Include="FB_STB.BufferFull.Get" />
     <SubObject Include="IBuffer.MaxCapacity" />
     <SubObject Include="IBuffer.MaxCapacity" />
     <SubObject Include="IBuffer.MaxCapacity.Get" />

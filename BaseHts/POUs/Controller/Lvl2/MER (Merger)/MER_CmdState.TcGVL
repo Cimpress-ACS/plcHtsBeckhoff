@@ -1,7 +1,0 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <GVL Name="MER_CmdState" Id="{b9214a5f-7159-4b63-935d-ec28da4fcc76}">
-    <Declaration><![CDATA[VAR_GLOBAL
-END_VAR]]></Declaration>
-    <ObjectProperties />
-  </GVL>
-</TcPlcObject>
