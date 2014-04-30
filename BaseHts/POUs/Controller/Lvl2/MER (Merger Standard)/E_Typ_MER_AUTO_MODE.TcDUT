@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="E_Typ_MER_AUTO_MODE" Id="{33420f6c-a0f4-4aa0-82aa-2118d1ec3331}">
+  <DUT Name="E_Typ_MER_AUTO_MODE" Id="{2572c362-2ffb-4d5e-8f4a-bffd19bfc89b}">
     <Declaration><![CDATA[TYPE E_Typ_MER_AUTO_MODE :
 (
 	/// 0= Merge over time 	

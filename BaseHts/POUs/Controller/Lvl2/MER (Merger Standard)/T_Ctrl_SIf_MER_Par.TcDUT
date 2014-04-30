@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MER_Par" Id="{65b4b177-2e17-4329-8888-27fa3c444dcd}">
+  <DUT Name="T_Ctrl_SIf_MER_Par" Id="{cd9b2267-217b-4d03-a1a4-f316a74b20d1}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Par :
 STRUCT
 	/// Setpoint, line number to release all from parent in case if main mode "OnCommand" is selected. (1 -> X)

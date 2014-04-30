@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="E_Typ_MER_MODE" Id="{5c6ff74c-8415-465c-b530-a7a7cb6673b3}">
+  <DUT Name="E_Typ_MER_MODE" Id="{09f79c7e-babd-4fd7-a73c-13ea1493a92a}">
     <Declaration><![CDATA[TYPE E_Typ_MER_MODE :
 (
 	/// 0= main mode automatic, controller automatically merge hangers from different lines dependent E_Typ_MER_AUTO_MODE

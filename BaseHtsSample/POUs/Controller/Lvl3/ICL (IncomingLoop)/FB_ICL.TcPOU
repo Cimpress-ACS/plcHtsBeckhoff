@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="FB_ICL" Id="{02a250b4-4676-41ca-9fdd-76c07d8e8914}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_ICL EXTENDS FB_CtrlModule
 VAR
@@ -7,7 +7,7 @@ VAR
 	/// List of childs specific interface for additional parameters or cur	
 	pDPJ_4_SIF: POINTER TO T_Ctrl_SIf_DPJ;
 	pDPJ_9_SIF: POINTER TO T_Ctrl_SIf_DPJ;
-	pMER_8_SIF: POINTER TO T_Ctrl_SIf_MER;
+	pMER_8_SIF: POINTER TO T_Ctrl_SIf_MTR;
 	pCHD_4_SIF: POINTER TO T_Ctrl_SIf_CHD;
 	pTLP_4_SIF: POINTER TO T_Ctrl_SIf_DRV;
 	pTLK_9_SIF: POINTER TO T_Ctrl_SIf_DRV;
@@ -93,142 +93,58 @@ pMER_8_SIF := p_fbMER_8^.getCtrlSIf();
 pCHD_4_SIF := p_fbCHD_4^.getCtrlSIf();]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{808e6c7f-401c-4798-81e9-d749bc0c2149}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+    <Method Name="IoOutBridge" Id="{4dab2c97-99b0-4c22-a400-9afddc21a41a}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
-
-		// State Change Condition	
-		IF (me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
-		END_IF
-
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Always" Id="{f383c623-6310-4d82-b373-93c3dbe56a8f}">
-      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
-	//me.StateMachine.intStateNext := cSTA_OFFBusy;
-	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
-END_IF
-
-SUPER^.Always();
-
-// ---------------------------------------------------------------------------------
-// Simulation
-IF (CIf.SwCfg.bolSimulation) THEN
-	;
-END_IF
+        <ST><![CDATA[SUPER^.IoOutBridge();
+// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
 	
-// ----------------------------------------------------------------------------------
-// cyclic actions outside of statemachine
-IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
-	;
-END_IF
-
-// Variable mapping for Childs
-pDPJ_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
-pDPJ_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
-pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[0] := TRUE;
-pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
-
-pDPJ_9_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
-pDPJ_9_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
-pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[0] := pTLP_10_CIf^.Job.intState = cSTA_RUN;
-pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
-
-// Speed to merger 8
-pMER_8_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
-pMER_8_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
-
-// Variable mapping for CHD
-pCHD_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
-pCHD_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
-
-// ----------------------------------------------------------------------------------
-// Conditions Always
-// EOFF exist in FB_CtrlModule. Not overrule.
-(*
-// overrule error always from base -> no EOFF State!! in EOFF go to OFF
-IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
-	IF (me.StateMachine.intState=cSTA_OFF) THEN
-		me.StateMachine.intStateNext := cSTA_OFF;
-	ELSE // stay in OFF
-		me.StateMachine.intStateNext := cSTA_OFFBusy;
+		;
 	END_IF
-*)
-
-IF (me.Alarm.eActivAlmClass=E_AlmClass.STOP) AND (me.StateMachine.intStateNext<>cSTA_Error)
-		AND ((me.StateMachine.intState = cSTA_RUN) OR (me.StateMachine.intState = cSTA_RUNBusy))THEN
-	// alarm evt STOP
-	me.StateMachine.intStateNext := cSTA_STOPBusy;	
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCmdState" Id="{56732ee2-bf16-496a-ba6f-e89bdde02a52}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+	ELSE
+	
+	// cmd's
+		CASE intCmdState OF
+				
+		END_CASE;
+	END_IF
 END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_STOP" Id="{e0fcc967-bb3c-4fb6-b767-1df9d0caa10a}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+    <Method Name="IoInBridge" Id="{6f37f59f-c9ef-42df-8c69-af6978e78f8f}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-	END_IF
+        <ST><![CDATA[SUPER^.IoInBridge();
+// digitale and analoge inputs read from hardware or forcing
 
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		;
-		
-		
-		// State Change Condition
-		IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP ) THEN
-			IF (me.intCmd=cCMD_RUN) THEN
-				me.StateMachine.intStateNext :=  cSTA_RUNBusy;
-			END_IF
-		ELSE
-			// Clear pending command to prevent automatic recovery!
-			CIf.Job.intACmd:=cSTA_DONE;
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	;
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="FB_init" Id="{77eeca91-af8b-4a92-b2db-b61c47d7b920}">
@@ -295,81 +211,41 @@ END_FOR
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCmdState" Id="{56732ee2-bf16-496a-ba6f-e89bdde02a52}">
-      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
-VAR_INPUT
-	intCmdState: INT;
-	bolState: BOOL;
-END_VAR
+    <Method Name="sta_RUN" Id="{808e6c7f-401c-4798-81e9-d749bc0c2149}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
-IF (getCmdState='') THEN // global not defined get local
-	// get string cmd/state string information in runtime
-	IF (bolState=FALSE) THEN
-		// cmd's
-	ELSE
-	
-	// cmd's
-		CASE intCmdState OF
-				
-		END_CASE;
-	END_IF
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoInBridge" Id="{6f37f59f-c9ef-42df-8c69-af6978e78f8f}">
-      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.IoInBridge();
-// digitale and analoge inputs read from hardware or forcing
-
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	;
-ELSE
-	//simulation of global IO
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="getCtrlSIf" Id="{e0645c96-129d-4e27-bee9-56f0e4f35ff0}">
-      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_ICL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="StateMachine" Id="{b3a5b6f1-4248-4779-8017-4c41a94f29a4}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-    cSTA_RUN: 
-        THIS^.sta_RUN();
-    cSTA_STOP: 
-        THIS^.sta_STOP();	
-END_CASE;
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoOutBridge" Id="{4dab2c97-99b0-4c22-a400-9afddc21a41a}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.IoOutBridge();
-// digitale and analoge inputs read from hardware or forcing
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	// check interlocks to prevent damages
-	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
-	
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
 		;
 	END_IF
-END_IF]]></ST>
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+
+		// State Change Condition	
+		IF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		END_IF
+
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF
+
+]]></ST>
       </Implementation>
     </Method>
     <Method Name="sta_OFF" Id="{8e5d69b0-1f3d-4ab3-a409-1f81bdacc77c}">
@@ -404,6 +280,130 @@ END_IF]]></ST>
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
 		;
 	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{b3a5b6f1-4248-4779-8017-4c41a94f29a4}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+    cSTA_STOP: 
+        THIS^.sta_STOP();	
+END_CASE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCtrlSIf" Id="{e0645c96-129d-4e27-bee9-56f0e4f35ff0}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_ICL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_STOP" Id="{e0fcc967-bb3c-4fb6-b767-1df9d0caa10a}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.STOP ) THEN
+			IF (me.intCmd=cCMD_RUN) THEN
+				me.StateMachine.intStateNext :=  cSTA_RUNBusy;
+			END_IF
+		ELSE
+			// Clear pending command to prevent automatic recovery!
+			CIf.Job.intACmd:=cSTA_DONE;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Always" Id="{f383c623-6310-4d82-b373-93c3dbe56a8f}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
+	//me.StateMachine.intStateNext := cSTA_OFFBusy;
+	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
+END_IF
+
+SUPER^.Always();
+
+// ---------------------------------------------------------------------------------
+// Simulation
+IF (CIf.SwCfg.bolSimulation) THEN
+	;
+END_IF
+	
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	;
+END_IF
+
+// Variable mapping for Childs
+pDPJ_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
+pDPJ_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
+pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[0] := TRUE;
+pDPJ_4_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
+
+pDPJ_9_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
+pDPJ_9_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
+pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[0] := pTLP_10_CIf^.Job.intState = cSTA_RUN;
+pDPJ_9_SIF^.Cur.a_bolJunctionOutputOK[1] := TRUE;
+
+// Speed to merger 8
+pMER_8_SIF^.Cur.dinTransportPosition_um := pTLK_9_SIF^.Cur.dinPos_um;
+pMER_8_SIF^.Cur.dinTransportspeed_um_s := pTLK_9_SIF^.Cur.dinSpeed_um_s;
+
+// Variable mapping for CHD
+pCHD_4_SIF^.Cur.dinTransportPosition_um := pTLP_4_SIF^.Cur.dinPos_um;
+pCHD_4_SIF^.Cur.dinTransportspeed_um_s := pTLP_4_SIF^.Cur.dinSpeed_um_s;
+
+// ----------------------------------------------------------------------------------
+// Conditions Always
+// EOFF exist in FB_CtrlModule. Not overrule.
+(*
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+*)
+
+IF (me.Alarm.eActivAlmClass=E_AlmClass.STOP) AND (me.StateMachine.intStateNext<>cSTA_Error)
+		AND ((me.StateMachine.intState = cSTA_RUN) OR (me.StateMachine.intState = cSTA_RUNBusy))THEN
+	// alarm evt STOP
+	me.StateMachine.intStateNext := cSTA_STOPBusy;	
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <ObjectProperties />

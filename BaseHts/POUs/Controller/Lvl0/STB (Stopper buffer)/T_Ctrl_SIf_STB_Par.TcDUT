@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_STB_Par" Id="{81d3ed45-9894-4a05-a4ad-530361756a1c}">
+  <DUT Name="T_Ctrl_SIf_STB_Par" Id="{af4028ff-692b-4e05-8d96-b60e0c6e296d}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Par :
 STRUCT
 	/// [ms] Pulse length valve (clocking)
@@ -17,14 +17,15 @@ STRUCT
 	udiReleaseAllTime_ms: UDINT;
 	/// [ms] Debounce time for inputs
 	udiDebounceTime_ms: UDINT;
-	// This parameter is used in combination with FB_MTR
-	// [um] Position of the end of slide (must be measured, starts at pin sensor [zero pos], ends at the point where the slide comes in the transport)
+	/// This parameter is used in combination with FB_MTR
+	/// [um] Position of the end of slide (must be measured, starts at pin sensor [zero pos], ends at the point where the slide comes in the transport)
 	dinPositionOfSlide_um: DINT;
-	// This parameter is used in combination with FB_MTR	
-	// [ms] Time on slide.
+	/// This parameter is used in combination with FB_MTR	
+	/// [ms] Time on slide.
 	uinTimeOnSlide_ms: UINT;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

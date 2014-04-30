@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Line" Id="{ef95cf22-601a-4890-8131-8dfd6fd80434}">
+  <DUT Name="T_Line" Id="{a9d57bd9-e9b1-41a5-b185-daaf0cb00f6d}">
     <Declaration><![CDATA[TYPE T_Line :
 STRUCT
 	/// Merge-mode

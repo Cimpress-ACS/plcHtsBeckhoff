@@ -340,7 +340,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Add pointers
 	fbICL_1.p_fbDPJ_4 := g_a_pCtrlInst[E_CtrlId.DPJ_4];
 	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_15];
-	fbICL_1.p_fbMTR_15 := g_a_pCtrlInst[E_CtrlId.MTR_15];
+	fbICL_1.p_fbMER_8 := g_a_pCtrlInst[E_CtrlId.MTR_15];
 	fbICL_1.p_fbCHD_4 := g_a_pCtrlInst[E_CtrlId.CHD_4];
 	fbICL_1.p_fbTLP_4 := g_a_pCtrlInst[E_CtrlId.TLP_4];
 	fbICL_1.p_fbTLP_10 := g_a_pCtrlInst[E_CtrlId.TLP_16];

@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MTR_Par" Id="{f2843daa-5cb0-4265-96ab-263bd6506bf5}">
+  <DUT Name="T_Ctrl_SIf_MTR_Par" Id="{ca01da24-5949-4fcf-93cd-fe6e8b3437d3}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MTR_Par :
 STRUCT
 	/// [um] Pin Lenght

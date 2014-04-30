@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_STB_Cfg" Id="{d35be0a5-9ddd-45cb-8b1f-f5e6a341269a}">
+  <DUT Name="T_Ctrl_SIf_STB_Cfg" Id="{455bae2f-6af6-4ed9-96fe-8cc1a221724c}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Cfg :
 STRUCT
 	/// Has buffer full sensor (optional)
@@ -20,14 +20,15 @@ STRUCT
 	bolCylPosLostMonitoring: BOOL;
 	/// to release all work with puleses and counts or use time to release
 	bolReleaseAllNonPulse: BOOL;
-	// Unique line number. (Starts with 1..) Used in case if STB work in combination with FUB MTR to merge hangers into a TLK.
+	/// Unique line number. (Starts with 1..) Used in case if STB work in combination with FUB MTR to merge hangers into a TLK.
 	usiLineNumber: USINT;
-	// Simulation mode
-	// 0 = Normal simulation of STB function, e.g. STB in combination with SLB controller
-	// 1 = Hanger detection signal can be overridden manually to test STB in combination with MTR controller
-	usiSimulationMode: USINT;	
+	/// Simulation mode
+	/// 0 = Normal simulation of STB function, e.g. STB in combination with SLB controller
+	/// 1 = Hanger detection signal can be overridden manually to test STB in combination with MTR controller
+	usiSimulationMode: USINT;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

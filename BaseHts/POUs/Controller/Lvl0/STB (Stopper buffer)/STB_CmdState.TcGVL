@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <GVL Name="STB_CmdState" Id="{46642582-ded6-4061-8727-b4dbfc82905f}">
+  <GVL Name="STB_CmdState" Id="{66fcd6e3-d27a-4159-99c3-8804ed4816a5}">
     <Declaration><![CDATA[VAR_GLOBAL CONSTANT
 	/// ctrl commands definitions
 	/// specific commands >200 - every command has to be a even number

@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_STB_Out" Id="{f1c0bed8-a242-4f7f-a61b-a5c837d01ddd}">
+  <DUT Name="T_Ctrl_SIf_STB_Out" Id="{e018e5a0-900b-4f06-9cc4-a1b3368e461b}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Out :
 STRUCT
 	/// Output for controlling the pneumatic cylinder 

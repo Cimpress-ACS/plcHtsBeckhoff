@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MER_In" Id="{d99a4279-663d-481f-b9ca-efdef6b54dea}">
+  <DUT Name="T_Ctrl_SIf_MER_In" Id="{b86bd678-6cb9-46be-9f82-5c6e4f759512}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_In :
 STRUCT
 	/// Sensors for jam detection (option)

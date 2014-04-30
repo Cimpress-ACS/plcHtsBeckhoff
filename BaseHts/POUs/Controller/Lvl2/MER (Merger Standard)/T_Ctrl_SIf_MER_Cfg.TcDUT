@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MER_Cfg" Id="{59962ece-9451-4d94-b8d9-ba95966f6dbd}">
+  <DUT Name="T_Ctrl_SIf_MER_Cfg" Id="{97d9bc2f-1324-4c13-b225-ff53df08d648}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Cfg :
 STRUCT
 	/// Merger main mode

@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <POU Name="FB_STB" Id="{c8b52cc0-6bd9-4b10-ac2e-3831051316a4}">
+  <POU Name="FB_STB" Id="{2c0e0df1-8c09-41f8-a0bd-c96c8ecb57b7}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_STB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
 	/// Sensor hanger detected
@@ -43,16 +43,14 @@ VAR
 	bolWaitForDecrement: BOOL;
 	/// Copy of Output
 	bolRetractOld: BOOL;
-	
 	///Last new position value from parent
 	dinTransportPositionOld_um: DINT;
 	///Position correction in faster Task cycletime
 	dinPositionCorrection_um: DINT;
-	// [um] Calculated negative trigger offset 
-	dinCalcTrigNegPosOffset_um : DINT;
-	// Loop variable
+	/// [um] Calculated negative trigger offset 
+	dinCalcTrigNegPosOffset_um: DINT;
+	/// Loop variable
 	intBufferIndex: INT;
-
 END_VAR
 VAR CONSTANT
 	/// sub States for RELEASE_ALL Function
@@ -60,9 +58,9 @@ VAR CONSTANT
 	cSTA_SUB_HANGER_PASSING: INT := 502;
 	cSTA_SUB_HANGER_PASSED: INT := 504;
 	cSTA_SUB_FINISHED: INT := 506;
-	cSTA_SUB_CHECK_FOR_RESERVATION: INT:= 508;
-	cSTA_SUB_RELEASE_BUSY: INT:= 510;
-	cSTA_SUB_STOP: INT:= 512;
+	cSTA_SUB_CHECK_FOR_RESERVATION: INT := 508;
+	cSTA_SUB_RELEASE_BUSY: INT := 510;
+	cSTA_SUB_STOP: INT := 512;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -134,14 +132,591 @@ IF (me.bolActivate) THEN // cyclic call enabled
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="getCtrlSIf" Id="{15fe5429-3d53-46f9-9125-d9d66bc98ae3}">
+    <Property Name="BufferFull" Id="{02284bae-b0f7-4a3a-834f-eefb1f826051}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{7e5bfe22-a6d6-4c42-bc48-1c9a217e37c2}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= SIf.Cur.bolBufferFull;]]></ST>
+        </Implementation>
+        <ObjectProperties />
+      </Get>
+      <ObjectProperties />
+    </Property>
+    <Method Name="sta_RELEASE_ALL" Id="{0695e32c-02f5-48c8-b73b-3f463f88cf33}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
+		;
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+
+		// State Change Condition
+		IF ((me.intCmd=cCMD_STOP) OR (me.intCmd=STB_CmdState.cCMD_RELEASE)) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_STOPBusy" Id="{088b1a7b-32dc-4c78-9a4a-516f95b15a9f}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+		// Switch valve off, cylinder back to extend position -> stop hanger
+		SIf.Out.bolRetract.intern := FALSE;
+		SIf.Out.bolRetract2.intern := TRUE;	
+				
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
+			me.StateMachine.intStateNext := cSTA_STOP;
+		END_IF
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCtrlSIf" Id="{15f5c180-a2b3-495e-b78f-09cae671113b}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_STB
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="FB_init" Id="{1d354139-e7b2-4543-a7ec-09d67062c543}">
+    <Method Name="sta_STOP" Id="{18e0f5bc-2ce1-4277-9ce8-609e3e93faca}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		bolErrorPosLost:= FALSE;
+		uinPosEdgeCounter:= 0;
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+	
+		//--------------------------------------------------------------------
+		// Monitoring for cylinder position lost
+		//--------------------------------------------------------------------
+		IF (Sif.cfg.bolCylPosLostMonitoring=TRUE) THEN
+			
+			// -> Checked indirectly via sensor "buffer full" or "hanger detected" if exist.
+			
+			// Decision, which sensor should be used for monitoring
+			// Prio 1. Always use the hanger detection sensor if exists
+			IF (SIf.Cfg.bolHasHangerDetection = TRUE) THEN
+				// Use hanger detection sensor signal
+				bolSignalForPosLostMonitoring:= SIf.In.bolHangerDetected.intern;
+			ELSE
+				// Prio 2. Check if buffer full sensor exists 
+				IF (SIf.Cfg.bolHasBufferFullSensor = TRUE) THEN
+					// Use buffer full sensor signal
+					bolSignalForPosLostMonitoring:= SIf.In.bolBufferFull.intern;
+				ELSE
+					// No sensor exist. Not possible to monitor cylinder position lost! 
+					bolSignalForPosLostMonitoring:= FALSE;
+				END_IF
+			END_IF
+				
+			// Count sensor pos. edges
+			IF ((bolSignalForPosLostMonitoring <> bolSignalForPosLostMonitoringOld) AND (bolSignalForPosLostMonitoring = TRUE))THEN	
+				uinPosEdgeCounter:= uinPosEdgeCounter + 1;
+			END_IF
+			bolSignalForPosLostMonitoringOld:= bolSignalForPosLostMonitoring;
+						
+			// Check condition for set error
+			// Wait until the counter is > than dinMaxNumOfHangers_PosMonitoring
+			IF (uinPosEdgeCounter > SIf.Cfg.dinMaxNumOfHangers_PosMonitoring) THEN
+				bolErrorPosLost:= TRUE;
+			END_IF
+			
+		END_IF
+		
+		//--------------------------------------------------------------------
+		//--------------------------------------------------------------------
+		
+		// State Change Condition	
+		// Error cylinder position lost
+		IF ((bolErrorPosLost=TRUE) AND (Sif.cfg.bolCylPosLostMonitoring=TRUE))THEN
+			// SIf.Alm[3].strText := 'Cylinder position lost. Hangers slip through';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			bolErrorPosLost:= FALSE;
+			uinPosEdgeCounter:= 0;
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		ELSIF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN 
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASEBusy;
+		ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
+		ELSIF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+//-------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASE" Id="{1da0ee01-0cdc-4e7f-9127-89d072bd7bce}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+			
+		;
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Switch valve off, cylinder back to extend position -> stop hanger
+		SIf.Out.bolRetract.intern := FALSE;
+		SIf.Out.bolRetract2.intern := TRUE;	
+		
+		// State Change Condition
+		IF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
+		END_IF
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Property Name="MaxCapacity" Id="{1e6304d1-0221-44bd-a956-b9950d6623bc}">
+      <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{96f5bfb5-fb4d-48e4-b8a7-cb03a42f5e7d}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MaxCapacity:= SIf.Cfg.dinMaxCapacity;]]></ST>
+        </Implementation>
+        <ObjectProperties />
+      </Get>
+      <ObjectProperties />
+    </Property>
+    <Method Name="getCmdState" Id="{2bdf6a61-a73b-4fe4-b312-0c81796df710}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+			STB_CmdState.cCMD_RELEASE_ALL: 
+				getCmdState := 'cCMD_RELEASE_ALL';
+			STB_CmdState.cCMD_RELEASE: 
+				getCmdState := 'cCMD_RELEASE';
+		END_CASE;
+	ELSE
+	
+	// states
+		CASE intCmdState OF
+			STB_CmdState.cSTA_RELEASE_ALLBusy: 
+				getCmdState := 'cSTA_RELEASE_ALLBusy';
+			STB_CmdState.cSTA_RELEASE_ALL: 
+				getCmdState := 'cSTA_RELEASE_ALL';
+			STB_CmdState.cSTA_RELEASEBusy: 
+				getCmdState := 'cSTA_RELEASEBusy';
+			STB_CmdState.cCMD_RELEASE: 
+				getCmdState := 'cCMD_RELEASE';
+		
+			// SUB States
+			cSTA_SUB_INITIALIZED:
+				getCmdState := 'cSTA_SUB_INITIALIZED';
+			cSTA_SUB_HANGER_PASSING:
+				getCmdState := 'cSTA_SUB_HANGER_PASSING';
+			cSTA_SUB_HANGER_PASSED:
+				getCmdState := 'cSTA_SUB_HANGER_PASSED';
+			cSTA_SUB_FINISHED:
+				getCmdState := 'cSTA_SUB_FINISHED';				
+			cSTA_SUB_CHECK_FOR_RESERVATION:
+				getCmdState := 'cSTA_SUB_CHECK_FOR_RESERVATION';			
+			cSTA_SUB_RELEASE_BUSY:
+				getCmdState := 'cSTA_SUB_RELEASE_BUSY';		
+			cSTA_SUB_STOP:
+				getCmdState := 'cSTA_SUB_STOP';	
+													
+		END_CASE;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFFBusy" Id="{306326e6-a0b7-46fa-b764-cc316669bf70}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+			
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Switch valve off, cylinder back to extend position -> stop hanger
+		SIf.Out.bolRetract.intern := FALSE;
+		SIf.Out.bolRetract2.intern := TRUE;	
+			
+		// State Change Condition
+		IF (FALSE) THEN
+			;
+		ELSIF (TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_OFF;
+		END_IF
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASEBusy" Id="{395698e3-6919-4c84-a482-a281905ef5ac}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+		// Check if min. one hanger exist and save info tmp. Used for counting in state RELEASE.	
+		IF (SIf.In.bolHangerDetected.intern = TRUE) THEN
+			bolHangerDetected:= TRUE;
+		ELSE
+			bolHangerDetected:= FALSE;
+		END_IF
+	
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Switch valve on, cylinder to retract position -> release hanger
+		SIf.Out.bolRetract.intern := TRUE;
+		SIf.Out.bolRetract2.intern := FALSE;	
+		
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE;
+	
+			// Update all counters. Only if a hanger was detected before.
+			// If no hanger detection sensor exists, count unconditional with every cylinder stroke
+			IF (bolHangerDetected = TRUE) OR (SIf.Cfg.bolHasHangerDetection = FALSE) THEN
+				
+				// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
+				// For all other units like e.g. double stopper it's only an approximate number.
+			
+				IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
+					IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
+						// Calculate number of hangers in buffer dependent number of hangers per pulse
+						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+					ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
+						// Calculate number of hangers in buffer dependent number of hangers per pulse
+						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
+					END_IF
+				END_IF
+					
+				// Calculate total counter dependent number of hangers per pulse
+				SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
+				
+				bolHangerDetected:= FALSE;
+			END_IF
+				
+		END_IF
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_ERROR" Id="{5d0a2b8f-1244-4216-9fec-4f419e65b64a}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Switch valve off, cylinder back to extend position -> stop hanger
+		SIf.Out.bolRetract.intern := FALSE;
+		SIf.Out.bolRetract2.intern := TRUE;	
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="StateMachine" Id="{6e79d84e-f7c9-45ea-9c1b-3ad4cd70559c}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+	cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+    cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+    STB_CmdState.cSTA_RELEASE_ALLBusy: 
+        THIS^.sta_RELEASE_ALLBusy();
+    STB_CmdState.cSTA_RELEASE_ALL: 
+        THIS^.sta_RELEASE_ALL();
+    STB_CmdState.cSTA_RELEASEBusy: 
+        THIS^.sta_RELEASEBusy();
+    STB_CmdState.cSTA_RELEASE: 
+        THIS^.sta_RELEASE();
+END_CASE;
+
+
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUN" Id="{744bfd93-ce22-4ca3-812f-c4f1ba7e6668}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		// Init sub state machine	
+		me.SubStateMachine.intState := cSTA_SUB_CHECK_FOR_RESERVATION; 
+		me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_FOR_RESERVATION; 
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		//----------------------------------------------------------------------
+		// Calculate position for transport 
+		//----------------------------------------------------------------------	
+		// If this task is in faster cycle then the parent, calculate internal position more exactly during the taskcycle
+		IF dinTransportPositionOld_um <> SIf.Cur.dinTransportPosition_um THEN
+			SIf.Cur.dinTransportPositionCalc_um := SIf.Cur.dinTransportPosition_um;
+			dinTransportPositionOld_um := SIf.Cur.dinTransportPosition_um;
+			dinPositionCorrection_um := 0;
+		ELSE
+			dinPositionCorrection_um := dinPositionCorrection_um + LREAL_TO_DINT(DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s) * UDINT_TO_LREAL(me.FUBInfo.udiSample_ms) / 1000.0 );
+			SIf.Cur.dinTransportPositionCalc_um := dinTransportPositionOld_um + dinPositionCorrection_um;
+		END_IF
+				
+		//--------------------------------------------------------------------------------------
+		// sub state machine
+		CASE me.SubStateMachine.intState OF
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_CHECK_FOR_RESERVATION:
+			
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+					;
+				END_IF
+			
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+					;
+				END_IF
+							
+				// Calculate trigger "negative" position offset.
+				// Note: The trigger offset must be calculated dependent the drive (transport) speed 
+				// Formular: TrigNegPosOffset = DriveSpeed * TimeOnSlide	
+				dinCalcTrigNegPosOffset_um:= REAL_TO_DINT (DINT_TO_REAL(SIf.Cur.dinTransportspeed_um_s) * (UINT_TO_REAL(SIf.Par.uinTimeOnSlide_ms) / 1000));
+					
+				// Check trigger window
+				FOR intBufferIndex := 0 TO Const_MTR.cusiSectionBuffer_SIZE DO
+					// Check if the current transport position is within the trigger window and if section is reserved for this instance to release the hanger
+					IF ((SIf.Par.dinPositionOfSlide_um < (SIf.Cur.pSectionBuffer^[intBufferIndex].dinTrigStartPos - dinCalcTrigNegPosOffset_um))
+						AND (SIf.Par.dinPositionOfSlide_um > (SIf.Cur.pSectionBuffer^[intBufferIndex].dinTrigEndPos - dinCalcTrigNegPosOffset_um))
+						AND (SIf.Cur.pSectionBuffer^[intBufferIndex].enmState = E_Typ_MTR_SECTION_STATE.Reserved) AND (SIf.Cur.pSectionBuffer^[intBufferIndex].usiReservedForLine = SIf.Cfg.usiLineNumber)) THEN						
+							// Section is free and reserved for this instance -> hanger can be released!
+							// Update status for the section
+							SIf.Cur.pSectionBuffer^[intBufferIndex].enmState := E_Typ_MTR_SECTION_STATE.HangerOnSlide;
+							me.SubStateMachine.intStateNext := cSTA_SUB_RELEASE_BUSY;
+							EXIT;
+					END_IF
+				END_FOR					
+				
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_RELEASE_BUSY:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+					;
+				END_IF
+			
+				// Switch valve on, cylinder to retract position -> release hanger
+				SIf.Out.bolRetract.intern := TRUE;
+				
+				// State Change Condition
+				IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
+					// Next step
+					me.SubStateMachine.intStateNext := cSTA_SUB_STOP;
+			
+					// Update all counters. Only if a hanger was detected before.
+					// If no hanger detection sensor exists, count unconditional with every cylinder stroke
+					IF (SIf.In.bolHangerDetected.intern = TRUE) OR (SIf.Cfg.bolHasHangerDetection = FALSE) THEN
+						
+						// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
+						// For all other units like e.g. double stopper it's only an approximate number.
+					
+						IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
+							IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
+								// Calculate number of hangers in buffer dependent number of hangers per pulse
+								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+							ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
+								// Calculate number of hangers in buffer dependent number of hangers per pulse
+								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
+							END_IF
+						END_IF						
+						// Calculate total counter dependent number of hangers per pulse
+						SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;		
+					END_IF
+						
+				END_IF
+			
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_STOP:
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
+				END_IF
+				
+				// Update status for the section
+				SIf.Cur.pSectionBuffer^[intBufferIndex].enmState := E_Typ_MTR_SECTION_STATE.HangerReleased;
+				// Switch valve off, cylinder back to extend position -> stop hanger
+				SIf.Out.bolRetract.intern := FALSE;
+			
+				// State Change Condition
+				// Check error if retracted position not reached
+				IF (TRUE) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_FOR_RESERVATION;
+				END_IF
+		
+			
+		END_CASE
+		
+		// State Change Condition
+		IF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;	
+		END_IF
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+	;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="FB_init" Id="{767e6c56-3317-494a-8aba-d6cc72d16a31}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -224,93 +799,52 @@ SIF.Cfg.bolCylPosLostMonitoring:= FALSE;
 SIF.Cfg.bolReleaseAllNonPulse:= FALSE;
 SIf.Cfg.usiSimulationMode:= 0;]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="StateMachine" Id="{20c5001b-9be9-4659-bbf5-d38e42a17c25}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+    <Method Name="IoOutBridge" Id="{7c749205-b87e-436e-86c7-af8223dedf93}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-	cSTA_RUNBusy: 
-        THIS^.sta_RUNBusy();
-    cSTA_RUN: 
-        THIS^.sta_RUN();
-    cSTA_STOPBusy: 
-        THIS^.sta_STOPBusy();
-    cSTA_STOP: 
-        THIS^.sta_STOP();
-    STB_CmdState.cSTA_RELEASE_ALLBusy: 
-        THIS^.sta_RELEASE_ALLBusy();
-    STB_CmdState.cSTA_RELEASE_ALL: 
-        THIS^.sta_RELEASE_ALL();
-    STB_CmdState.cSTA_RELEASEBusy: 
-        THIS^.sta_RELEASEBusy();
-    STB_CmdState.cSTA_RELEASE: 
-        THIS^.sta_RELEASE();
-END_CASE;
-
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="getCmdState" Id="{2e781d84-5972-48ff-a5d5-c13672fb64b5}">
-      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
-VAR_INPUT
-	intCmdState: INT;
-	bolState: BOOL;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
-IF (getCmdState='') THEN // global not defined get local
-	// get string cmd/state string information in runtime
-	IF (bolState=FALSE) THEN
-		// cmd's
-		CASE intCmdState OF
-			STB_CmdState.cCMD_RELEASE_ALL: 
-				getCmdState := 'cCMD_RELEASE_ALL';
-			STB_CmdState.cCMD_RELEASE: 
-				getCmdState := 'cCMD_RELEASE';
-		END_CASE;
-	ELSE
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRetract));
 	
-	// states
-		CASE intCmdState OF
-			STB_CmdState.cSTA_RELEASE_ALLBusy: 
-				getCmdState := 'cSTA_RELEASE_ALLBusy';
-			STB_CmdState.cSTA_RELEASE_ALL: 
-				getCmdState := 'cSTA_RELEASE_ALL';
-			STB_CmdState.cSTA_RELEASEBusy: 
-				getCmdState := 'cSTA_RELEASEBusy';
-			STB_CmdState.cCMD_RELEASE: 
-				getCmdState := 'cCMD_RELEASE';
-		
-			// SUB States
-			cSTA_SUB_INITIALIZED:
-				getCmdState := 'cSTA_SUB_INITIALIZED';
-			cSTA_SUB_HANGER_PASSING:
-				getCmdState := 'cSTA_SUB_HANGER_PASSING';
-			cSTA_SUB_HANGER_PASSED:
-				getCmdState := 'cSTA_SUB_HANGER_PASSED';
-			cSTA_SUB_FINISHED:
-				getCmdState := 'cSTA_SUB_FINISHED';				
-			cSTA_SUB_CHECK_FOR_RESERVATION:
-				getCmdState := 'cSTA_SUB_CHECK_FOR_RESERVATION';			
-			cSTA_SUB_RELEASE_BUSY:
-				getCmdState := 'cSTA_SUB_RELEASE_BUSY';		
-			cSTA_SUB_STOP:
-				getCmdState := 'cSTA_SUB_STOP';	
-													
-		END_CASE;
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		IF (SIf.Ilk.bolRetract=TRUE) THEN
+			// switch off?
+			IF (SIf.Out.bolRetract.map = TRUE) THEN
+				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
+			END_IF
+			SIf.Out.bolRetract.map := FALSE;
+		END_IF	
 	END_IF
-END_IF
-]]></ST>
+	THIS^.Out_bolRetract := SIf.Out.bolRetract.map;
+	
+
+
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRetract2));
+	
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		IF (SIf.Ilk.bolRetract=TRUE) THEN
+			// switch off?
+			IF (SIf.Out.bolRetract2.map = TRUE) THEN
+				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
+			END_IF
+			SIf.Out.bolRetract2.map := FALSE;
+		END_IF	
+	END_IF
+	THIS^.Out_bolRetract2 := SIf.Out.bolRetract2.map;
+	
+END_IF]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="sta_STOP" Id="{478b2df1-4994-4e17-96b3-9dbf37e98a06}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+    <Method Name="sta_OFF" Id="{854c6654-f8b5-4ba2-8c05-830fc81503c6}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -319,90 +853,40 @@ END_IF
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
 		
-		bolErrorPosLost:= FALSE;
-		uinPosEdgeCounter:= 0;
+		// Reset total counter
+		SIf.Cur.dinHangersPassedTotal:= 0;
 	END_IF
 
 
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
 	
-		//--------------------------------------------------------------------
-		// Monitoring for cylinder position lost
-		//--------------------------------------------------------------------
-		IF (Sif.cfg.bolCylPosLostMonitoring=TRUE) THEN
-			
-			// -> Checked indirectly via sensor "buffer full" or "hanger detected" if exist.
-			
-			// Decision, which sensor should be used for monitoring
-			// Prio 1. Always use the hanger detection sensor if exists
-			IF (SIf.Cfg.bolHasHangerDetection = TRUE) THEN
-				// Use hanger detection sensor signal
-				bolSignalForPosLostMonitoring:= SIf.In.bolHangerDetected.intern;
-			ELSE
-				// Prio 2. Check if buffer full sensor exists 
-				IF (SIf.Cfg.bolHasBufferFullSensor = TRUE) THEN
-					// Use buffer full sensor signal
-					bolSignalForPosLostMonitoring:= SIf.In.bolBufferFull.intern;
-				ELSE
-					// No sensor exist. Not possible to monitor cylinder position lost! 
-					bolSignalForPosLostMonitoring:= FALSE;
-				END_IF
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF (me.intCmd=cCMD_STOP) THEN
+				me.StateMachine.intStateNext :=  cSTA_STOPBusy;
+			ELSIF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN 
+				me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASEBusy;
+			ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
+				me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
+			ELSIF(me.intCmd=cCMD_RUN) THEN
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
 			END_IF
-				
-			// Count sensor pos. edges
-			IF ((bolSignalForPosLostMonitoring <> bolSignalForPosLostMonitoringOld) AND (bolSignalForPosLostMonitoring = TRUE))THEN	
-				uinPosEdgeCounter:= uinPosEdgeCounter + 1;
-			END_IF
-			bolSignalForPosLostMonitoringOld:= bolSignalForPosLostMonitoring;
-						
-			// Check condition for set error
-			// Wait until the counter is > than dinMaxNumOfHangers_PosMonitoring
-			IF (uinPosEdgeCounter > SIf.Cfg.dinMaxNumOfHangers_PosMonitoring) THEN
-				bolErrorPosLost:= TRUE;
-			END_IF
-			
-		END_IF
-		
-		//--------------------------------------------------------------------
-		//--------------------------------------------------------------------
-		
-		// State Change Condition	
-		// Error cylinder position lost
-		IF ((bolErrorPosLost=TRUE) AND (Sif.cfg.bolCylPosLostMonitoring=TRUE))THEN
-			// SIf.Alm[3].strText := 'Cylinder position lost. Hangers slip through';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			bolErrorPosLost:= FALSE;
-			uinPosEdgeCounter:= 0;
-			me.StateMachine.intStateNext := cSTA_ERROR;
-		ELSIF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN 
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASEBusy;
-		ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
-		ELSIF (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_RUNBusy;
 		END_IF
 	END_IF
 
-//-------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------
 // Exit action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
 		;
 	END_IF]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Property Name="MaxCapacity" Id="{4f3ff8f3-9a12-4e37-8175-5f8b1050f609}">
-      <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
-]]></Declaration>
-      <Get Name="Get" Id="{b5e41e32-f4fd-44b7-b0d2-49d7c5a47474}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[MaxCapacity:= SIf.Cfg.dinMaxCapacity;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="IoInBridge" Id="{5345eaf2-516c-4b4f-858a-b12b456f155b}">
+    <Method Name="IoInBridge" Id="{ad64270e-51e2-4353-aac2-63b95e4be0b0}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
 ]]></Declaration>
       <Implementation>
@@ -422,31 +906,248 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="sta_ERROR" Id="{5e8047b4-e08f-431d-8f88-5ad335ff5f9a}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+    <Property Name="NumOfHangers" Id="{b24fd635-1ab3-48c6-a9c5-bd58c8c8acc3}">
+      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{4bed2c26-83de-4352-b891-1fd833c50d9a}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
+        </Implementation>
+        <ObjectProperties />
+      </Get>
+      <ObjectProperties />
+    </Property>
+    <Method Name="sta_RELEASE_ALLBusy" Id="{bfdec8d2-2974-4967-afbb-45cfff255917}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
 //--------------------------------------------------------------------------------------
 // Entry action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+				
+		dinNumOfHangersToRelease:= 0;
+		dinSetNumOfHangersToRelease:= 0;
 		
+		// Reset package counter
+		SIf.Cur.dinHangersPassedPackage:= 0;
+	
+		// Initialize sub state machine
+		me.SubStateMachine.intState:= cSTA_SUB_INITIALIZED; 
+		me.SubStateMachine.intStateNext:= cSTA_SUB_INITIALIZED;
+	
 	END_IF
 
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Switch valve off, cylinder back to extend position -> stop hanger
-		SIf.Out.bolRetract.intern := FALSE;
-		SIf.Out.bolRetract2.intern := TRUE;	
-		
+			
+		//--------------------------------------------------------------------------------------
+		// sub state machine for release all sequence
+		CASE me.SubStateMachine.intState OF
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_INITIALIZED:
+				// Entry action
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
+					
+					//Used buffer mode?
+					CASE SIf.Par.usiBuffermode OF
+					0: // 0= Emptying buffer, use buffer capacity at cycle start
+						dinSetNumOfHangersToRelease := SIf.Cfg.dinMaxCapacity;
+					1: // 1= Emptying buffer, newly added hangers will be considered
+						dinSetNumOfHangersToRelease := dinNumOfHangersToRelease;
+					END_CASE
+				
+				END_IF
+				
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+					;
+				END_IF
+	
+				// State Change Condition
+				IF(TRUE)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSING;
+				END_IF
+						
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_HANGER_PASSING:
+				// Entry action
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
+									
+					// Check if min. one hanger exist and save info tmp. Used for counting.
+					IF (SIf.In.bolHangerDetected.intern = TRUE) THEN
+						bolHangerDetected:= TRUE;
+					ELSE
+						bolHangerDetected:= FALSE;
+					END_IF
+					
+				END_IF
+				
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+					;
+				END_IF
+
+				// Release all based on time and both pins go up or with pulses
+				IF (SIf.Cfg.bolReleaseAllNonPulse = TRUE) THEN
+					
+					SIf.Out.bolRetract.intern := TRUE; // both pins move up
+					SIf.Out.bolRetract2.intern := TRUE; // both pins move up
+					
+					// wait release all time
+					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiReleaseAllTime_ms) THEN
+						me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSED;
+					END_IF
+					
+					// Calculate number of hangers in buffer dependent number of hangers per pulse
+					SIf.Cur.dinNumOfHangersInBuffer := 0;
+					// Calculate total counter dependent number of hangers per pulse
+					SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
+					// Calculate package counter dependent number of hangers per pulse				
+					SIf.Cur.dinHangersPassedPackage:= SIf.Cur.dinHangersPassedPackage + dinNumOfHangersToRelease;
+					// calculate hangers still to release
+					dinSetNumOfHangersToRelease := 0;
+					
+				ELSE
+					
+					// Switch valve on, cylinder to retract position -> release hanger
+					SIf.Out.bolRetract.intern := TRUE;  // pin move up
+					SIf.Out.bolRetract2.intern := FALSE;  // pin move down
+					
+					// Pulse timer expired?
+					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
+						me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSED;
+						
+						// Update all counters. Only if a hanger was detected before.
+						// If no hanger detection sensor exists, count unconditional with every cylinder stroke
+						IF (bolHangerDetected = TRUE) OR (Sif.Cfg.bolHasHangerDetection = FALSE) THEN
+							
+							// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
+							// For all other units like e.g. double stopper it's only an approximate number.
+						
+							IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
+								// Calculate number of hangers in buffer dependent number of hangers per pulse
+								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
+							END_IF
+							// Calculate total counter dependent number of hangers per pulse
+							SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
+							// Calculate package counter dependent number of hangers per pulse				
+							SIf.Cur.dinHangersPassedPackage:= SIf.Cur.dinHangersPassedPackage + dinNumOfHangersToRelease;
+							// calculate hangers still to release
+							dinSetNumOfHangersToRelease := dinSetNumOfHangersToRelease - dinNumOfHangersToRelease;
+							
+							// Calculate NumOfHangersToRelease, Used for RELEASE_ALL end condition
+							// Has buffer?
+							// calculate max number of hangers could release per pulse
+							IF (SIf.Cur.dinNumOfHangersInBuffer<=SIf.Cfg.uinNumOfHangersPerPulse) THEN
+								dinNumOfHangersToRelease := SIf.Cur.dinNumOfHangersInBuffer;
+							ELSE
+								dinNumOfHangersToRelease := SIf.Cfg.uinNumOfHangersPerPulse;
+							END_IF
+							
+							//Used buffer mode?
+							CASE SIf.Par.usiBuffermode OF
+								0:  
+									IF  (dinNumOfHangersToRelease <= 0) THEN // All hangers should be released, do the hole capacity 
+										dinSetNumOfHangersToRelease:= dinSetNumOfHangersToRelease - SIf.Cfg.uinNumOfHangersPerPulse;
+									END_IF
+								1:
+									dinSetNumOfHangersToRelease:= dinNumOfHangersToRelease;
+							END_CASE
+													
+							bolHangerDetected:= FALSE;
+						END_IF
+					END_IF
+						
+				END_IF
+	
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_HANGER_PASSED:
+				// Entry action
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
+					;						
+				END_IF
+				
+				// Switch valve off, cylinder back to extend position -> stop hanger
+				SIf.Out.bolRetract.intern := FALSE;
+				SIf.Out.bolRetract2.intern := TRUE;	
+				
+				// Simulation
+				IF (CIf.SwCfg.bolSimulation) THEN
+					;
+				END_IF
+					
+				// State Change Condition
+				IF ((dinSetNumOfHangersToRelease<=0) AND ((Sif.Cfg.bolHasHangerDetection = FALSE) OR (SIf.Par.usiBuffermode<>1))) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_FINISHED;
+				ELSIF ((SIf.Par.usiBuffermode=1) AND (Sif.Cfg.bolHasHangerDetection = TRUE) AND (SIf.In.bolHangerDetected.intern = FALSE)) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_FINISHED;
+				ELSIF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiIntervalBufferEmptying_ms) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSING;
+				END_IF
+			
+			//--------------------------------------------------------------------------------------
+			cSTA_SUB_FINISHED:
+					;	// Buffer emptied 
+					
+		END_CASE
+			
 		// State Change Condition
-		IF (CIf.Job.bolAlmReset = TRUE) THEN
-			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		// [ms] Timeout buffer emptying -> ERROR,(0 = disable monitoring)
+		IF ((me.StateMachine.udiTimeInState_ms > (SIf.Par.udiTimeoutBufferEmptying_ms)) AND (SIf.Par.udiTimeoutBufferEmptying_ms <> 0)) THEN
+			// SIf.Alm[1].strText := 'Timeout buffer emptying';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		ELSIF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN				// Buffer emptied -> RELEASE_ALL
+			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALL;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;		
+		END_IF
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{dc9bc62e-8a9b-45ce-ab89-751cc170d7d6}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;				
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+		// State Change Condition
+		
+		// Check if access to section buffer exist. 
+		// This controller will be set to RUN in case if STB work in combination with FUB MTR to merge hangers into a TLK.
+		IF (SIf.Cur.pSectionBuffer = 0) THEN
+			// SIf.Alm[4].strText := 'RUN not possible, no access to section buffer';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+			me.StateMachine.intStateNext := cSTA_ERROR;
+		ELSE
+			me.StateMachine.intStateNext := cSTA_RUN;		
 		END_IF
 	END_IF
 
@@ -456,8 +1157,9 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="Always" Id="{7fabc6e2-63a8-426d-95f5-98b7f35af52c}">
+    <Method Name="Always" Id="{f236f7a7-e231-44ab-8398-0cfca557cb09}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
@@ -703,687 +1405,7 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 	me.StateMachine.intStateNext := cSTA_OFFBusy;
 END_IF]]></ST>
       </Implementation>
-    </Method>
-    <Method Name="sta_STOPBusy" Id="{9e86f1a2-ea6b-4182-bca1-8cd83a9d88bb}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-			
-		// Switch valve off, cylinder back to extend position -> stop hanger
-		SIf.Out.bolRetract.intern := FALSE;
-		SIf.Out.bolRetract2.intern := TRUE;	
-				
-		// State Change Condition
-		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
-			me.StateMachine.intStateNext := cSTA_STOP;
-		END_IF
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RELEASE_ALLBusy" Id="{a8fd9a1e-52c4-4cdf-b5f4-d1caf348b222}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-				
-		dinNumOfHangersToRelease:= 0;
-		dinSetNumOfHangersToRelease:= 0;
-		
-		// Reset package counter
-		SIf.Cur.dinHangersPassedPackage:= 0;
-	
-		// Initialize sub state machine
-		me.SubStateMachine.intState:= cSTA_SUB_INITIALIZED; 
-		me.SubStateMachine.intStateNext:= cSTA_SUB_INITIALIZED;
-	
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-			
-		//--------------------------------------------------------------------------------------
-		// sub state machine for release all sequence
-		CASE me.SubStateMachine.intState OF
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_INITIALIZED:
-				// Entry action
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
-					
-					//Used buffer mode?
-					CASE SIf.Par.usiBuffermode OF
-					0: // 0= Emptying buffer, use buffer capacity at cycle start
-						dinSetNumOfHangersToRelease := SIf.Cfg.dinMaxCapacity;
-					1: // 1= Emptying buffer, newly added hangers will be considered
-						dinSetNumOfHangersToRelease := dinNumOfHangersToRelease;
-					END_CASE
-				
-				END_IF
-				
-				// Simulation
-				IF (CIf.SwCfg.bolSimulation) THEN
-					;
-				END_IF
-	
-				// State Change Condition
-				IF(TRUE)THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSING;
-				END_IF
-						
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_HANGER_PASSING:
-				// Entry action
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
-									
-					// Check if min. one hanger exist and save info tmp. Used for counting.
-					IF (SIf.In.bolHangerDetected.intern = TRUE) THEN
-						bolHangerDetected:= TRUE;
-					ELSE
-						bolHangerDetected:= FALSE;
-					END_IF
-					
-				END_IF
-				
-				// Simulation
-				IF (CIf.SwCfg.bolSimulation) THEN
-					;
-				END_IF
-
-				// Release all based on time and both pins go up or with pulses
-				IF (SIf.Cfg.bolReleaseAllNonPulse = TRUE) THEN
-					
-					SIf.Out.bolRetract.intern := TRUE; // both pins move up
-					SIf.Out.bolRetract2.intern := TRUE; // both pins move up
-					
-					// wait release all time
-					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiReleaseAllTime_ms) THEN
-						me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSED;
-					END_IF
-					
-					// Calculate number of hangers in buffer dependent number of hangers per pulse
-					SIf.Cur.dinNumOfHangersInBuffer := 0;
-					// Calculate total counter dependent number of hangers per pulse
-					SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
-					// Calculate package counter dependent number of hangers per pulse				
-					SIf.Cur.dinHangersPassedPackage:= SIf.Cur.dinHangersPassedPackage + dinNumOfHangersToRelease;
-					// calculate hangers still to release
-					dinSetNumOfHangersToRelease := 0;
-					
-				ELSE
-					
-					// Switch valve on, cylinder to retract position -> release hanger
-					SIf.Out.bolRetract.intern := TRUE;  // pin move up
-					SIf.Out.bolRetract2.intern := FALSE;  // pin move down
-					
-					// Pulse timer expired?
-					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
-						me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSED;
-						
-						// Update all counters. Only if a hanger was detected before.
-						// If no hanger detection sensor exists, count unconditional with every cylinder stroke
-						IF (bolHangerDetected = TRUE) OR (Sif.Cfg.bolHasHangerDetection = FALSE) THEN
-							
-							// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
-							// For all other units like e.g. double stopper it's only an approximate number.
-						
-							IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
-								// Calculate number of hangers in buffer dependent number of hangers per pulse
-								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
-							END_IF
-							// Calculate total counter dependent number of hangers per pulse
-							SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
-							// Calculate package counter dependent number of hangers per pulse				
-							SIf.Cur.dinHangersPassedPackage:= SIf.Cur.dinHangersPassedPackage + dinNumOfHangersToRelease;
-							// calculate hangers still to release
-							dinSetNumOfHangersToRelease := dinSetNumOfHangersToRelease - dinNumOfHangersToRelease;
-							
-							// Calculate NumOfHangersToRelease, Used for RELEASE_ALL end condition
-							// Has buffer?
-							// calculate max number of hangers could release per pulse
-							IF (SIf.Cur.dinNumOfHangersInBuffer<=SIf.Cfg.uinNumOfHangersPerPulse) THEN
-								dinNumOfHangersToRelease := SIf.Cur.dinNumOfHangersInBuffer;
-							ELSE
-								dinNumOfHangersToRelease := SIf.Cfg.uinNumOfHangersPerPulse;
-							END_IF
-							
-							//Used buffer mode?
-							CASE SIf.Par.usiBuffermode OF
-								0:  
-									IF  (dinNumOfHangersToRelease <= 0) THEN // All hangers should be released, do the hole capacity 
-										dinSetNumOfHangersToRelease:= dinSetNumOfHangersToRelease - SIf.Cfg.uinNumOfHangersPerPulse;
-									END_IF
-								1:
-									dinSetNumOfHangersToRelease:= dinNumOfHangersToRelease;
-							END_CASE
-													
-							bolHangerDetected:= FALSE;
-						END_IF
-					END_IF
-						
-				END_IF
-	
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_HANGER_PASSED:
-				// Entry action
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
-					;						
-				END_IF
-				
-				// Switch valve off, cylinder back to extend position -> stop hanger
-				SIf.Out.bolRetract.intern := FALSE;
-				SIf.Out.bolRetract2.intern := TRUE;	
-				
-				// Simulation
-				IF (CIf.SwCfg.bolSimulation) THEN
-					;
-				END_IF
-					
-				// State Change Condition
-				IF ((dinSetNumOfHangersToRelease<=0) AND ((Sif.Cfg.bolHasHangerDetection = FALSE) OR (SIf.Par.usiBuffermode<>1))) THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_FINISHED;
-				ELSIF ((SIf.Par.usiBuffermode=1) AND (Sif.Cfg.bolHasHangerDetection = TRUE) AND (SIf.In.bolHangerDetected.intern = FALSE)) THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_FINISHED;
-				ELSIF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiIntervalBufferEmptying_ms) THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_HANGER_PASSING;
-				END_IF
-			
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_FINISHED:
-					;	// Buffer emptied 
-					
-		END_CASE
-			
-		// State Change Condition
-		// [ms] Timeout buffer emptying -> ERROR,(0 = disable monitoring)
-		IF ((me.StateMachine.udiTimeInState_ms > (SIf.Par.udiTimeoutBufferEmptying_ms)) AND (SIf.Par.udiTimeoutBufferEmptying_ms <> 0)) THEN
-			// SIf.Alm[1].strText := 'Timeout buffer emptying';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			me.StateMachine.intStateNext := cSTA_ERROR;
-		ELSIF (me.SubStateMachine.intState = cSTA_SUB_FINISHED) THEN				// Buffer emptied -> RELEASE_ALL
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALL;
-		ELSIF(me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;		
-		END_IF
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RUNBusy" Id="{b87e9da2-b12e-4907-a1e6-a92c31880305}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		;				
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-			
-		// State Change Condition
-		
-		// Check if access to section buffer exist. 
-		// This controller will be set to RUN in case if STB work in combination with FUB MTR to merge hangers into a TLK.
-		IF (SIf.Cur.pSectionBuffer = 0) THEN
-			// SIf.Alm[4].strText := 'RUN not possible, no access to section buffer';
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
-			me.StateMachine.intStateNext := cSTA_ERROR;
-		ELSE
-			me.StateMachine.intStateNext := cSTA_RUN;		
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoOutBridge" Id="{cc192b19-1f24-49da-a5f9-b90eb7484b9b}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRetract));
-	
-	// check interlocks to prevent damages
-	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
-		IF (SIf.Ilk.bolRetract=TRUE) THEN
-			// switch off?
-			IF (SIf.Out.bolRetract.map = TRUE) THEN
-				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
-			END_IF
-			SIf.Out.bolRetract.map := FALSE;
-		END_IF	
-	END_IF
-	THIS^.Out_bolRetract := SIf.Out.bolRetract.map;
-	
-
-
-	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRetract2));
-	
-	// check interlocks to prevent damages
-	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
-		IF (SIf.Ilk.bolRetract=TRUE) THEN
-			// switch off?
-			IF (SIf.Out.bolRetract2.map = TRUE) THEN
-				// Set alarm: SIf.Alm[2].strText := 'interlock retract - movement stopped';				
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
-			END_IF
-			SIf.Out.bolRetract2.map := FALSE;
-		END_IF	
-	END_IF
-	THIS^.Out_bolRetract2 := SIf.Out.bolRetract2.map;
-	
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RELEASEBusy" Id="{d071c270-0960-419e-84ca-32c9c580130a}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-		// Check if min. one hanger exist and save info tmp. Used for counting in state RELEASE.	
-		IF (SIf.In.bolHangerDetected.intern = TRUE) THEN
-			bolHangerDetected:= TRUE;
-		ELSE
-			bolHangerDetected:= FALSE;
-		END_IF
-	
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Switch valve on, cylinder to retract position -> release hanger
-		SIf.Out.bolRetract.intern := TRUE;
-		SIf.Out.bolRetract2.intern := FALSE;	
-		
-		// State Change Condition
-		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE;
-	
-			// Update all counters. Only if a hanger was detected before.
-			// If no hanger detection sensor exists, count unconditional with every cylinder stroke
-			IF (bolHangerDetected = TRUE) OR (SIf.Cfg.bolHasHangerDetection = FALSE) THEN
-				
-				// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
-				// For all other units like e.g. double stopper it's only an approximate number.
-			
-				IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
-					IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
-						// Calculate number of hangers in buffer dependent number of hangers per pulse
-						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
-					ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
-						// Calculate number of hangers in buffer dependent number of hangers per pulse
-						SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
-					END_IF
-				END_IF
-					
-				// Calculate total counter dependent number of hangers per pulse
-				SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;
-				
-				bolHangerDetected:= FALSE;
-			END_IF
-				
-		END_IF
-		
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_OFF" Id="{d2a34a5c-f0c5-47c3-b84b-70297d0bbf2c}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-		// Reset total counter
-		SIf.Cur.dinHangersPassedTotal:= 0;
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-	
-		// State Change Condition
-		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
-			IF (me.intCmd=cCMD_STOP) THEN
-				me.StateMachine.intStateNext :=  cSTA_STOPBusy;
-			ELSIF (me.intCmd=STB_CmdState.cCMD_RELEASE) THEN 
-				me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASEBusy;
-			ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
-				me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
-			ELSIF(me.intCmd=cCMD_RUN) THEN
-				me.StateMachine.intStateNext := cSTA_RUNBusy;
-			END_IF
-		END_IF
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RELEASE" Id="{d3ab56c7-ad8f-4966-8841-acbee0d0e785}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-			
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Switch valve off, cylinder back to extend position -> stop hanger
-		SIf.Out.bolRetract.intern := FALSE;
-		SIf.Out.bolRetract2.intern := TRUE;	
-		
-		// State Change Condition
-		IF (me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		ELSIF(me.intCmd=STB_CmdState.cCMD_RELEASE_ALL) THEN
-			me.StateMachine.intStateNext := STB_CmdState.cSTA_RELEASE_ALLBusy;
-		END_IF
-		
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="BufferFull" Id="{d3d29fe6-4d59-4ed6-9fb2-195a86a52610}">
-      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
-]]></Declaration>
-      <Get Name="Get" Id="{1990e61d-c57e-4770-b9a7-37750eb5c7b9}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[BufferFull:= SIf.Cur.bolBufferFull;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="sta_RUN" Id="{d7d7d28a-5082-41d9-9f8a-6b0df5bc7288}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-		// Init sub state machine	
-		me.SubStateMachine.intState := cSTA_SUB_CHECK_FOR_RESERVATION; 
-		me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_FOR_RESERVATION; 
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		//----------------------------------------------------------------------
-		// Calculate position for transport 
-		//----------------------------------------------------------------------	
-		// If this task is in faster cycle then the parent, calculate internal position more exactly during the taskcycle
-		IF dinTransportPositionOld_um <> SIf.Cur.dinTransportPosition_um THEN
-			SIf.Cur.dinTransportPositionCalc_um := SIf.Cur.dinTransportPosition_um;
-			dinTransportPositionOld_um := SIf.Cur.dinTransportPosition_um;
-			dinPositionCorrection_um := 0;
-		ELSE
-			dinPositionCorrection_um := dinPositionCorrection_um + LREAL_TO_DINT(DINT_TO_LREAL(SIf.Cur.dinTransportspeed_um_s) * UDINT_TO_LREAL(me.FUBInfo.udiSample_ms) / 1000.0 );
-			SIf.Cur.dinTransportPositionCalc_um := dinTransportPositionOld_um + dinPositionCorrection_um;
-		END_IF
-				
-		//--------------------------------------------------------------------------------------
-		// sub state machine
-		CASE me.SubStateMachine.intState OF
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_CHECK_FOR_RESERVATION:
-			
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
-					;
-				END_IF
-			
-				// Simulation
-				IF (CIf.SwCfg.bolSimulation) THEN
-					;
-				END_IF
-							
-				// Calculate trigger "negative" position offset.
-				// Note: The trigger offset must be calculated dependent the drive (transport) speed 
-				// Formular: TrigNegPosOffset = DriveSpeed * TimeOnSlide	
-				dinCalcTrigNegPosOffset_um:= REAL_TO_DINT (DINT_TO_REAL(SIf.Cur.dinTransportspeed_um_s) * (UINT_TO_REAL(SIf.Par.uinTimeOnSlide_ms) / 1000));
-					
-				// Check trigger window
-				FOR intBufferIndex := 0 TO Const_MTR.cusiSectionBuffer_SIZE DO
-					// Check if the current transport position is within the trigger window and if section is reserved for this instance to release the hanger
-					IF ((SIf.Par.dinPositionOfSlide_um < (SIf.Cur.pSectionBuffer^[intBufferIndex].dinTrigStartPos - dinCalcTrigNegPosOffset_um))
-						AND (SIf.Par.dinPositionOfSlide_um > (SIf.Cur.pSectionBuffer^[intBufferIndex].dinTrigEndPos - dinCalcTrigNegPosOffset_um))
-						AND (SIf.Cur.pSectionBuffer^[intBufferIndex].enmState = E_Typ_MTR_SECTION_STATE.Reserved) AND (SIf.Cur.pSectionBuffer^[intBufferIndex].usiReservedForLine = SIf.Cfg.usiLineNumber)) THEN						
-							// Section is free and reserved for this instance -> hanger can be released!
-							// Update status for the section
-							SIf.Cur.pSectionBuffer^[intBufferIndex].enmState := E_Typ_MTR_SECTION_STATE.HangerOnSlide;
-							me.SubStateMachine.intStateNext := cSTA_SUB_RELEASE_BUSY;
-							EXIT;
-					END_IF
-				END_FOR					
-				
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_RELEASE_BUSY:
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
-					;
-				END_IF
-			
-				// Switch valve on, cylinder to retract position -> release hanger
-				SIf.Out.bolRetract.intern := TRUE;
-				
-				// State Change Condition
-				IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiPulseLengthValve_ms) THEN
-					// Next step
-					me.SubStateMachine.intStateNext := cSTA_SUB_STOP;
-			
-					// Update all counters. Only if a hanger was detected before.
-					// If no hanger detection sensor exists, count unconditional with every cylinder stroke
-					IF (SIf.In.bolHangerDetected.intern = TRUE) OR (SIf.Cfg.bolHasHangerDetection = FALSE) THEN
-						
-						// Note: Only for separator the number of hangers per pulse corresponds exactly the real number of passed hangers.
-						// For all other units like e.g. double stopper it's only an approximate number.
-					
-						IF (SIf.Cfg.bolHasDecrementSensor = FALSE) THEN // Else do it in Method Always
-							IF (SIf.Cfg.bolHasBufferFullSensor = TRUE AND SIf.In.bolBufferFull.intern = FALSE) THEN
-								// Calculate number of hangers in buffer dependent number of hangers per pulse
-								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;
-							ELSIF SIf.Cfg.bolHasBufferFullSensor = FALSE THEN
-								// Calculate number of hangers in buffer dependent number of hangers per pulse
-								SIf.Cur.dinNumOfHangersInBuffer:= SIf.Cur.dinNumOfHangersInBuffer - dinNumOfHangersToRelease;						
-							END_IF
-						END_IF						
-						// Calculate total counter dependent number of hangers per pulse
-						SIf.Cur.dinHangersPassedTotal:= SIf.Cur.dinHangersPassedTotal + dinNumOfHangersToRelease;		
-					END_IF
-						
-				END_IF
-			
-			//--------------------------------------------------------------------------------------
-			cSTA_SUB_STOP:
-				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
-					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;
-				END_IF
-				
-				// Update status for the section
-				SIf.Cur.pSectionBuffer^[intBufferIndex].enmState := E_Typ_MTR_SECTION_STATE.HangerReleased;
-				// Switch valve off, cylinder back to extend position -> stop hanger
-				SIf.Out.bolRetract.intern := FALSE;
-			
-				// State Change Condition
-				// Check error if retracted position not reached
-				IF (TRUE) THEN
-					me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_FOR_RESERVATION;
-				END_IF
-		
-			
-		END_CASE
-		
-		// State Change Condition
-		IF(me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;	
-		END_IF
-		
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-	;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Property Name="NumOfHangers" Id="{d9009ad7-ce51-4db2-b90d-dd6ce48f950f}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
-]]></Declaration>
-      <Get Name="Get" Id="{233154b1-ab3c-49ea-93c8-d4df46a7a6f8}">
-        <Declaration><![CDATA[]]></Declaration>
-        <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
-        </Implementation>
-      </Get>
-    </Property>
-    <Method Name="sta_OFFBusy" Id="{f3985256-4080-45b5-b3fc-086d27bd7fe2}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-			
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Switch valve off, cylinder back to extend position -> stop hanger
-		SIf.Out.bolRetract.intern := FALSE;
-		SIf.Out.bolRetract2.intern := TRUE;	
-			
-		// State Change Condition
-		IF (FALSE) THEN
-			;
-		ELSIF (TRUE) THEN
-			me.StateMachine.intStateNext := cSTA_OFF;
-		END_IF
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RELEASE_ALL" Id="{ffe3734d-1e95-47d2-b816-e7091e0df1c8}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
-		;
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-
-		// State Change Condition
-		IF ((me.intCmd=cCMD_STOP) OR (me.intCmd=STB_CmdState.cCMD_RELEASE)) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		END_IF
-	END_IF
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
+      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

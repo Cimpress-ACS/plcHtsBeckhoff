@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MER_Cur" Id="{f21b8653-efda-4149-9b12-7eb2fbe49d28}">
+  <DUT Name="T_Ctrl_SIf_MER_Cur" Id="{2a26aae6-5e99-4fbe-a92c-3e1c3df314ae}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Cur :
 STRUCT
 	/// Number of lines to merge, depends on how many times the method "AddLine" was called at init
@@ -13,7 +13,8 @@ STRUCT
 	/// Childs is ready
 	a_bolChildReady: ARRAY[0..Base_Const.cMaxNrOfChilds] OF BOOL;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

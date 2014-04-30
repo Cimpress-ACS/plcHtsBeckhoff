@@ -1,23 +1,24 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="E_Typ_MTR_SECTION_STATE" Id="{3693340a-2afc-4e2e-8348-3946d0a6e722}">
-    <Declaration><![CDATA[TYPE E_Typ_MTR_SECTION_STATE:
+  <DUT Name="E_Typ_MTR_SECTION_STATE" Id="{eb084a68-b623-4c86-a35a-c333e1ee350c}">
+    <Declaration><![CDATA[TYPE E_Typ_MTR_SECTION_STATE :
 (
-	// 0 = Undefined (free buffer element) 
+	/// 0 = Undefined (free buffer element) 
 	Undefined := 0,
-	// 1 = section start position was set
+	/// 1 = section start position was set
 	StartPositionSet := 1,
-	// 2 = section end position was set (section is free)
+	/// 2 = section end position was set (section is free)
 	EndPositionSet := 2,
-	// 3 = section already engaged, detected by hanger sensor. (hanger in section, set if hanger was detected by sensor) 
+	/// 3 = section already engaged, detected by hanger sensor. (hanger in section, set if hanger was detected by sensor) 
 	EngagedByDetecSensor := 3,
-	// 4 = section reserved for line
-	Reserved:= 4,
-	// 5 = hanger on slide
-	HangerOnSlide:= 5,
-	// 6 = hanger was released in section from slide
-	HangerReleased:= 6
-)USINT;
-END_TYPE]]></Declaration>
+	/// 4 = section reserved for line
+	Reserved := 4,
+	/// 5 = hanger on slide
+	HangerOnSlide := 5,
+	/// 6 = hanger was released in section from slide
+	HangerReleased := 6
+) USINT;
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

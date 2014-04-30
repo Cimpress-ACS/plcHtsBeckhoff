@@ -2,7 +2,7 @@
   <POU Name="FB_HFE" Id="{c6981df2-3e96-4d86-a844-3d0e43ed881a}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HFE EXTENDS FB_CtrlBase
 VAR_INPUT
-	a_bolLDSNeedsHanger: ARRAY[0..cuintMaxStation] OF BOOL;
+	a_bolLDSNeedsHanger: ARRAY[0..Const_HFE.cintMaxStation] OF BOOL;
 	p_fbTlpDrive: POINTER TO FB_DRV;
 	///p_fbJunction : POINTER TO FB_JUN;
 	p_fbSLB: POINTER TO FB_SLB;
@@ -364,7 +364,7 @@ END_VAR
 		//fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_pulseTimeout_ms/10);
 		//fbSimulationTimer(); // set time/reset timer
 		//fbSimulationTimer.IN := TRUE; // start timer
-		FOR intNbOfLDS := 0 TO cintMaxStation DO
+		FOR intNbOfLDS := 0 TO Const_HFE.cintMaxStation DO
 			intSubState[intNbOfLDS] := 500;	// Init Refill Substate
 		END_FOR
 	END_IF
@@ -388,7 +388,7 @@ END_VAR
 		//IF NOT(pSLB_SIf^.Cur.bolBufferFull) THEN
 		//	pStopperBuffer_CIf^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
 		//END_IF
-		FOR intNbOfLDS := 0 TO cintMaxStation DO
+		FOR intNbOfLDS := 0 TO Const_HFE.cintMaxStation DO
 			IF (SIf.Par.a_bolEnableJunction[intNbOfLDS]) AND (a_pMultiChildCtrl[intNbOfLDS]<>0) THEN
 				Refill(intNbOfLDS);
 			END_IF

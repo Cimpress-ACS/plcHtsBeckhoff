@@ -1,10 +1,10 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MTR_Cfg" Id="{7018c4a6-a951-4c3d-8a1b-9726cdadefa1}">
+  <DUT Name="T_Ctrl_SIf_MTR_Cfg" Id="{129e4afd-fa92-4ce2-96bd-8ddc654c9a3c}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MTR_Cfg :
 STRUCT
-	
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

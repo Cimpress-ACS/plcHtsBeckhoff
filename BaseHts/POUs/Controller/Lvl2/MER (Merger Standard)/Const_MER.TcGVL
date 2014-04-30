@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <GVL Name="Const_MER" Id="{4cfa3674-aa6c-46a8-8780-cdcc0b80e63b}">
+  <GVL Name="Const_MER" Id="{a8b687c4-08ff-4f13-97ef-63a0034a56ce}">
     <Declaration><![CDATA[VAR_GLOBAL CONSTANT
 	cusiMinAddedChilds: USINT := 1;
 	cMAX_JAM_SENSORS: USINT := 3;

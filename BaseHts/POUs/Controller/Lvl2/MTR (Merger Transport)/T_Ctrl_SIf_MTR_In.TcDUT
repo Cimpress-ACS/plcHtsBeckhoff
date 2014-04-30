@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MTR_In" Id="{c15e366f-6e93-43bb-a6c9-05d813354b5d}">
+  <DUT Name="T_Ctrl_SIf_MTR_In" Id="{ef78a787-e893-4ad6-9000-a93fac269beb}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MTR_In :
 STRUCT
 	/// Sensor hanger detected

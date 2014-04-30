@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_MTR_Cur" Id="{d69d3b15-5481-44b6-a9b5-ff0d69bee1b8}">
+  <DUT Name="T_Ctrl_SIf_MTR_Cur" Id="{f31755b9-4a01-49c0-80c1-286ca6448eec}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_MTR_Cur :
 STRUCT
 	/// Number of lines to merge, depends on how many times the method "AddLine" was called at init
@@ -19,7 +19,8 @@ STRUCT
 	///[um] actual calculated position
 	dinTransportPositionCalc_um: DINT;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>

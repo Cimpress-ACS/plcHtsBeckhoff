@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_STB_Cur" Id="{77ac1236-787c-4683-86fa-3a12c7f136d7}">
+  <DUT Name="T_Ctrl_SIf_STB_Cur" Id="{2ba6579a-d993-45fc-b27e-22669bb1d6e4}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Cur :
 STRUCT
 	/// Hangers passed total counter (reset in state OFF)
@@ -11,8 +11,8 @@ STRUCT
 	/// Approximate number of hangers in buffer
 	dinNumOfHangersInBuffer: DINT;
 	/// Buffer is full
-	bolBufferFull: BOOL;	
-	// Pointer to section buffer of FUB MTR. Needed in case if STB work in combination with MTR to merge hangers into a TLK.
+	bolBufferFull: BOOL;
+	/// Pointer to section buffer of FUB MTR. Needed in case if STB work in combination with MTR to merge hangers into a TLK.
 	pSectionBuffer: POINTER TO ARRAY[0..Const_MTR.cusiSectionBuffer_SIZE] OF T_MTR_Buffer_Sections;
 	///[um] actual position from the transport written from Parent
 	dinTransportPosition_um: DINT;
@@ -21,7 +21,8 @@ STRUCT
 	///[um] actual calculated position
 	dinTransportPositionCalc_um: DINT;
 END_STRUCT
-END_TYPE]]></Declaration>
+END_TYPE
+]]></Declaration>
     <ObjectProperties />
   </DUT>
 </TcPlcObject>
