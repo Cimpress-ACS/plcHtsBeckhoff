@@ -1,0 +1,1026 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_MER" Id="{4ec1fd8a-b4cf-4749-a115-ce84b8f07dcf}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_MER EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
+VAR_INPUT
+	// Sensors for jam detection
+	In_a_bolJamSensor: ARRAY[1..cMAX_JAM_SENSORS] OF BOOL;
+END_VAR
+VAR
+	// Specific interface struct for public access
+	SIf: T_Ctrl_SIf_MER;
+	// List of pointers to Childs
+	a_pLineChildCtrl: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO FB_SLB;
+	// List of childs common interface
+	a_pLineChildCIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_CIf;
+	// List of childs specific interface for additional parameters or cur
+	a_pLineChildSIF: ARRAY[0..Base_Const.cMaxNrOfChilds] OF POINTER TO T_Ctrl_SIf_SLB;
+	// Function specific variables
+	usiNumOfLines: USINT;
+	usiNumOfValidPointerToLine: USINT;
+	bolHangerExist: BOOL;
+	bolGoToRun: BOOL;
+	dinPassedTotalLineXOld: DINT;
+	// Used for counting passed hangers if "E_Typ_MER_MODE.MergeOverSetpoint" is selected.
+	dinNumOfPassedHangers: DINT;
+	// Used for time measurement if "E_Typ_MER_MODE.MergeOverTime" is selected.
+	udiMergingTime: UDINT;
+	usiLineNumToReleaseAll: USINT;
+	usiIndexToRelease: USINT;
+	bolReleaseHanger: BOOL;
+	// Shadow copy of In_a_bolJamSensor[]
+	a_bolJamSensorOnce: ARRAY[1..cMAX_JAM_SENSORS] OF BOOL;
+	// Start time of jam sensor is true
+	a_udiTimeJamDetection: ARRAY[1..cMAX_JAM_SENSORS] OF UDINT;
+	// Jam release delay timer
+	udiJamReleaseDelayTime_ms: UDINT;
+	// Jam at merger output detected 
+	bolJamDetected: BOOL;
+	// Loop variable
+	intI: INT;
+END_VAR
+VAR CONSTANT
+	// sub States
+	cSTA_SUB_INITIALIZED: INT := 500;
+	cSTA_SUB_WAIT_FOR_CMD: INT := 502;
+	cSTA_SUB_CHECK_HANGER_EXIST: INT := 504;
+	cSTA_SUB_SEND_RELEASE: INT := 506;
+	cSTA_SUB_SEND_RELEASE_ALL: INT := 508;
+	cSTA_SUB_SEND_STOP: INT := 510;
+	cSTA_SUB_WAIT_JOB_DONE: INT := 512;
+	cSTA_SUB_CHECK_MERGE_CON: INT := 514;
+	cSTA_SUB_WAIT_LINE_FREE: INT := 516;
+	cSTA_SUB_END: INT := 518;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+The controller automatically merge hangers from different lines dependent time or distribution of the number of hangers.
+Lines are always from controller type slide buffer FB_SLB.
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		05.09.2013		AVME/DSC	Start history. 
+0.00.2		09.09.2013		AVME/DSC 	Integration of all merger basic functionalities. Test on simulator.
+										Controller can work in 2 different main modes:
+										-> "automatic", controller automatically merge hangers from different lines dependent E_Typ_MER_AUTO_MODE
+										-> "on command", in case if merger work as charge controller. Release line X dependent from parent command.
+0.00.3		19.09.2013		AVME/PRE	Implement new Base Concept
+0.00.4		01.10.2013		AVME/DSC	Sub state machine general handling deleted. Not used anymore. Handled in Base Class.										
+0.00.5		03.10.2013		AVME/PRE	Integrate new function insert Belt		
+0.00.6		03.10.2013		AVME/PRE	Insert new sub state LOCK_SECTION.	
+0.00.7		15.10.2013		AVME/DSC	Complete redesign of the merger "MergeIntoTrp" mode.
+0.00.8		30.10.2013		AVME/DSC	Modifications for "MergeIntoTrp" mode during test at the tool. Good merging possible with drive speed = 0. (slow speed)
+										Merging with higher speed not possible!				
+0.00.9		08.11.2013		AVME/MRU	Stop merger if outfeed sensor detect a jam (Bugzilla Nr. 8)
+0.00.10		03.12.2013		AVME/MRU	Add MaxCapacity / NumOfHangers properties
+0.00.11		09.12.2013		AVME/DSC	Modification in method "checkStateAllLines".
+										Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+										Parent controller need state STOP that automatic stop sequence can work for all other childs.
+0.00.12		13.01.2014		AVME/MRU	Bugzilla ID 03: BufferFull for LineControl added
+0.00.13		22.01.2014		AVME/MRU	udiJamReleaseDelayTime_ms added; Timing "Check jam detection" reworked
+0.00.14		30.04.2014		AVME/DSC    Deleted complete handling for mode "MergeIntoTrp" and implemented function into new controller FB_MTR.									
+__________________________________________________________________________________________________*)
+
+
+IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
+	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
+		CtrlInit();
+		CIf.Info.bolInitDone := TRUE;
+	ELSE
+		CycleStartDuty();
+	
+		Always();
+		
+		StateMachine();
+		
+		CycleEndDuty();
+	END_IF
+END_IF;
+
+]]></ST>
+    </Implementation>
+    <Property Name="BufferFull" Id="{0fe3aa77-178b-467f-a874-9c0e721d2f03}">
+      <Declaration><![CDATA[PROPERTY BufferFull : BOOL
+]]></Declaration>
+      <Get Name="Get" Id="{50d4ab70-d19c-4ca5-8638-dc71cd7f9075}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[BufferFull:= False;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="CalcMaxCapacity" Id="{103715e4-1eff-499e-a6fa-dc2632da1f57}">
+      <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
+VAR
+	ii: INT;
+	dinSumMaxCapacity: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method calculate the sum of max. capacities from all lines and return the result.
+
+//Init
+CalcMaxCapacity:= 0;
+dinSumMaxCapacity:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfLines-1 BY 1 DO
+	// Build sum of all lines		
+	dinSumMaxCapacity:= dinSumMaxCapacity + a_pLineChildSIF[ii]^.Cur.dinMaxCapacity; 	
+END_FOR
+
+// Return result
+CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoInBridge" Id="{16b4ee01-2009-4b58-a37e-58294e9088ff}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+// Read sensors for waiting if a jam is detected
+FOR intI := 1 TO SIf.Cfg.usiCountJamSensors DO
+	SIf.In.a_bolJamSensor[intI].map := THIS^.In_a_bolJamSensor[intI];
+	IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+		getInBol(CIf.Job.bolIoForce,ADR(SIf.In.a_bolJamSensor[intI]));
+	END_IF
+END_FOR
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	//ctrl.In.bol_PosSwitchBasicDefTyp.intern := getInBol(ctrl.ifc.Job.bol_Force ,ADR(ctrl.In.bol_PosSwitchBasicDefTyp);
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{22fe2a2e-5267-4bbe-b87a-d8a58965254b}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+	
+		bolGoToRun:= FALSE;
+		usiIndexToRelease:= 0;
+		
+		// Initialize sub state machine
+		me.SubStateMachine.intState:= cSTA_SUB_INITIALIZED; 
+		me.SubStateMachine.intStateNext:= cSTA_SUB_INITIALIZED;
+		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+					
+		// Check configured main mode
+		CASE SIf.Cfg.usiMergeMainMode OF	
+		
+			// Mode - Automatic
+			E_Typ_MER_MODE.Automatic:
+			
+				// send command RUN to all existing line child controller.
+				THIS^.CmdToAllLines(cCMD_RUN);
+				
+				// State Change Condition
+				// Check if all childs in "RUN", ready for release hanger 
+				IF(THIS^.checkStateAllLines(cSTA_RUN))THEN
+					bolGoToRun:= TRUE;			
+				END_IF	
+		
+			// Mode - OnCommand	
+			E_Typ_MER_MODE.OnCommand:
+			
+				// send command STOP to all existing line child controller.
+				THIS^.CmdToAllLines(cCMD_RUN);
+				
+				// State Change Condition
+				// Check if all childs stopped, ready for new command 
+				IF(THIS^.checkStateAllLines(cSTA_RUN))THEN
+					bolGoToRun:= TRUE;					
+				END_IF	
+			
+		END_CASE
+
+	
+		// State Change Condition	
+		IF (bolGoToRun=TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;		
+		END_IF
+
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddLine" Id="{27954374-ac72-4c1b-9639-4e1c3e3a7420}">
+      <Declaration><![CDATA[METHOD AddLine
+VAR_INPUT
+	p_Line: POINTER TO FB_SLB;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Method add the pointer address of the line child controller to the array list.
+IF (usiNumOfLines <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add line child controller to list
+	a_pLineChildCtrl[usiNumOfLines] := p_Line;
+	// Inc. number of lines
+	usiNumOfLines:= usiNumOfLines+1;
+	// Check if the pointer is valid
+	IF (p_Line<>0) THEN
+		usiNumOfValidPointerToLine:= usiNumOfValidPointerToLine+1;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoOutBridge" Id="{2b988668-2d6f-4721-8081-dd92a30540a4}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+
+// ... no physical outputs
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CalcSumOfItems" Id="{33b6c786-9b49-4277-aadc-eeaa1fd2ff7a}">
+      <Declaration><![CDATA[METHOD PROTECTED CalcSumOfItems : DINT
+VAR
+	ii: INT;
+	dinSumOfItems: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method calculate the sum of hangers from all lines and return the result.
+
+//Init
+CalcSumOfItems:= 0;
+dinSumOfItems:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfLines-1 BY 1 DO
+	// Build sum of all zones		
+	dinSumOfItems:= dinSumOfItems + a_pLineChildSIF[ii]^.Cur.dinNumOfHangersInBuffer; 	
+END_FOR
+
+// Return result
+CalcSumOfItems:= dinSumOfItems;]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="MaxCapacity" Id="{4d017794-5592-41c8-a076-76d1bc2f6731}">
+      <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{9392ad4f-afa5-4d39-be8e-9a79b12b6e04}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="sta_STOP" Id="{5c442dd0-d7fb-48c6-9e65-774b5f3e8e13}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// State Change Condition	
+		IF (me.intCmd = cCMD_RUN) THEN 
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+//-------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCtrlSIf" Id="{64680fe6-2fae-4dcf-a5d3-17f3d1dea54a}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_MER
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkChildValid" Id="{6eb666ef-d45c-4e0d-af3a-6cd1613bd716}">
+      <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (usiNumOfLines = usiNumOfValidPointerToLine) THEN
+	checkChildValid:= TRUE;
+ELSE
+	checkChildValid:= FALSE;
+	// Invalid child pointer
+	IF (usiNumOfLines <> usiNumOfValidPointerToLine) THEN
+		// SIf.Alm[1].strText := 'Invalid child pointer'; 
+		pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);	
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{97a09aa8-c6d1-4318-b500-0aae29162986}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_STOPBusy: 
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+	cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();				
+END_CASE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_RUN" Id="{98b6cab1-ad34-4a3c-b82e-651fe597dd54}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;	
+		;
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+	
+		// Check States for parent information
+		THIS^.checkStateAllLines(cSTA_RUN);
+
+		// Check jam detection
+		IF (udiJamReleaseDelayTime_ms > SIf.Par.udi_jamTimeout_ms) THEN
+			bolJamDetected := FALSE;
+		ELSE
+			udiJamReleaseDelayTime_ms := udiJamReleaseDelayTime_ms + me.FUBInfo.udiSample_ms;
+		END_IF
+		
+		FOR intI := 1 TO SIf.Cfg.usiCountJamSensors DO
+			// Start jam timer
+			IF ((SIf.In.a_bolJamSensor[intI].intern = TRUE) AND (a_bolJamSensorOnce[intI] = FALSE)) THEN
+				a_bolJamSensorOnce[intI]:= TRUE;
+				//a_udiTimeJamDetection[intI]:= me.StateMachine.udiTimeInState_ms;
+				a_udiTimeJamDetection[intI]:= 0;
+			// Stop jam timer
+			ELSIF ((SIf.In.a_bolJamSensor[intI].intern = FALSE) AND (a_bolJamSensorOnce[intI] = TRUE)) THEN
+				a_bolJamSensorOnce[intI]:= FALSE;
+			// Set flag if neccessary
+			ELSIF ((SIf.In.a_bolJamSensor[intI].intern = TRUE) AND (a_bolJamSensorOnce[intI] = TRUE)) THEN
+				//IF (me.StateMachine.udiTimeInState_ms > a_udiTimeJamDetection[intI] + SIf.Par.udi_jamTimeout_ms) THEN
+				IF (a_udiTimeJamDetection[intI] > SIf.Par.udi_jamTimeout_ms) THEN
+					bolJamDetected := TRUE;
+					udiJamReleaseDelayTime_ms := 0;
+				END_IF
+			END_IF
+			a_udiTimeJamDetection[intI]:= a_udiTimeJamDetection[intI]+ me.FUBInfo.udiSample_ms;
+		END_FOR
+	
+		//----------------------------------------------------------------------------------------
+		// Substates for merging lines dependent time or distribution of the number of hangers
+		//----------------------------------------------------------------------------------------
+		CASE me.SubStateMachine.intState OF
+	
+			//-----------------------------------------------
+			// INITIALIZE 					(MODE: All modes)
+			//-----------------------------------------------
+			cSTA_SUB_INITIALIZED:
+			
+				// Check configured main mode
+				CASE SIf.Cfg.usiMergeMainMode OF	
+				
+					// Mode - Automatic
+					E_Typ_MER_MODE.Automatic:		
+						me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_HANGER_EXIST;					
+									
+					// Mode - OnCommand	
+					E_Typ_MER_MODE.OnCommand:		
+						me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;
+														
+				END_CASE
+			
+			//-----------------------------------------------
+			// WAIT FOR COMMAND 			(MODE: OnCommand)
+			//-----------------------------------------------	
+			cSTA_SUB_WAIT_FOR_CMD:
+			
+				// Wait for command to release all
+				IF (me.intCmd=SLB_CmdState.cCMD_RELEASE_ALL) THEN
+					// Check about valid line number
+					IF ((SIf.Par.usiLineNumToReleaseAll = 0) OR (SIf.Par.usiLineNumToReleaseAll > usiNumOfLines)) THEN
+						// Invalid line	
+						// SIf.Alm[2].strText := 'Invalid line number. Line not exist'; 
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);		
+					ELSE
+						// Valid line	
+						usiLineNumToReleaseAll:= SIf.Par.usiLineNumToReleaseAll-1;
+						me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE_ALL;
+					END_IF
+						
+				END_IF
+				
+			//-----------------------------------------------
+			// CHECK HANGER EXIST 			(MODE: Automatic)     
+			//-----------------------------------------------
+			cSTA_SUB_CHECK_HANGER_EXIST:
+				// Entry action
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
+					;						
+				END_IF
+				
+				// Init
+				bolReleaseHanger:= FALSE;
+					
+				// Check hanger exists on line
+				IF (a_pLineChildSIF[usiIndexToRelease]^.Cur.bolHangerDetected=TRUE) THEN
+					bolReleaseHanger:= TRUE;					
+				ELSE		
+					// No hanger on this line, check next
+					IF (usiIndexToRelease < (usiNumOfLines-1)) THEN
+						// Inc. index to next line
+						usiIndexToRelease:= usiIndexToRelease + 1;	
+					ELSE
+						usiIndexToRelease:= 0;
+					END_IF
+				END_IF			
+	
+				// State Change Condition
+				IF (bolReleaseHanger=TRUE) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE;
+					// Reset counter and timer
+					dinNumOfPassedHangers:=0;
+					udiMergingTime:=0;
+				END_IF
+					
+			//-----------------------------------------------
+			// SEND RELEASE					(MODE: Automatic)
+			//-----------------------------------------------
+			cSTA_SUB_SEND_RELEASE:		
+	
+				// Send release command to line X (trigger command)
+				a_pLineChildCIF[usiIndexToRelease]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE;				
+				
+				// State Change Condition
+				IF(TRUE)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_JOB_DONE;					
+				END_IF	
+						
+			//-----------------------------------------------
+			// SEND RELEASE	ALL				(MODE: OnCommand)
+			//-----------------------------------------------
+			cSTA_SUB_SEND_RELEASE_ALL:
+			
+				// Send release all command to line X
+				a_pLineChildCIF[usiLineNumToReleaseAll]^.Job.intACmd:= STB_CmdState.cCMD_RELEASE_ALL;				
+				
+				// State Change Condition
+				IF(TRUE)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_JOB_DONE;					
+				END_IF		
+					
+			//-----------------------------------------------
+			// WAIT JOB DONE				(MODE: All modes)
+			//-----------------------------------------------
+			cSTA_SUB_WAIT_JOB_DONE:
+		
+				// Check configured main mode
+				CASE SIf.Cfg.usiMergeMainMode OF	
+				
+					// Mode - Automatic
+					E_Typ_MER_MODE.Automatic:
+						// State Change Condition
+						// Wait until job done
+						IF(a_pLineChildCIF[usiIndexToRelease]^.Job.intACmd = cSTA_DONE) THEN									
+							me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_MERGE_CON;																				
+						END_IF	
+									
+					// Mode - OnCommand	
+					E_Typ_MER_MODE.OnCommand:
+						// State Change Condition
+						// Wait until release all
+						IF(a_pLineChildCIF[usiLineNumToReleaseAll]^.Job.intState = SLB_CmdState.cCMD_RELEASE_ALL)THEN				
+							me.SubStateMachine.intStateNext := cSTA_SUB_SEND_STOP;																
+						END_IF
+						
+				END_CASE
+							
+			//-----------------------------------------------
+			// SEND STOP					(MODE: OnCommand)
+			//-----------------------------------------------
+			cSTA_SUB_SEND_STOP:
+			
+				// Send stop command to line X
+				a_pLineChildCIF[usiLineNumToReleaseAll]^.Job.intACmd:=cCMD_RUN;				
+				
+				// State Change Condition
+				IF(a_pLineChildCIF[usiLineNumToReleaseAll]^.Job.intState=cSTA_RUN)THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_LINE_FREE;					
+				END_IF	
+								
+			//-----------------------------------------------
+			// CHECK MERGE CONDITIONS		(MODE: Automatic)
+			//-----------------------------------------------
+			cSTA_SUB_CHECK_MERGE_CON:
+				// Entry action
+				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
+					me.SubStateMachine.intStateLastCycle := me.SubStateMachine.intState;							
+					;						
+				END_IF
+					
+				// Count the passed hangers from current line X
+				IF (a_pLineChildSIF[usiIndexToRelease]^.Cur.dinHangersPassedTotal <> dinPassedTotalLineXOld) THEN
+					// Count passed hangers if "E_Typ_MER_AUTO_MODE.MergeOverSetpoint" is selected.				
+					dinNumOfPassedHangers:= dinNumOfPassedHangers + a_pLineChildSIF[usiIndexToRelease]^.Cur.uinNumOfHangersPerPulseFirstZone;			
+					// Calculate merged hangers total
+					SIf.Cur.dinNumOfMergedHangersTotal:= SIf.Cur.dinNumOfMergedHangersTotal + a_pLineChildSIF[usiIndexToRelease]^.Cur.uinNumOfHangersPerPulseFirstZone;									
+				END_IF
+				dinPassedTotalLineXOld:= a_pLineChildSIF[usiIndexToRelease]^.Cur.dinHangersPassedTotal;
+		
+					
+				// State Change Condition
+				IF (a_pLineChildSIF[usiIndexToRelease]^.Cur.bolHangerDetected=FALSE) THEN	// No hanger exist
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_LINE_FREE;				
+				ELSIF ((SIf.Par.a_LinePar[usiIndexToRelease].usiMergeMode = E_Typ_MER_AUTO_MODE.MergeOverTime) AND (udiMergingTime >= SIf.Par.a_LinePar[usiIndexToRelease].udiMergingTime_ms)) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_LINE_FREE;				
+				ELSIF ((SIf.Par.a_LinePar[usiIndexToRelease].usiMergeMode = E_Typ_MER_AUTO_MODE.MergeOverSetpoint) AND (dinNumOfPassedHangers >= SIf.Par.a_LinePar[usiIndexToRelease].uinNumOfHangersToMerge)) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_LINE_FREE;							
+				ELSIF ((SIf.Par.a_LinePar[usiIndexToRelease].usiMergeMode = E_Typ_MER_AUTO_MODE.MergeOverTime) AND (udiMergingTime < SIf.Par.a_LinePar[usiIndexToRelease].udiMergingTime_ms)) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE;					
+				ELSIF ((SIf.Par.a_LinePar[usiIndexToRelease].usiMergeMode = E_Typ_MER_AUTO_MODE.MergeOverSetpoint) AND (dinNumOfPassedHangers < SIf.Par.a_LinePar[usiIndexToRelease].uinNumOfHangersToMerge)) THEN
+					me.SubStateMachine.intStateNext := cSTA_SUB_SEND_RELEASE;	
+				END_IF
+	
+			//-----------------------------------------------
+			// WAIT UNTIL LINE IS FREE		(MODE: All modes)
+			//-----------------------------------------------
+			cSTA_SUB_WAIT_LINE_FREE:
+
+				IF (bolJamDetected	= TRUE) THEN // Line is not free, jam detected
+					// SIf.Alm[3].strText := 'Merger waits for jam sensor free';
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);				
+				ELSE				
+					// Check configured main mode
+					CASE SIf.Cfg.usiMergeMainMode OF	
+					
+						// Mode - Automatic
+						E_Typ_MER_MODE.Automatic:
+							// State Change Condition
+							IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.a_LinePar[usiIndexToRelease].udiWaitTimeLineFree_ms) THEN 
+								IF(me.intCmd=cCMD_STOP)THEN
+									// Go to end
+									me.SubStateMachine.intStateNext := cSTA_SUB_END;
+								ELSE
+									// Merging cycle line X complete
+									IF (usiIndexToRelease < (usiNumOfLines-1)) THEN						
+										// Inc. index to next line
+										usiIndexToRelease:= usiIndexToRelease + 1;	
+									ELSE
+										usiIndexToRelease:= 0;
+									END_IF
+									
+									// Go on with automatic cycle
+									me.SubStateMachine.intStateNext := cSTA_SUB_CHECK_HANGER_EXIST;					
+								END_IF		
+							END_IF
+									
+						// Mode - OnCommand	
+						E_Typ_MER_MODE.OnCommand:
+							// State Change Condition
+							IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.a_LinePar[usiLineNumToReleaseAll].udiWaitTimeLineFree_ms) THEN												
+								// Update merged hangers total -> After release all, use passed package 
+								SIf.Cur.dinNumOfMergedHangersTotal:= SIf.Cur.dinNumOfMergedHangersTotal + a_pLineChildSIF[usiLineNumToReleaseAll]^.Cur.dinHangersPassedPackage;			
+								
+								IF(me.intCmd=cCMD_STOP)THEN
+									// Go to end
+									me.SubStateMachine.intStateNext := cSTA_SUB_END;
+								ELSE
+									//Set "Job done" for parent
+									CIf.Job.intACmd:=cSTA_DONE;
+									me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_FOR_CMD;
+								END_IF								
+							END_IF
+							
+					END_CASE
+				END_IF
+			//-----------------------------------------------
+			// END							(MODE: All modes)
+			//-----------------------------------------------
+			cSTA_SUB_END:
+			     // ... do nothing
+		
+		END_CASE
+
+		// Timer handling for merging time
+		udiMergingTime:= udiMergingTime + me.FUBInfo.udiSample_ms;
+			
+		// State Change Condition
+		IF ((me.intCmd=cCMD_STOP) AND ((me.SubStateMachine.intState=cSTA_SUB_END) OR (me.SubStateMachine.intState=cSTA_SUB_CHECK_HANGER_EXIST) OR (me.SubStateMachine.intState=cSTA_SUB_WAIT_FOR_CMD) OR (me.SubStateMachine.intState=cSTA_SUB_WAIT_LINE_FREE))) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="NumOfHangers" Id="{9c9e00a2-8244-44db-b766-0ee3acbf0b4d}">
+      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+]]></Declaration>
+      <Get Name="Get" Id="{9493e81d-81fe-4c97-8f53-76675eca1281}">
+        <Declaration><![CDATA[]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinCurrentItemCount;]]></ST>
+        </Implementation>
+      </Get>
+    </Property>
+    <Method Name="checkChildAlmClass" Id="{a6a1dddc-f0b1-434e-86e6-858df105bb9f}">
+      <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------
+// check child alarm classes
+// set me alarm class active if at least one child has an EOFF
+IF CheckAllChildAlmClass(E_AlmClass.EOFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.EOFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.OFF) THEN
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.OFF;
+	me.Alarm.bolfp := TRUE;
+ELSIF CheckAllChildAlmClass(E_AlmClass.STOP) THEN  // FB_MER needs alarm class STOP
+	CIf.Job.eMe_ActivAlmClass := E_AlmClass.STOP;
+	me.Alarm.bolfp := TRUE;
+ELSE
+	IF (me.Alarm.bolfp) THEN
+		CIf.Job.eMe_ActivAlmClass := E_AlmClass.NONE; // no reset necessary
+		me.Alarm.bolfp := FALSE;
+	END_IF
+END_IF
+
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs
+//------------------------------------------------------------------------------------------------------
+// set alarm class parent of childs in the case of a parent EOFF or me=OFF or EOFF
+IF (CIf.Job.eParent_ActivAlmClass=E_AlmClass.EOFF) THEN
+	SetAllChildAlmClass(CIf.Job.eParent_ActivAlmClass);
+ELSIF(CIf.Job.eMe_ActivAlmClass=E_AlmClass.EOFF) OR (CIf.Job.eMe_ActivAlmClass=E_AlmClass.OFF) THEN
+	SetAllChildAlmClass(CIf.Job.eMe_ActivAlmClass);
+ELSE
+	// no important alarm for child active
+	SetAllChildAlmClass(E_AlmClass.NONE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="Always" Id="{a8df2dd4-8743-40f2-b237-f7b2d0f85e0e}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+VAR
+	/// Looping variable
+	intSec: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF (me.bolChangeBackToAUTO=TRUE) THEN // switch mode to automatic switch off controller
+	//me.StateMachine.intStateNext := cSTA_OFFBusy;
+	//me.bolChangeBackToAUTO := FALSE; // for cylinder no change to off when switch to automatic!!
+END_IF
+
+SUPER^.Always();
+
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	
+	//-------------------------------------------------
+	// Provide current values for the parent
+	//-------------------------------------------------	
+	
+	// Number of lines to merge, depends on how many times the method "AddLine" was called at init
+	SIf.Cur.usiNumOfLinesToMerge:= usiNumOfLines;
+	// Actual Item Count of this controller -> based on all lines
+	SIf.Cur.dinCurrentItemCount:= THIS^.CalcSumOfItems();
+	// Max. buffer capacity -> based on all lines
+	SIf.Cur.dinMaxCapacity:= THIS^.CalcMaxCapacity();	
+	
+END_IF
+
+// ----------------------------------------------------------------------------------
+// Always change actions in Base Library
+// ----------------------------------------------------------------------------------
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF
+
+// Conditions Always
+IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_AlmClass.OFF) OR (me.intCmd=cCMD_OFF))
+		 AND (me.StateMachine.intState<>cSTA_ERROR) AND (me.StateMachine.intState<>cSTA_ERRORQuit) AND
+		(me.StateMachine.intState<>cSTA_OFF) AND (me.StateMachine.intState<>cSTA_OFFBusy)) THEN
+	// alarm evt EOFF, OFF or cmd off
+	me.StateMachine.intStateNext := cSTA_OFFBusy;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CtrlInit" Id="{b238bae4-e92a-42aa-a6ec-33b6c80bb3fa}">
+      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.CtrlInit();
+
+//----------------------------------------------------------------------
+// Initialize all lines
+//----------------------------------------------------------------------
+
+// Method initialize all line child controller.
+FOR ii:=0 TO usiNumOfLines-1 BY 1 DO	
+	a_pLineChildCIF[ii] := THIS^.AddChild(a_pLineChildCtrl[ii]^);
+	a_pLineChildSIF[ii] := a_pLineChildCtrl[ii]^.getCtrlSIf();
+END_FOR]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_STOPBusy" Id="{b6418de7-b53e-42bd-a912-10bb797dbc3d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		// send command STOP to all existing line child controller.
+		THIS^.CmdToAllLines(cCMD_STOP);
+
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+			
+		// State Change Condition
+		// Check if all STOPPED
+		IF (THIS^.checkStateAllLines(cSTA_STOP)) THEN
+			me.StateMachine.intStateNext := cSTA_STOP;
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="checkStateAllLines" Id="{b71079dc-b4d4-4583-8fb1-91c36695200b}">
+      <Declaration><![CDATA[METHOD PROTECTED checkStateAllLines : BOOL
+VAR_INPUT
+	cSTA: INT;
+END_VAR
+VAR
+	ii: INT;
+	usiNumOfCheckedChilds: USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method check input state of all lines
+
+//Init
+checkStateAllLines:= FALSE;
+usiNumOfCheckedChilds:= 0;
+
+// Loop over all childs
+FOR ii:=0 TO usiNumOfLines-1 BY 1 DO
+	// Check state	
+	// Special condition: In case if the child is in state ERROR and STOP is requested. Set child as checked.
+	// Parent controller need state STOP that automatic stop sequence can work for all other childs.
+	IF (a_pLineChildCIF[ii]^.Job.intState = cSTA) OR ((a_pLineChildCIF[ii]^.Job.intState = cSTA_ERROR) AND (cSTA = cSTA_STOP)) THEN
+		usiNumOfCheckedChilds:= usiNumOfCheckedChilds+1;
+		SIf.Cur.a_bolChildReady[ii] := TRUE;
+	ELSE
+		SIf.Cur.a_bolChildReady[ii] := FALSE;		
+	END_IF
+
+END_FOR
+
+// All states equal the input state
+IF (usiNumOfCheckedChilds = usiNumOfLines) THEN
+	checkStateAllLines:= TRUE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="CmdToAllLines" Id="{d430a304-77c9-4865-8569-e8598d5e1125}">
+      <Declaration><![CDATA[METHOD PROTECTED CmdToAllLines
+VAR_INPUT
+	cCMD: INT;
+END_VAR
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// Method send input command to all existing line child controller.
+FOR ii:=0 TO usiNumOfLines-1 BY 1 DO	
+	a_pLineChildCIF[ii]^.Job.intACmd:= cCMD;
+END_FOR
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCmdState" Id="{dcc55f97-87c0-422b-b24c-b66dbdca2e3a}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+		END_CASE;
+	ELSE
+	
+	// states
+		CASE intCmdState OF	
+			// SUB States
+			cSTA_SUB_INITIALIZED:
+				getCmdState := 'cSTA_SUB_INITIALIZED';			
+			cSTA_SUB_WAIT_FOR_CMD:
+				getCmdState := 'cSTA_SUB_WAIT_FOR_CMD';					
+			cSTA_SUB_CHECK_HANGER_EXIST:
+				getCmdState := 'cSTA_SUB_CHECK_HANGER_EXIST';
+			cSTA_SUB_SEND_RELEASE:
+				getCmdState := 'cSTA_SUB_SEND_RELEASE';
+			cSTA_SUB_SEND_RELEASE_ALL:
+				getCmdState := 'cSTA_SUB_SEND_RELEASE_ALL';	
+			cSTA_SUB_SEND_STOP:
+				getCmdState := 'cSTA_SUB_SEND_STOP';		
+			cSTA_SUB_WAIT_JOB_DONE:
+				getCmdState := 'cSTA_SUB_WAIT_JOB_DONE';
+			cSTA_SUB_CHECK_MERGE_CON:
+				getCmdState := 'cSTA_SUB_CHECK_MERGE_CON';
+			cSTA_SUB_WAIT_LINE_FREE:
+				getCmdState := 'cSTA_SUB_WAIT_LINE_FREE';	
+			cSTA_SUB_END:
+				getCmdState := 'cSTA_SUB_END';	
+		END_CASE;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_OFF" Id="{dd33ab23-b00b-4923-900c-796506fa9626}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		;		
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Reset total counter
+		SIf.Cur.dinNumOfMergedHangersTotal:= 0;
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF (me.intCmd=cCMD_STOP) THEN
+				me.StateMachine.intStateNext := cSTA_STOPBusy;
+			ELSIF (me.intCmd=cCMD_RUN) THEN 
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			END_IF
+		END_IF
+	END_IF
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{e0a5d3bd-653b-4f48-904e-f799d42a312d}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+
+// set name of class/typ
+CIf.Info.strType := 'FB_MER'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[1].strText := 'Invalid child pointer';
+SIf.Alm[2].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[2].strText := 'Invalid line number. Line not exist';
+SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[3].strText := 'Merger waits for jam sensor free'; 
+
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// configuration
+SIf.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;
+SIf.Cfg.usiCountJamSensors:= 0;
+
+// parameter
+SIf.Par.udi_jamTimeout_ms:= 500;
+// Default parameter for the lines are set in method InitLines]]></ST>
+      </Implementation>
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

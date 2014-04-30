@@ -1,0 +1,18 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Line" Id="{ef95cf22-601a-4890-8131-8dfd6fd80434}">
+    <Declaration><![CDATA[TYPE T_Line :
+STRUCT
+	/// Merge-mode
+	usiMergeMode: E_Typ_MER_AUTO_MODE;
+	/// [ms] Time, how long hangers are merged from sub- into the main line.
+	udiMergingTime_ms: UDINT;
+	/// Setpoint, how many hangers should merged from sub- into the main line.
+	uinNumOfHangersToMerge: UINT;
+	/// [ms] Wait time until the line is free before release the next line to prevent hanger collision.
+	udiWaitTimeLineFree_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

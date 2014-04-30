@@ -1,0 +1,10 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="Const_MTR" Id="{595c142d-3379-4e4f-af53-d49257632863}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cusiMinAddedChilds: USINT := 1;
+	cusiSectionBuffer_SIZE: USINT := 80;  // Buffer prepared for 80 sections, means, with section length e.g. 0.49 m a TLK with max. length of 39 m 
+										  // can be handled beginning from the pin detection sensor.
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="Const_MER" Id="{64304e6d-fcfb-4e69-851b-f23c488bbdd0}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cusiMinAddedChilds: USINT := 1;
+	cusiSectionBuffer_SIZE: USINT := 80;  // Buffer prepared for 80 sections, means, with section length e.g. 0.49 m a TLK with max. length of 39 m 
+										  // can be handled beginning from the pin detection sensor. 
+	cMAX_JAM_SENSORS: USINT := 3;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

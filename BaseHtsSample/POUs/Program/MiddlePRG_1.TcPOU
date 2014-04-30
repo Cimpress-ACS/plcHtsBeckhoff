@@ -12,6 +12,7 @@ VAR
 	pTmpSIf_SLB: POINTER TO T_Ctrl_SIf_SLB;
 	pTmpSIf_STB: POINTER TO T_Ctrl_SIf_STB;
 	pTmpSIf_MER: POINTER TO T_Ctrl_SIf_MER;
+	pTmpSIf_MTR: POINTER TO T_Ctrl_SIf_MTR;
 	pTmpSIf_RFW: POINTER TO T_Ctrl_SIf_RFW;
 	jj: INT;
 	fbTLC_2: FB_DRV;
@@ -20,8 +21,7 @@ VAR
 	fbTLP_4: FB_DRV;
 	fbTLP_5: FB_DRV;
 	fbTLK_15: FB_DRV;
-	/// configured with mode "MergeIntoTrp", needs faster task
-	fbMER_15: FB_MER;
+	fbMTR_15: FB_MTR;
 	/// DPJ in MiddlePRG
 	fbDPJ_4: FB_DPJ;
 	fbDPJ_15: FB_DPJ;
@@ -46,14 +46,10 @@ VAR
 	fbSBI_3: FB_STB;
 	fbBUF_16: FB_SLB;
 	fbSBI_16: FB_STB;
-	fbSLB_12: FB_SLB;
 	fbSEP_12: FB_STB;
-	fbSLB_13: FB_SLB;
 	fbSEP_13: FB_STB;
-	fbSLB_14: FB_SLB;
 	fbSEP_14: FB_STB;
-END_VAR
-]]></Declaration>
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	
@@ -463,24 +459,31 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// ----------		
 	fbSEP_12.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_12);     		// SEP_8 - init and entry fb_instance in global fb pointer array
 	pTmpSIf_STB := fbSEP_12.getCtrlSIf();
-	// SEP_12 - configuration		
+	// SEP_12 - configuration
+	pTmpSIf_STB^.Cfg.usiSimulationMode:= 1;
+	pTmpSIf_STB^.Cfg.usiLineNumber:= 1;						// 1 SEP in transport line to merge hangers into the TLK
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
 	pTmpSIf_STB^.Cfg.uinNumOfHangersPerPulse:= 1;																		
 	pTmpSIf_STB^.Cfg.bolCylPosLostMonitoring:= FALSE;
 	pTmpSIf_STB^.Cfg.dinMaxNumOfHangers_PosMonitoring:= pTmpSIf_STB^.Cfg.dinMaxCapacity + 5;
-	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;								
+	pTmpSIf_STB^.Cfg.bolReleaseAllNonPulse:= FALSE;	
+			
 	// SEP_12 - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
-
+	pTmpSIf_STB^.Par.dinPositionOfSlide_um:= 3000000;  // 3 m
+	pTmpSIf_STB^.Par.uinTimeOnSlide_ms:= 10;
+	
 	// ----------
 	// SEP_13
 	// ----------		
 	fbSEP_13.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_13);     		// SEP_8 - init and entry fb_instance in global fb pointer array
 	pTmpSIf_STB := fbSEP_13.getCtrlSIf();
-	// SEP_13 - configuration		
+	// SEP_13 - configuration	
+	pTmpSIf_STB^.Cfg.usiSimulationMode:= 1;
+	pTmpSIf_STB^.Cfg.usiLineNumber:= 2;						// 2 SEP in transport line to merge hangers into the TLK
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
@@ -491,13 +494,17 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// SEP_13 - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
-
+	pTmpSIf_STB^.Par.dinPositionOfSlide_um:= 6000000;  // 6 m
+	pTmpSIf_STB^.Par.uinTimeOnSlide_ms:= 10;
+	
 	// ----------
 	// SEP_14
 	// ----------		
 	fbSEP_14.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SEP_14);     		// SEP_8 - init and entry fb_instance in global fb pointer array
 	pTmpSIf_STB := fbSEP_14.getCtrlSIf();
-	// SEP_14 - configuration		
+	// SEP_14 - configuration	
+	pTmpSIf_STB^.Cfg.usiSimulationMode:= 1;	
+	pTmpSIf_STB^.Cfg.usiLineNumber:= 3;						// 3 SEP in transport line to merge hangers into the TLK
 	pTmpSIf_STB^.Cfg.bolHasBufferFullSensor := TRUE;   													
 	pTmpSIf_STB^.Cfg.bolHasHangerDetection := TRUE;   				
 	pTmpSIf_STB^.Cfg.dinMaxCapacity:= 11;													// Based on: +8.0-B6 
@@ -508,6 +515,8 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// SEP_14 - parameter	
 	pTmpSIf_STB^.Par.udiPulseLengthValve_ms := 200;   // needs 200ms, work in combination with a MER configured with mode "MergeIntoTrp"
 	pTmpSIf_STB^.Par.udiSensorTime_ms := 2000;
+	pTmpSIf_STB^.Par.dinPositionOfSlide_um:= 9000000;  // 9 m
+	pTmpSIf_STB^.Par.uinTimeOnSlide_ms:= 10;
 	
 	// ----------------------------------
 	// Elementgroups of Slide- Buffers
@@ -555,51 +564,27 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// ----------	
 	fbBUF_16.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.BUF_16);     	// BUF_10 - init and entry fb_instance in global fb pointer array
 	fbBUF_16.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SBI_16]);				// Add Element as Type Bufferelement
-	
-	// ----------
-	// SLB_12
-	// ----------	
-	fbSLB_12.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_12);     		// SLB_8 - init and entry fb_instance in global fb pointer array
-	fbSLB_12.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_12]);				// Add Element as Type Bufferelement
-	
-	// ----------
-	// SLB_13
-	// ----------	
-	fbSLB_13.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_13);     		// SLB_8 - init and entry fb_instance in global fb pointer array
-	fbSLB_13.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_13]);				// Add Element as Type Bufferelement
-	
-	// ----------
-	// SLB_14
-	// ----------	
-	fbSLB_14.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.SLB_14);     		// SLB_8 - init and entry fb_instance in global fb pointer array
-	fbSLB_14.AddBufferZone(g_a_pCtrlInst[E_CtrlId.SEP_14]);				// Add Element as Type Bufferelement
 		
 	// ----------------------------------
 	// MERGERS
 	// ----------------------------------
 	
 	// ----------
-	// MER_15
+	// MTR_15
 	// ----------
-	fbMER_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MER_15);     // init and entry fb_instance in global fb pointer array
-	pTmpSIf_MER:= fbMER_15.getCtrlSIf();
+	fbMTR_15.iniAllCtrlArrays(ADR(g_a_pCtrlInst),ADR(g_a_pCtrlCIf),E_CtrlId.MTR_15);     // init and entry fb_instance in global fb pointer array
+	pTmpSIf_MTR:= fbMTR_15.getCtrlSIf();
 	// ADD Childs
-	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_12]);
-	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_13]);
-	fbMER_15.AddLine(g_a_pCtrlInst[E_CtrlId.SLB_14]);
-	// MER_15 - configuration fix	
-	pTmpSIf_MER^.Cfg.usiMergeMainMode:= E_Typ_MER_MODE.Automatic;	
-	pTmpSIf_MER^.Par.dinHangerSensorPosition_um := 770000; 				    // 770 mm  Distance between pin sensor and hanger detected sensor
-	pTmpSIf_MER^.Par.dinPinLenght_um:= 25000; 								// 25 mm								
-	pTmpSIf_MER^.Par.dinSectionLenght_um:= 484000;							// 484 mm
-	pTmpSIf_MER^.Par.dinTrigStartOffset_um:= 1000;							// 1 mm						
-	pTmpSIf_MER^.Par.dinTrigEndOffset_um:= 10000;							// 10 mm							
-  	// MER_15 - parameters fix	
-	pTmpSIf_MER^.Par.a_LinePar[0].udiWaitTimeLineFree_ms:= 0;
-	// MER_15 - init parameters for line control	
-	pTmpSIf_MER^.Par.a_LinePar[0].usiMergeMode:= E_Typ_MER_AUTO_MODE.MergeIntoTrp;
-	pTmpSIf_MER^.Par.a_LinePar[0].dinLinePosition_um:= 1900000;				// 1900 mm  Distance between pin sensor and the point where the line comes into the transport system
-
+	fbMTR_15.AddLine(g_a_pCtrlInst[E_CtrlId.SEP_12]);
+	fbMTR_15.AddLine(g_a_pCtrlInst[E_CtrlId.SEP_13]);
+	fbMTR_15.AddLine(g_a_pCtrlInst[E_CtrlId.SEP_14]);
+	// MTR_15 - parameters fix	
+	pTmpSIf_MTR^.Par.dinHangerSensorPosition_um := 770000; 				    // 770 mm  Distance between pin sensor and hanger detected sensor
+	pTmpSIf_MTR^.Par.dinPinLenght_um:= 25000; 								// 25 mm								
+	pTmpSIf_MTR^.Par.dinSectionLenght_um:= 484000;							// 484 mm
+	pTmpSIf_MTR^.Par.dinTrigStartOffset_um:= 1000;							// 1 mm						
+	pTmpSIf_MTR^.Par.dinTrigEndOffset_um:= 10000;							// 10 mm	
+	
 	g_uinStartProzess := g_uinStartProzess + 1; // For StartUp order
 	
 END_IF
@@ -773,31 +758,24 @@ IF (bolInitDone AND bolPlcStartupDone AND bolHostInitDone AND (g_uinStartProzess
 	fbSBI_16();
 	Out_16_0_Y4_PreStopper := fbSBI_16.Out_bolRetract;
 	
-	// SLB_12
-	fbSLB_12();
 	fbSEP_12.In_bolHangerDetected:= In_12_0_B8_Hanger_At_Separator;
 	fbSEP_12.In_bolBufferFull := In_12_0_B6_Separator_Full;
 	fbSEP_12();
 	Out_12_0_Y7_Separator := fbSEP_12.Out_bolRetract;
 	
-	// SLB_13
-	fbSLB_13();
 	fbSEP_13.In_bolHangerDetected:= In_13_0_B8_Hanger_At_Separator;
 	fbSEP_13.In_bolBufferFull := In_13_0_B6_Separator_Full;
 	fbSEP_13();
 	Out_13_0_Y7_Separator := fbSEP_13.Out_bolRetract;
 	
-	// SLB_14
-	fbSLB_14();
 	fbSEP_14.In_bolHangerDetected:= In_14_0_B8_Hanger_At_Separator;
 	fbSEP_14.In_bolBufferFull := In_14_0_B6_Separator_Full;
 	fbSEP_14();
 	Out_14_0_Y7_Separator := fbSEP_14.Out_bolRetract;
 	
-	// MER_15
-	fbMER_15.In_bolHangerDetected := In_15_0_B2_Hanger_In_TLK;
-	fbMER_15.In_bolPinDetected := In_15_0_B15_Loading_Pulse;	
-	fbMER_15();
+	fbMTR_15.In_bolHangerDetected := In_15_0_B2_Hanger_In_TLK;
+	fbMTR_15.In_bolPinDetected := In_15_0_B15_Loading_Pulse;	
+	fbMTR_15();
 	
 END_IF
 // -----------------------------------------------------------------------------------------------]]></ST>

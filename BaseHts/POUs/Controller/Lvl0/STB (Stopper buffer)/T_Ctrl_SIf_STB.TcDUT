@@ -1,0 +1,24 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_STB" Id="{ea35b5b2-731d-40a5-b369-2d0d7814df2c}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB :
+STRUCT
+	/// configuration
+	Cfg: T_Ctrl_SIf_STB_Cfg;
+	/// parameter
+	Par: T_Ctrl_SIf_STB_Par;
+	/// current values
+	Cur: T_Ctrl_SIf_STB_Cur;
+	/// io input
+	In: T_Ctrl_SIf_STB_In;
+	/// io output
+	Out: T_Ctrl_SIf_STB_Out;
+	/// alarm number used in this controller
+	Alm: ARRAY[1..4] OF T_Ctrl_Alm;
+	/// interlock of output/movements
+	Ilk: T_Ctrl_SIf_STB_Ilk;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,25 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_MTR_Cur" Id="{d69d3b15-5481-44b6-a9b5-ff0d69bee1b8}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MTR_Cur :
+STRUCT
+	/// Number of lines to merge, depends on how many times the method "AddLine" was called at init
+	usiNumOfLinesToMerge: USINT;
+	/// Approximate number of merged hangers total from all lines
+	dinNumOfMergedHangersTotal: DINT;
+	/// Max. buffer capacity -> based on all lines
+	dinMaxCapacity: DINT;
+	/// Actual Item Count of this controller -> based on all lines
+	dinCurrentItemCount: DINT;
+	/// Childs is ready
+	a_bolChildReady: ARRAY[0..Base_Const.cMaxNrOfChilds] OF BOOL;
+	///[um] actual position from the transport written from Parent
+	dinTransportPosition_um: DINT;
+	///[um] actual speed from the transport written from Parent
+	dinTransportspeed_um_s: DINT;
+	///[um] actual calculated position
+	dinTransportPositionCalc_um: DINT;
+END_STRUCT
+END_TYPE]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

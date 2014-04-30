@@ -1,0 +1,33 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_STB_Cfg" Id="{d35be0a5-9ddd-45cb-8b1f-f5e6a341269a}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_STB_Cfg :
+STRUCT
+	/// Has buffer full sensor (optional)
+	bolHasBufferFullSensor: BOOL;
+	/// Has hanger detection sensor
+	bolHasHangerDetection: BOOL;
+	/// Has decrement sensor, if not then decrement with stroke 
+	bolHasDecrementSensor: BOOL;
+	/// Don't delete dinNumOfHangersInBuffer if no hanger detected, used for very long buffers
+	bolDisableBufferDelete: BOOL;
+	/// Max. buffer capacity
+	dinMaxCapacity: DINT;
+	/// Number of passing hangers per pulse
+	uinNumOfHangersPerPulse: UINT;
+	/// max number of hangers detected in STOP if bolCylPosLostMonitoring activated until an error occures
+	dinMaxNumOfHangers_PosMonitoring: DINT;
+	/// Enable cylinder position lost monitoring
+	bolCylPosLostMonitoring: BOOL;
+	/// to release all work with puleses and counts or use time to release
+	bolReleaseAllNonPulse: BOOL;
+	// Unique line number. (Starts with 1..) Used in case if STB work in combination with FUB MTR to merge hangers into a TLK.
+	usiLineNumber: USINT;
+	// Simulation mode
+	// 0 = Normal simulation of STB function, e.g. STB in combination with SLB controller
+	// 1 = Hanger detection signal can be overridden manually to test STB in combination with MTR controller
+	usiSimulationMode: USINT;	
+END_STRUCT
+END_TYPE]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,16 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_MER_Par" Id="{65b4b177-2e17-4329-8888-27fa3c444dcd}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_MER_Par :
+STRUCT
+	/// Setpoint, line number to release all from parent in case if main mode "OnCommand" is selected. (1 -> X)
+	usiLineNumToReleaseAll: USINT;
+	/// List of parameters for Line 1 -> X
+	a_LinePar: ARRAY[0..Base_Const.cMaxNrOfChilds] OF T_Line;
+	/// [ms] Timeout jam sensor in RUN
+	udi_jamTimeout_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

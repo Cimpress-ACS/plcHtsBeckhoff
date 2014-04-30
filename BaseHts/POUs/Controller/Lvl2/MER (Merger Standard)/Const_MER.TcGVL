@@ -1,0 +1,9 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="Const_MER" Id="{4cfa3674-aa6c-46a8-8780-cdcc0b80e63b}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	cusiMinAddedChilds: USINT := 1;
+	cMAX_JAM_SENSORS: USINT := 3;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

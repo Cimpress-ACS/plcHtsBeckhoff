@@ -303,7 +303,7 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	fbICL_1.AddSeqChild(stSequence);
 	
 	// Define sequence parameter
-	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MER_15];
+	stSequence.pChild:= g_a_pCtrlInst[E_CtrlId.MTR_15];
 	stSequence.uinGroupRun:= 8;
 	stSequence.uinGroupStop:= 1;	
 	stSequence.intCmdSeqRun:= cCMD_RUN;
@@ -327,25 +327,26 @@ IF ((NOT bolPlcStartupDone) AND (g_uinStartProzess>=(uinTaskNbr-1))) THEN
 	// Add buffer elements
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_2]); 
 	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_3]); 
-	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MER_15]); 
+	fbICL_1.AddIBufferChilds(g_a_pCtrlInst[E_CtrlId.MTR_15]); 
 
 	// Add infos to LineControl (BufferFull -> No more hanger needed)
 	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2a]);
 	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2b]);
 	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.DSB2_2c]);
-	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_12]);
-	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_13]);
-	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SLB_14]); 
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SEP_12]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SEP_13]);
+	fbICL_1.AddIBufferFullChilds(g_a_pCtrlInst[E_CtrlId.SEP_14]); 
 	
 	// Add pointers
 	fbICL_1.p_fbDPJ_4 := g_a_pCtrlInst[E_CtrlId.DPJ_4];
 	fbICL_1.p_fbDPJ_9 := g_a_pCtrlInst[E_CtrlId.DPJ_15];
-	fbICL_1.p_fbMER_8 := g_a_pCtrlInst[E_CtrlId.MER_15];
+	fbICL_1.p_fbMTR_15 := g_a_pCtrlInst[E_CtrlId.MTR_15];
 	fbICL_1.p_fbCHD_4 := g_a_pCtrlInst[E_CtrlId.CHD_4];
 	fbICL_1.p_fbTLP_4 := g_a_pCtrlInst[E_CtrlId.TLP_4];
 	fbICL_1.p_fbTLP_10 := g_a_pCtrlInst[E_CtrlId.TLP_16];
 	fbICL_1.p_fbTLK_9 := g_a_pCtrlInst[E_CtrlId.TLK_15];
 
+	
 	g_uinStartProzess := g_uinStartProzess + 1;	// For StartUp order
 
 END_IF
