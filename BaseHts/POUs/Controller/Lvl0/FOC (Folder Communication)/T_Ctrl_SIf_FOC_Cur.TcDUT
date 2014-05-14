@@ -1,0 +1,18 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_FOC_Cur" Id="{8d85c0fe-09ce-492c-b426-1bd50b77a818}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOC_Cur :
+STRUCT
+	/// filtered data read ready counter
+	uliDataReadReadyCounter: ULINT;
+	/// filtered empty hanger counter
+	uliEmptyHangerCounter: ULINT;
+	/// overall number of sent CAN messages to folder
+	uliCountSentMessages: ULINT;
+	/// counter for warnings when DataReadReady window was detected but no RFID CAN cmd was sent by LineControl. This means shirt stack of 1 as fallback.
+	uliWarningsDataReadReadyButNoRfid: ULINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

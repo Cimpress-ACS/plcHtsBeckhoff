@@ -1,8 +1,9 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <POU Name="FB_HFE" Id="{c6981df2-3e96-4d86-a844-3d0e43ed881a}">
+  <POU Name="FB_HFE" Id="{86893e81-719c-4738-b9ce-9fed71641f32}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HFE EXTENDS FB_CtrlBase
 VAR_INPUT
-	a_bolLDSNeedsHanger: ARRAY[0..Const_HFE.cintMaxStation] OF BOOL;
+	a_bolLDSNeedsHanger: ARRAY[0..cuintMaxStation] OF BOOL;
+	a_intHFE_BufferZone: ARRAY[0..cuintMaxStation] OF INT;
 	p_fbTlpDrive: POINTER TO FB_DRV;
 	///p_fbJunction : POINTER TO FB_JUN;
 	p_fbSLB: POINTER TO FB_SLB;
@@ -78,7 +79,7 @@ END_IF;
 
 ]]></ST>
     </Implementation>
-    <Method Name="checkChildPointer" Id="{377c738f-d178-499a-90e0-bd8c6ff78892}">
+    <Method Name="checkChildPointer" Id="{2628831c-e252-490c-9419-ae88f6f74ad5}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
 ]]></Declaration>
       <Implementation>
@@ -90,8 +91,149 @@ END_IF
 
 ]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="sta_RUNBusy" Id="{3f57e16b-6d71-4944-be5c-e9c8de0f6536}">
+    <Method Name="StateMachine" Id="{2785aa7e-8b1e-4b90-ab2a-ef8c705cc460}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+	 cSTA_RUN: 
+        THIS^.sta_RUN();
+	cSTA_RUNBusy:
+        THIS^.sta_RUNBusy();
+END_CASE;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="Always" Id="{38a63fb6-18ba-49bf-b019-0f3d98495c64}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Always();
+
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	
+	;
+	
+END_IF
+
+// ----------------------------------------------------------------------------------
+// Conditions Always
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="AddJunction" Id="{5540d54a-f506-4b0d-99c2-3c260241ccce}">
+      <Declaration><![CDATA[METHOD AddJunction
+VAR_INPUT
+	p_MultiChild: POINTER TO FB_JUN;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// Method add the pointer address of the buffer zone child controller to the array list.
+IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
+	// Add buffer zone child controller to list
+	a_pMultiChildCtrl[usiNumOfMultiChild] := p_MultiChild;
+	// Inc. number of buffer zones
+	usiNumOfMultiChild:= usiNumOfMultiChild+1;
+	// Check if the pointer is valid
+	IF (p_MultiChild<>0) THEN
+		usiNumOfValidPointerMultiChild:= usiNumOfValidPointerMultiChild+1;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCtrlSIf" Id="{5fc078fa-9c7e-42fa-bafa-cab6d54b3c09}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HFE
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFF" Id="{6210d5a1-7a82-4e48-85c7-024e0dd57ae0}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		;
+		
+		// State Change Condition
+		IF me.intCmd=cCMD_RUN THEN
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoOutBridge" Id="{78be845b-6cb3-4729-99d3-ceb4ab98388e}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+VAR
+	bolSwitchValvesOff: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	//setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolClamping));
+
+	//THIS^.Out_Clamping := SIf.Out.bolClamping.map;
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoInBridge" Id="{87c349ad-3c09-4d5e-b5f7-9476c0ddfb4c}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+//SIf.In.bolGiveNextHangerSensor.map := THIS^.In_GiveNextHangerSensor;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	//getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolGiveNextHangerSensor));
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUNBusy" Id="{894533f3-8f3a-47da-891a-a7947aa13be9}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
 ]]></Declaration>
       <Implementation>
@@ -125,74 +267,9 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="IoOutBridge" Id="{4cac0705-f681-4002-849f-c39a6b418233}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
-VAR
-	bolSwitchValvesOff: BOOL;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	//setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolClamping));
-
-	//THIS^.Out_Clamping := SIf.Out.bolClamping.map;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="AddJunction" Id="{51307a6c-c362-433e-bbf7-2151e7518882}">
-      <Declaration><![CDATA[METHOD AddJunction
-VAR_INPUT
-	p_MultiChild: POINTER TO FB_JUN;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[
-// Method add the pointer address of the buffer zone child controller to the array list.
-IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
-	// Add buffer zone child controller to list
-	a_pMultiChildCtrl[usiNumOfMultiChild] := p_MultiChild;
-	// Inc. number of buffer zones
-	usiNumOfMultiChild:= usiNumOfMultiChild+1;
-	// Check if the pointer is valid
-	IF (p_MultiChild<>0) THEN
-		usiNumOfValidPointerMultiChild:= usiNumOfValidPointerMultiChild+1;
-	END_IF
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="StateMachine" Id="{63992788-f9ee-4ff3-9214-1a46ff8d92d1}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-	 cSTA_RUN: 
-        THIS^.sta_RUN();
-	cSTA_RUNBusy:
-        THIS^.sta_RUNBusy();
-END_CASE;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoInBridge" Id="{7c1dfef0-3e88-43e9-8666-9a2e0a755ef9}">
-      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-//SIf.In.bolGiveNextHangerSensor.map := THIS^.In_GiveNextHangerSensor;
-
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	//getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolGiveNextHangerSensor));
-ELSE
-	//simulation of global IO
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Refill" Id="{856b054f-7e87-4de9-9a2e-27c51c04afdb}">
+    <Method Name="Refill" Id="{a70ee1c9-ddec-4fbe-9641-717811c70682}">
       <Declaration><![CDATA[METHOD Refill
 VAR_INPUT
 	intNbOfLDS: INT;
@@ -220,7 +297,9 @@ END_IF
 CASE intSubState[intNbOfLDS] OF
 	cSTA_SUB_WaitForJob: // LDS needs hanger
 		IF (a_bolLDSNeedsHanger[intNbOfLDS]) THEN
-			IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS]^.job.intState = 6)THEN //	Just open if PreStopper is closed
+//			IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS + 2]^.job.intState = 6) OR (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS + 2]^.job.intState = 12) THEN //	Just open if PreStopper is closed
+			IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[a_intHFE_BufferZone[intNbOfLDS]]^.job.intState = 6) 
+			OR (p_fbSLB^.CtrlCIf^.Info.p_aCIf[a_intHFE_BufferZone[intNbOfLDS]]^.job.intState = 12) THEN //	Just open if PreStopper is closed
 				a_pMultiChildCIF[intNbOfLDS]^.Job.intACmd:= Base_Elements.VLV_CmdState.cCMD_OPEN;
 				udiTimeInStateRefill_ms[intNbOfLDS] := 0;
 				intSubState[intNbOfLDS] := cSTA_SUB_WaitOpen;
@@ -239,7 +318,10 @@ CASE intSubState[intNbOfLDS] OF
 		END_IF
 		
 	cSTA_SUB_WaitClose:	// Waiting time between STB closing and junction closing
-		IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS]^.job.intState = 6)THEN //	Just close if PreStopper is closed
+//		IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS + 2]^.job.intState = 6) or (p_fbSLB^.CtrlCIf^.Info.p_aCIf[intNbOfLDS + 2]^.job.intState = 12) THEN //	Just close if PreStopper is closed
+		IF (p_fbSLB^.CtrlCIf^.Info.p_aCIf[a_intHFE_BufferZone[intNbOfLDS]]^.job.intState = 6) 
+		OR (p_fbSLB^.CtrlCIf^.Info.p_aCIf[a_intHFE_BufferZone[intNbOfLDS]]^.job.intState = 12) THEN //	Just close if PreStopper is closed
+
 			udiTimeInStateRefill_ms[intNbOfLDS] := 0;
 			intSubState[intNbOfLDS] := cSTA_SUB_Close;
 		END_IF
@@ -253,8 +335,104 @@ CASE intSubState[intNbOfLDS] OF
 END_CASE
 ]]></ST>
       </Implementation>
+      <ObjectProperties />
     </Method>
-    <Method Name="FB_init" Id="{8e502808-14af-414c-8759-358c0334fa54}">
+    <Method Name="sta_RUN" Id="{c71e8941-26c5-4fe3-ba0e-2d2f1350a90d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+VAR
+	intNbOfLDS: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		//fbSimulationTimer.IN := FALSE;
+		//fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_pulseTimeout_ms/10);
+		//fbSimulationTimer(); // set time/reset timer
+		//fbSimulationTimer.IN := TRUE; // start timer
+		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+			intSubState[intNbOfLDS] := 500;	// Init Refill Substate
+		END_FOR
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			//fbSimulationTimer(); // simulation time
+			//IF (fbSimulationTimer.Q) THEN
+			//	SIf.In.bolPulse.intern := NOT SIf.In.bolPulse.intern; // toggle pulse
+			//	fbSimulationTimer.IN := FALSE;
+			//ELSE
+			//	fbSimulationTimer.IN := TRUE;
+			//END_IF
+		END_IF
+		
+		//IF NOT(pSLB_SIf^.Cur.bolBufferFull) THEN
+		//	pStopperBuffer_CIf^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
+		//END_IF
+		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+			IF (SIf.Par.a_bolEnableJunction[intNbOfLDS]) AND (a_pMultiChildCtrl[intNbOfLDS]<>0) THEN
+				Refill(intNbOfLDS);
+			END_IF
+			IF (INT_TO_UINT(intNbOfLDS) = (SIf.Cfg.uintNbOfLDS-1)) THEN // Last station = End of SLB, no VLV there
+				IF (a_bolLDSNeedsHanger[intNbOfLDS]= TRUE) THEN
+					IF (pSLB_SIf^.Cur.bolHangerDetected = TRUE) THEN // Just if Hanger is at Last STB
+						pSLB_CIf^.Job.intACmd := SLB_CmdState.cCMD_RELEASE;	
+					END_IF
+				END_IF
+			END_IF
+		END_FOR
+		
+		// State Change Condition
+		IF me.intCmd=cCMD_OFF THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		END_IF
+		
+	END_IF
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="CtrlInit" Id="{e7c5b937-9ee0-4d79-b978-8457f8d90220}">
+      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+VAR
+	ii: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.CtrlInit();
+
+// get child CIf
+pTlpDrive_CIf := THIS^.AddChild(p_fbTlpDrive^);
+pSLB_CIf := THIS^.AddChild(p_fbSLB^);
+pSLB_SIf := p_fbSLB^.getCtrlSIf();
+
+//initialize all multi Child controller.
+FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
+	// Get child common if
+	a_pMultiChildCIF[ii]:= THIS^.AddChild(a_pMultiChildCtrl[ii]^);	
+	// Get specific interface for additional parmaeters or cur
+	a_pMultiChildSIF[ii]:= a_pMultiChildCtrl[ii]^.getCtrlSIf();
+END_FOR]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="FB_init" Id="{fe94e761-66c6-4876-9312-76755a5c43ca}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
 VAR_INPUT
 	///if TRUE, the retain variables are initialized (warm start / cold start)
@@ -311,159 +489,7 @@ SIf.Cfg.uintNbOfLDS := 1;
 // actual values
 //SIf.Cur.dinCounter := 0;]]></ST>
       </Implementation>
-    </Method>
-    <Method Name="sta_OFF" Id="{a16c069c-703e-4c01-a3c2-7b1c06e300e1}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		;
-		
-		// State Change Condition
-		IF me.intCmd=cCMD_RUN THEN
-			me.StateMachine.intStateNext :=  cSTA_RUNBusy;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RUN" Id="{a3c64f4c-52a8-4cfc-85f0-6d9ced2eacf0}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
-VAR
-	intNbOfLDS: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-		//fbSimulationTimer.IN := FALSE;
-		//fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_pulseTimeout_ms/10);
-		//fbSimulationTimer(); // set time/reset timer
-		//fbSimulationTimer.IN := TRUE; // start timer
-		FOR intNbOfLDS := 0 TO Const_HFE.cintMaxStation DO
-			intSubState[intNbOfLDS] := 500;	// Init Refill Substate
-		END_FOR
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			//fbSimulationTimer(); // simulation time
-			//IF (fbSimulationTimer.Q) THEN
-			//	SIf.In.bolPulse.intern := NOT SIf.In.bolPulse.intern; // toggle pulse
-			//	fbSimulationTimer.IN := FALSE;
-			//ELSE
-			//	fbSimulationTimer.IN := TRUE;
-			//END_IF
-		END_IF
-		
-		//IF NOT(pSLB_SIf^.Cur.bolBufferFull) THEN
-		//	pStopperBuffer_CIf^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
-		//END_IF
-		FOR intNbOfLDS := 0 TO Const_HFE.cintMaxStation DO
-			IF (SIf.Par.a_bolEnableJunction[intNbOfLDS]) AND (a_pMultiChildCtrl[intNbOfLDS]<>0) THEN
-				Refill(intNbOfLDS);
-			END_IF
-		END_FOR
-		
-		// State Change Condition
-		IF me.intCmd=cCMD_OFF THEN
-			me.StateMachine.intStateNext := cSTA_OFFBusy;
-		END_IF
-		
-	END_IF
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="CtrlInit" Id="{beb142c5-b4c7-438e-ac62-70a65f3bfa37}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
-VAR
-	ii: INT;
-END_VAR
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.CtrlInit();
-
-// get child CIf
-pTlpDrive_CIf := THIS^.AddChild(p_fbTlpDrive^);
-pSLB_CIf := THIS^.AddChild(p_fbSLB^);
-pSLB_SIf := p_fbSLB^.getCtrlSIf();
-
-//initialize all multi Child controller.
-FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO	
-	// Get child common if
-	a_pMultiChildCIF[ii]:= THIS^.AddChild(a_pMultiChildCtrl[ii]^);	
-	// Get specific interface for additional parmaeters or cur
-	a_pMultiChildSIF[ii]:= a_pMultiChildCtrl[ii]^.getCtrlSIf();
-END_FOR]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="getCtrlSIf" Id="{d67f7c09-3c51-43c4-95fd-99f3d6f44728}">
-      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HFE
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Always" Id="{f7d28a1a-3d0a-4c73-9cd1-02a1f80ddb25}">
-      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.Always();
-
-IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
-	
-	;
-	
-END_IF
-
-// ----------------------------------------------------------------------------------
-// Conditions Always
-// overrule error always from base -> no EOFF State!! in EOFF go to OFF
-IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
-	IF (me.StateMachine.intState=cSTA_OFF) THEN
-		me.StateMachine.intStateNext := cSTA_OFF;
-	ELSE // stay in OFF
-		me.StateMachine.intStateNext := cSTA_OFFBusy;
-	END_IF
-END_IF
-]]></ST>
-      </Implementation>
+      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

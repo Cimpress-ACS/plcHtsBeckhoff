@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.34</ProjectVersion>
+    <ProjectVersion>0.0.0.39</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.34 - JUN / DPJ replaced with version from Shirtstream
+    <Description>0.0.0.39 - Bug fixed in HFE, CHD; FOC and FOD added
+
+0.0.0.34 - JUN / DPJ replaced with version from Shirtstream
 
 0.0.0.32 - HFE from Lvl1 to Lvl2 and reworked
 
@@ -89,6 +91,30 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <AssemblyName>MyApplication</AssemblyName>-->
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="POUs\Controller\Driver\FOD\FB_ReceiveFolderState.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\FB_SendFolderMessage.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\Infrastructure\FB_DecodeCanRxMessage.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\Infrastructure\fb_GenerateCanTxMessage.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\T_FOD.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\T_FOD_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\T_FOD_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Driver\FOD\T_FOD_StateMachine.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\CHD_CmdState.TcGVL">
       <SubType>Code</SubType>
     </Compile>
@@ -117,6 +143,30 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\T_Ctrl_SIf_CHD_Par.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\FB_FOC.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\FOC_CmdState.TcGVL">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC_Cfg.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC_Cur.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC_In.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC_Out.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\T_Ctrl_SIf_FOC_Par.TcDUT">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Controller\Lvl0\HRU %28Hanger Rotation Unit%29\FB_HRU.TcPOU">
@@ -501,8 +551,11 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
   <ItemGroup>
     <Folder Include="POUs\" />
     <Folder Include="POUs\Controller\" />
+    <Folder Include="POUs\Controller\Driver\FOD\" />
+    <Folder Include="POUs\Controller\Driver\FOD\Infrastructure\" />
     <Folder Include="POUs\Controller\Lvl0\" />
     <Folder Include="POUs\Controller\Lvl0\CHD %28Cross Hanger Detection%29\" />
+    <Folder Include="POUs\Controller\Lvl0\FOC %28Folder Communication%29\" />
     <Folder Include="POUs\Controller\Lvl0\HRU %28Hanger Rotation Unit%29\" />
     <Folder Include="POUs\Controller\Lvl0\JUN %28Junction%29\" />
     <Folder Include="POUs\Controller\Lvl0\LAI %28Labler Interface%29\" />

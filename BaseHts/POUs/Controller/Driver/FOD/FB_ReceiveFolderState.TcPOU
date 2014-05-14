@@ -1,0 +1,163 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_ReceiveFolderState" Id="{c2686182-c8b3-42f7-8d2f-9f7e031db424}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_ReceiveFolderState
+VAR_INPUT
+	InRxCounter AT %I*: UINT;
+	InNoOfRxMessages AT %I*: UINT;
+	RxMessages AT %I*: ARRAY[0..9] OF CANQUEUE;
+	/// CAN Identifier to listen for
+	intCobId: INT := 112;
+	/// time until DataReadReady windows gets detected (both directions: true and false). Use this to prevent jitters on the CAN bus.
+	tFilterTime: TIME := TIME#100ms;
+END_VAR
+VAR_OUTPUT
+	OutRxCounter AT %Q*: UINT;
+	CpuOnline: BOOL;
+	EmptyHangerOnTheWay: BOOL;
+	FilteredEmptyHangerOnTheWay: BOOL;
+	HangerRequest: BOOL;
+	RequestData: BOOL;
+	DataReadReady: BOOL;
+	FilteredDataReadReady: BOOL;
+	ErrorMessage: UINT;
+	StatusMessage: UINT;
+	/// non filtered counter
+	uliCountDataReadReady: ULINT;
+	/// non filtered counter
+	uliCountEmptyHanger: ULINT;
+	/// number of read CobId's	
+	uliReadCounter: ULINT;
+END_VAR
+VAR
+	tDataReadReadyTrue: TON;
+	tDataReadReadyFalse: TON;
+	tEmptyHangerOnTheWayTrue: TON;
+	tEmptyHangerOnTheWayFalse: TON;
+	/// current state
+	uinState: UINT;
+	/// last read CobId
+	uinLastRxCobId: UINT;
+	ReceivedBytes: UINT;
+	arrDataRecieved: CANMESSAGE;
+	k: UINT;
+	fbDecodeRxMessage: fb_DecodeCanRxMessage;
+END_VAR
+VAR CONSTANT
+	cSTA_WAIT_MESSAGE: UINT := 10;
+	cSTA_SEARCH_MESSAGE: UINT := 20;
+	cSTA_PARSE_MESSAGE: UINT := 30;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+CAN communication to Kannegiesser folder to listening for CAN messages and parse Folder state.
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		28.09.2013		VP/RE		Start history
+0.00.2		28.10.2013		VP/RE		Handle multiple messages, filter for Folder message
+0.00.3		29.10.2013		VP/RE		Introduced state names
+0.00.4		11.12.2013		VP/RE		Implemented FilteredDataReadReady to prevent jitters in CAN communication 
+
+___________________________________________________________________________________________________*)
+
+
+CASE uinState OF
+	
+cSTA_WAIT_MESSAGE: 	
+	IF InRxCounter <> OutRxCounter THEN
+		uinState := cSTA_SEARCH_MESSAGE;
+	END_IF
+	
+cSTA_SEARCH_MESSAGE:	
+	FOR k := 0 TO InNoOfRxMessages DO
+		fbDecodeRxMessage(	RxMessage:= RxMessages[k],
+  							CobId=>uinLastRxCobId ,
+							BytesReceived=> ReceivedBytes,
+							arrDataReceived=>arrDataRecieved );
+
+		// filter Folder message
+		IF (uinLastRxCobId = INT_TO_UINT(intCobId)) THEN
+			uinState := cSTA_PARSE_MESSAGE;
+			EXIT;
+		END_IF
+			
+	END_FOR
+	
+	IF (uinState = cSTA_SEARCH_MESSAGE) THEN
+		uinState := cSTA_WAIT_MESSAGE;
+	END_IF
+	
+	OutRxCounter := OutRxCounter + 1;
+	
+cSTA_PARSE_MESSAGE:	
+	uliReadCounter := uliReadCounter + 1;
+	
+	// parse data
+	CpuOnline := arrDataRecieved[0].0;
+	EmptyHangerOnTheWay := arrDataRecieved[1].1;
+	HangerRequest := arrDataRecieved[1].0;
+	RequestData := arrDataRecieved[1].5;
+
+	ErrorMessage := USINT_TO_UINT(arrDataRecieved[5]);
+	StatusMessage := ANY_TO_UINT(arrDataRecieved[6] + arrDataRecieved[7] * 256);
+	
+	// update counters
+	IF DataReadReady = FALSE AND arrDataRecieved[1].6 THEN
+		uliCountDataReadReady := uliCountDataReadReady + 1;
+	END_IF
+
+	DataReadReady := arrDataRecieved[1].6;
+	
+	IF EmptyHangerOnTheWay = FALSE AND arrDataRecieved[1].1 THEN
+		uliCountEmptyHanger := uliCountEmptyHanger + 1;
+	END_IF
+	
+	uinState := cSTA_WAIT_MESSAGE;
+	
+END_CASE
+
+
+// filter DataReadReady window
+tDataReadReadyTrue(IN:= DataReadReady = TRUE , PT:= tFilterTime);
+tDataReadReadyFalse(IN:= DataReadReady = FALSE , PT:= tFilterTime);
+IF (tDataReadReadyTrue.Q = TRUE) THEN
+	FilteredDataReadReady := TRUE;
+END_IF
+IF (tDataReadReadyFalse.Q = TRUE) THEN
+	FilteredDataReadReady := FALSE;
+END_IF
+
+// filter EmptyHangerOnTheWay
+tEmptyHangerOnTheWayTrue(IN:= EmptyHangerOnTheWay = TRUE , PT:= tFilterTime);
+tEmptyHangerOnTheWayFalse(IN:= EmptyHangerOnTheWay = FALSE , PT:= tFilterTime);
+IF (tEmptyHangerOnTheWayTrue.Q = TRUE) THEN
+	FilteredEmptyHangerOnTheWay := TRUE;
+END_IF
+IF (tEmptyHangerOnTheWayFalse.Q = TRUE) THEN
+	FilteredEmptyHangerOnTheWay := FALSE;
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="init" Id="{98e19d40-e70e-469f-aa24-4ad53e547a05}">
+      <Declaration><![CDATA[METHOD init
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[OutRxCounter := InRxCounter;
+uinState := cSTA_WAIT_MESSAGE;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

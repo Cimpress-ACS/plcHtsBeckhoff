@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_CHD_Out" Id="{613083c4-ce3e-422d-b2fa-5f622ba11f41}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_CHD_Out" Id="{87ec89d4-c4f5-4642-be5c-a59ab49f8850}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_CHD_Out :
 STRUCT
 	///switch valve junction

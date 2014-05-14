@@ -1,0 +1,11 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_FOC_In" Id="{0359702f-e303-4706-8ca2-c4aaeec6c21f}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOC_In :
+STRUCT
+	usiCANDeviceErrorState: T_Ctrl_IoUsint;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

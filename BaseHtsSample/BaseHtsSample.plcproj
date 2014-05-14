@@ -82,7 +82,7 @@
     <LibraryReference Include="Base_Elements,0.0.1.6,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.34,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.39,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.4.4,Vistaprint">

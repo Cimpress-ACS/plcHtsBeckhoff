@@ -1,0 +1,17 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_FOD" Id="{b8e840be-1f9c-4eb8-b61f-f79b8036ac32}">
+    <Declaration><![CDATA[TYPE T_FOD :
+STRUCT
+	strState: STRING;
+	strCmd: STRING;
+	intCmd: INT;
+	intServiceCmd: INT;
+	stStatus: T_RFD_Status;
+	Cfg: T_FOD_Cfg;
+	Cur: T_FOD_Cur;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

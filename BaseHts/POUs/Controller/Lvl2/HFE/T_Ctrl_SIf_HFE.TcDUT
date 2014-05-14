@@ -1,5 +1,5 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_HFE" Id="{edc547a8-e57f-4547-aed9-568f6e05e12d}">
+  <DUT Name="T_Ctrl_SIf_HFE" Id="{6faf8ac0-0164-4b32-8a1d-52ceee67997d}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_HFE :
 STRUCT
 	///configuration

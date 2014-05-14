@@ -1,0 +1,20 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_DecodeCanRxMessage" Id="{04e48716-0c9d-4f13-885d-bf169472b28d}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DecodeCanRxMessage
+VAR_INPUT
+	RxMessage: CANQUEUE;
+END_VAR
+VAR_OUTPUT
+	CobId: UINT;
+	BytesReceived: UINT;
+	arrDataReceived: CANMESSAGE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[BytesReceived := SHR((SHL(RxMessage.CobId,12)),12);
+Cobid := SHR(rxMessage.CobId,5);
+arrDataReceived := RxMessage.data;]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

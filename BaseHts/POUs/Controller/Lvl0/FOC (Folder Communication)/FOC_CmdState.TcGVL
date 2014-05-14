@@ -1,0 +1,12 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <GVL Name="FOC_CmdState" Id="{8ecaf4c8-c3dc-4c72-ad8f-d7145b02af60}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	///ctrl commands definitions
+	///specific commands >200 - every command has to be a even number
+	cCMD_RELEASE_SHIRTS: INT := 201;
+	///ctrl specific states definitions
+	cSTA_RELEASE_SHIRTS: INT := cCMD_RELEASE_SHIRTS;
+END_VAR]]></Declaration>
+    <ObjectProperties />
+  </GVL>
+</TcPlcObject>

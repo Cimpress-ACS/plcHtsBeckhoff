@@ -1,6 +1,6 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
-  <DUT Name="T_Ctrl_SIf_HFE_Cur" Id="{34db0434-8f77-47a8-9f61-1ab0eceee1c2}">
-    <Declaration><![CDATA[TYPE T_Ctrl_SIf_HFE_Cur :
+  <DUT Name="T_FOD_Cfg" Id="{87075845-8a93-438f-a417-db5ca69fc26e}">
+    <Declaration><![CDATA[TYPE T_FOD_Cfg :
 STRUCT
 END_STRUCT
 END_TYPE

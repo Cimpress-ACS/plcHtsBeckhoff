@@ -1,0 +1,135 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_SendFolderMessage" Id="{44c7f651-2422-40e5-842a-5c17c023e2c5}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_SendFolderMessage
+VAR_INPUT
+	InTxCounter AT %I*: UINT;
+	CpuOnline: BOOL;
+	EmptyHangerConveying: BOOL;
+	ProgramNumber: BYTE := 1;
+	/// 1=forward, 2=sideward
+	ShirtStackConveyor: BYTE := 1;
+	ChangeCustomer: BOOL;
+	StopFolder: BOOL;
+	ShotOutStacks: BOOL;
+	/// CAN Identifier of receiver
+	TxCobId: UINT := 113;
+	/// true = starts sending a message. make sure all data fields are set before.
+	bStartSend: BOOL;
+	/// timeout after sent message before next message will be send
+	tTimeout: TIME := TIME#50ms;
+END_VAR
+VAR_OUTPUT
+	TxMessages AT %Q*: ARRAY[0..9] OF CANQUEUE;
+	OutTxCounter AT %Q*: UINT;
+	OutNoOfTxMessages AT %Q*: UINT := 1;
+END_VAR
+VAR
+	uinState: UINT;
+	BytesToSend: UINT := 8;
+	arrDataToSend: CANMESSAGE;
+	m: UINT;
+	fbGenerateTxMessage: fb_GenerateCanTxMessage;
+	uliCountSentMessages: ULINT;
+	tWaitTimer: TON;
+END_VAR
+VAR CONSTANT
+	cSTA_WAIT_SEND: UINT := 10;
+	cSTA_SEND_MESSAGE: UINT := 20;
+	cSTA_WAIT_SEND_COMPLETE: UINT := 30;
+	cSTA_WAIT_BEFORE_SEND_NEXT: UINT := 40;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+CAN communication to Kannegiesser folder to send commands.
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		28.09.2013		VP/RE		Start history
+0.00.2		29.10.2013		VP/RE		Introduced state names
+0.00.3		11.12.2013		VP/RE		Implemented sleep timeout after sending a CAN message.
+___________________________________________________________________________________________________*)
+
+
+CASE uinState OF
+	
+cSTA_WAIT_SEND:	
+	IF bStartSend THEN
+		bStartSend:=FALSE;
+		uinState := cSTA_SEND_MESSAGE;
+	END_IF
+	
+cSTA_SEND_MESSAGE:	
+	
+	uliCountSentMessages := uliCountSentMessages + 1;
+
+	FOR m := 0 TO OutNoOfTxMessages - 1 DO
+		
+		arrDataToSend[0].0 := CpuOnline;
+		arrDataToSend[0].1 := EmptyHangerConveying;
+		arrDataToSend[1].0 := ChangeCustomer;
+		
+		arrDataToSend[0].4 := ProgramNumber.0;
+		arrDataToSend[0].5 := ProgramNumber.1;
+		arrDataToSend[0].6 := ProgramNumber.2;
+		arrDataToSend[0].7 := ProgramNumber.3;
+		
+		IF (ShirtStackConveyor = 1) THEN
+			arrDataToSend[2].1 := 1;
+			arrDataToSend[2].2 := 0;
+		ELSIF (ShirtStackConveyor = 2) THEN
+			arrDataToSend[2].1 := 0;
+			arrDataToSend[2].2 := 1;
+		ELSIF (ShirtStackConveyor = 0) THEN
+			arrDataToSend[2].1 := 0;
+			arrDataToSend[2].2 := 0;
+		END_IF
+		
+		arrDataToSend[3].5 := StopFolder;
+		arrDataToSend[3].6 := ShotOutStacks;
+
+		fbGenerateTxMessage(CobId := TxCobId,
+							BytesToSend := BytesToSend,
+							arrDataToSend := arrDataToSend ,
+							TxMessage => TxMessages[0] );
+	END_FOR
+	
+	OutTxCounter := OutTxCounter + 1;
+	uinState := cSTA_WAIT_SEND_COMPLETE;
+	
+cSTA_WAIT_SEND_COMPLETE:	
+	IF OutTxCounter = InTxCounter THEN
+		uinState := cSTA_WAIT_BEFORE_SEND_NEXT;
+	END_IF
+
+cSTA_WAIT_BEFORE_SEND_NEXT:
+	IF (tWaitTimer.Q = TRUE) THEN
+		uinState := cSTA_WAIT_SEND;
+	END_IF
+	
+END_CASE
+
+tWaitTimer(IN := uinState = cSTA_WAIT_BEFORE_SEND_NEXT, PT := tTimeout);
+]]></ST>
+    </Implementation>
+    <Method Name="init" Id="{140f156a-5dd9-46b7-b1a9-4b84f1e03e5d}">
+      <Declaration><![CDATA[METHOD init
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[uinState := cSTA_WAIT_SEND;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

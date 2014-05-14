@@ -1,0 +1,620 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="FB_FOC" Id="{13298bb1-5c26-4643-81f4-0ef34493f2e9}">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_FOC EXTENDS FB_CtrlBase
+VAR_INPUT
+	/// 0=No Error
+	In_usiCANDeviceErrorState: USINT;
+END_VAR
+VAR
+	fbReceiveFolderState: FB_ReceiveFolderState;
+	fbSendFolderMessage: FB_SendFolderMessage;
+	/// interface to LineControl
+	bolSEND_CAN_MESSAGE: BOOL;
+	bolCanMessageOk: BOOL;
+	bolOldSendCanMessage: BOOL;
+	/// Specific interface struct for public access
+	SIf: T_Ctrl_SIf_FOC;
+	/// current counter flag
+	uliOldSentMessagesCount: ULINT;
+	/// current counter
+	uliSentMessagesCount: ULINT;
+	bolOldFilteredDataReadReady: BOOL;
+	bolOldFilteredEmptyHanger: BOOL;
+	tSendMessageTimer: TON;
+	udiTimeSinceLastCanMessage: UDINT;
+	udiTimeSinceLastDataReadReadyTrue: UDINT;
+	udiTimeSinceLastDataReadReadyFalse: UDINT;
+	bolSendMessage: BOOL;
+	bolReleaseShirtsRequested: BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*__________________________________________________________________________________________________
+¦	
+¦	Vistaprint Schweiz GmbH
+¦	CH - 8401 Winterthur
+¦
+¦	www.vistaprint.ch - info@vistaprint.ch
+¦___________________________________________________________________________________________________
+
+Function desription:
+Folder Controller for CAN communication to Kannegiesser Folder.
+Supports RELEASE_SHIRTS command and handles resetting of ChangeCustomer flag (see CAN specification).
+
+
+History:
+Version		Date			Author		Comment
+---------------------------------------------------------------------------------------------------
+0.00.1		01.10.2013		VP/RE		Start history
+0.00.2		02.12.2013		VP/RE		Send 200 messages cyclic withing and after filtered reading window.
+0.00.3		11.12.2013		VP/RE		Count filtered empty hanger and DataReadReady.
+0.00.4		12.12.2013		VP/RE		Implemented RELEASE_SHIRTS. Implemented safe stack building (RFID and DataReadReady signal must given within a time window).
+___________________________________________________________________________________________________*)
+
+
+IF (me.bolActivate) (*AND pRFD_SIf <>0*) THEN // cyclic call enabled
+	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
+		CtrlInit();
+		CIf.Info.bolInitDone := TRUE;
+	ELSE
+		CycleStartDuty();
+	
+		Always();
+		
+		StateMachine();
+		
+		CycleEndDuty();
+	END_IF
+END_IF;
+]]></ST>
+    </Implementation>
+    <Method Name="sta_RUNbusy" Id="{281a748f-8f64-416f-80c0-88769ddfaa57}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUNbusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		fbReceiveFolderState.init();
+		fbSendFolderMessage.init();
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			fbSimulationTimer(); // simulation time
+			IF (fbSimulationTimer.Q) THEN
+				;
+			END_IF
+		END_IF
+		
+		// Function
+		
+		// State Change Condition
+		me.StateMachine.intStateNext := cSTA_RUN;
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;		
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCmdState" Id="{2f9c6fca-a565-48e1-9b80-a03483f317e2}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+			cCMD_RELEASE_SHIRTS: 
+				getCmdState := 'cCMD_RELEASE_SHIRTS';
+		END_CASE;
+	ELSE
+	
+	// cmd's
+		CASE intCmdState OF
+			cSTA_RELEASE_SHIRTS: 
+				getCmdState := 'cSTA_RELEASE_SHIRTS';
+
+			// SUB States
+			//cRFW_SUB_WaitTag:
+			//	getCmdState := 'cRFW_SUB_WaitTag';
+			
+		END_CASE;
+	END_IF
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoOutBridge" Id="{44ea0746-e2f6-4ff1-918e-d60777bff546}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+VAR
+	bolSwitchValvesOff: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	// check interlocks to prevent damages
+	IF (CIf.Job.bolIlkOverwrite=FALSE) THEN
+		;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="IoInBridge" Id="{4f5fb886-ba43-46d1-8da7-d96818dd7898}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+SIf.In.usiCANDeviceErrorState.map := THIS^.In_usiCANDeviceErrorState;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	getInUsint(CIf.Job.bolIoForce,ADR(SIf.In.usiCANDeviceErrorState));
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_OFF" Id="{5af4e84f-43dd-4f4e-b383-817d2d3a6e2a}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		fbSendFolderMessage.StopFolder := TRUE;
+		fbSendFolderMessage(bStartSend:= TRUE);
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF(me.intCmd=cCMD_RUN) THEN
+				me.StateMachine.intStateNext := cSTA_RUNBusy;
+			END_IF
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="Always" Id="{5f8f5c6a-cb2b-40b5-8385-b7d1db0cef2d}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.Always();
+
+// ----------------------------------------------------------------------------------
+// cyclic actions outside of statemachine
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	//pRFD_SIf^.stCur.pData := ADR(SIf.Cur.abytData[0]);
+	//SIf.Cur.bolPresent := pRFD_SIf^.stStatus.bolPresent;
+END_IF
+
+// config driver
+//pRFD_SIf^.stCfg.bolSimulation := CIf.SwCfg.bolSimulation;
+//pRFD_SIf^.stCfg.eTyp := SIf.Cfg.eTyp;
+
+// ----------------------------------------------------------------------------------
+// Always change actions in Base Library
+// ----------------------------------------------------------------------------------
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
+	END_IF
+END_IF
+
+// update counters
+SIf.Cur.uliCountSentMessages := fbSendFolderMessage.uliCountSentMessages;
+
+IF (uliOldSentMessagesCount <> fbSendFolderMessage.uliCountSentMessages) THEN
+	uliSentMessagesCount := uliSentMessagesCount + 1;
+END_IF
+ 
+uliOldSentMessagesCount := fbSendFolderMessage.uliCountSentMessages;
+
+// detect errors
+IF (SIf.In.usiCANDeviceErrorState.intern <> 0 AND me.StateMachine.intState = cSTA_RUN) THEN
+	// SIf.Alm[1].strText := 'CAN Communication Error. Problem on CAN device.';
+	pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+	me.StateMachine.intStateNext := cSTA_ERROR;
+END_IF
+
+// Conditions Always
+IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_AlmClass.OFF) OR (me.intCmd=cCMD_OFF))
+		 AND (me.StateMachine.intState<>cSTA_ERROR) AND (me.StateMachine.intState<>cSTA_ERRORQuit) AND
+		(me.StateMachine.intState<>cSTA_OFF) AND (me.StateMachine.intState<>cSTA_OFFBusy)) THEN
+	// alarm evt EOFF, OFF or cmd off
+	me.StateMachine.intStateNext := cSTA_OFFBusy;
+END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RELEASE" Id="{8c61daef-9076-41b2-b4cd-acb4d4058d4d}">
+      <Declaration><![CDATA[METHOD sta_RELEASE : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// continue receive CAN messages during this operation
+		fbReceiveFolderState.intCobId := SIf.Cfg.intCobId;
+		fbReceiveFolderState.tFilterTime := SIf.Par.tFilterTimeCanMessages;
+		fbReceiveFolderState();
+		
+		IF (me.StateMachine.udiTimeInState_ms < SIf.Par.udiTimeReleaseCanMessage_ms) THEN
+			// send release shirt stacks cmd to Folder
+			fbSendFolderMessage.ShotOutStacks := TRUE;
+			fbSendFolderMessage(bStartSend:= TRUE, TxCobId := INT_TO_UINT(SIf.Cfg.intFolderCobId));
+		ELSE
+			// clear CAN flag again
+			fbSendFolderMessage.ShotOutStacks := FALSE;
+			fbSendFolderMessage(bStartSend:= TRUE, TxCobId := INT_TO_UINT(SIf.Cfg.intFolderCobId));			
+		END_IF
+
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms > SIf.Par.udiTimeReleaseCanMessage_ms * 2) THEN
+			me.StateMachine.intStateNext := cSTA_RUN;
+		END_IF
+		
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+
+		// make sure that the ShotOutStacks flag is cleared!		
+		fbSendFolderMessage.ShotOutStacks := FALSE;
+		fbSendFolderMessage(bStartSend:= TRUE, TxCobId := INT_TO_UINT(SIf.Cfg.intFolderCobId));			
+	
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="StateMachine" Id="{b043e0a2-0567-4f6c-a8f7-658b8a717c09}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+    cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+	cSTA_RELEASE_SHIRTS:
+		THIS^.sta_RELEASE();		
+END_CASE;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_ERROR" Id="{bfc60c68-03cf-4d74-994b-8feea0ff055f}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateHistory := me.StateMachine.intStateLastCycle; // -> possibillity to go back to state before error
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+		
+		fbSendFolderMessage.StopFolder := TRUE;
+		fbSendFolderMessage(bStartSend:= TRUE);
+		
+		// State Change Condition
+		IF (CIf.Job.bolAlmReset = TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_ERRORQuit;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="getCtrlSIf" Id="{cbcf79b1-a411-4180-8a83-72ac7f279175}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_FOC
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="FB_init" Id="{ceaa7bb4-d25e-439e-93d4-a316bfde5cc9}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	udiTaskCnt: UDINT;
+	ii: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
+	END_IF
+END_FOR
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN;
+CIf.Job.aCmdList[ii].strName := 'Run';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+
+// set name of class/typ
+CIf.Info.strType := 'FB_FOC'; 
+
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.EOFF;
+SIf.Alm[1].strText := 'CAN Communication Error. Problem on CAN device'; 
+SIf.Alm[2].eAlmClass := E_AlmClass.EOFF;
+SIf.Alm[2].strText := 'RFID was obviously detected by LineControl but no DataReadReady signal';
+SIf.Alm[3].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[3].strText := 'DataReadReady signal detected by Folder but miss RFIDcmd from LineCtrl';
+// SIf.Alm[3].strText := 'A DataReadReady signal was detected by Folder but missing RFID cmd from LineControl';	// Was too long
+
+
+//*******************************************************************************
+// initial values
+//*******************************************************************************
+
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
+
+// configuration
+SIf.Cfg.intCobId := 112;
+SIf.Cfg.intFolderCobId := 113;
+SIf.Cfg.udiMissingCanMsgTimeout_ms := 300;	// Kannegiesser time window is 400.
+SIf.Cfg.udiMissingDataReadReadyTimeout_ms := 3000; // Kannegiesser folds a shirt every 4 seconds.
+
+// parmeter
+SIf.Par.intNumberOfSendMessages := 20;
+SIf.Par.tFilterTimeCanMessages := T#80MS;
+SIf.Par.udiTimeReleaseCanMessage_ms := 500;
+SIf.Par.udiWaitTimeBeforeRelease_ms := 16000;]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <Method Name="sta_RUN" Id="{dbe71be9-40a6-4af1-8633-e1752ca9e322}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		bolSEND_CAN_MESSAGE := FALSE;
+		
+		// reset ChangeCustomer bit
+		fbSendFolderMessage.ChangeCustomer := FALSE;
+		fbSendFolderMessage.CpuOnline := TRUE;
+		fbSendFolderMessage.StopFolder := FALSE;
+		fbSendFolderMessage(bStartSend:= TRUE);	
+		
+		udiTimeSinceLastDataReadReadyTrue := 0;
+		udiTimeSinceLastCanMessage := 0;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+
+		fbReceiveFolderState.intCobId := SIf.Cfg.intCobId;
+		fbReceiveFolderState.tFilterTime := SIf.Par.tFilterTimeCanMessages;
+		fbReceiveFolderState();
+
+		// check send messages when data read requested
+		IF (fbReceiveFolderState.FilteredDataReadReady = TRUE) THEN
+			
+			bolReleaseShirtsRequested := FALSE;	// releasing shirt during operation is not recommended and would lead to bad side effects
+			udiTimeSinceLastDataReadReadyTrue := udiTimeSinceLastDataReadReadyTrue + me.FUBInfo.udiSample_ms;
+			udiTimeSinceLastDataReadReadyFalse := 0;
+		
+			IF (bolOldFilteredDataReadReady = FALSE) THEN
+				SIf.Cur.uliDataReadReadyCounter := SIf.Cur.uliDataReadReadyCounter + 1;
+			END_IF
+			
+			IF (bolSEND_CAN_MESSAGE = TRUE) THEN
+				bolSEND_CAN_MESSAGE := FALSE;
+				uliSentMessagesCount := 0;
+				bolCanMessageOk := TRUE;
+			END_IF
+			
+			// check for missing CAN msg command signal
+			IF (udiTimeSinceLastDataReadReadyTrue > SIf.Cfg.udiMissingCanMsgTimeout_ms AND bolCanMessageOk = FALSE) THEN			
+				bolCanMessageOk := TRUE; // log error only once 
+				
+				// SIf.Alm[3].strText := 'A DataReadReady signal was detected by Folder but the RFID cmd from LineControl is missing. Timeout.';
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,3,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+				//me.StateMachine.intStateNext := cSTA_ERROR;
+				
+				SIf.Cur.uliWarningsDataReadReadyButNoRfid := SIf.Cur.uliWarningsDataReadReadyButNoRfid + 1;
+				
+				fbSendFolderMessage.ChangeCustomer := TRUE;	// build new stack
+				uliSentMessagesCount := 0;
+				
+			END_IF
+						
+			IF (uliSentMessagesCount < INT_TO_ULINT(SIf.Par.intNumberOfSendMessages)) THEN
+				bolSendMessage := TRUE;
+			ELSE
+				bolSendMessage := FALSE;
+			END_IF
+		END_IF
+		
+		// reset ChangeCustomer signal
+		IF (fbReceiveFolderState.FilteredDataReadReady = FALSE) THEN
+		
+			udiTimeSinceLastDataReadReadyFalse := udiTimeSinceLastDataReadReadyFalse + me.FUBInfo.udiSample_ms;
+			udiTimeSinceLastDataReadReadyTrue := 0;
+			bolCanMessageOk := FALSE;
+			
+			IF (bolOldFilteredDataReadReady = TRUE) THEN
+				fbSendFolderMessage.ChangeCustomer := FALSE;
+				fbSendFolderMessage.ShirtStackConveyor := 0;
+				uliSentMessagesCount := 0;
+				udiTimeSinceLastCanMessage := 0;
+			END_IF
+				
+			// check for missing DataReadReady signal
+			IF (bolSEND_CAN_MESSAGE = TRUE) THEN
+				udiTimeSinceLastCanMessage := udiTimeSinceLastCanMessage + me.FUBInfo.udiSample_ms;
+				IF (bolOldSendCanMessage = FALSE) THEN
+					udiTimeSinceLastCanMessage := 0;
+				END_IF
+		
+				IF (udiTimeSinceLastCanMessage > SIf.Cfg.udiMissingDataReadReadyTimeout_ms) THEN
+					// SIf.Alm[2].strText := 'RFID was obviously detected by LineControl but no DataReadReady signal. Timeout.';
+					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+					me.StateMachine.intStateNext := cSTA_ERROR;
+				END_IF	
+			END_IF
+			bolOldSendCanMessage := bolSEND_CAN_MESSAGE;
+			
+			IF (uliSentMessagesCount < INT_TO_ULINT(SIf.Par.intNumberOfSendMessages)) THEN
+				bolSendMessage := TRUE;
+			ELSE
+				bolSendMessage := FALSE;
+			END_IF
+		END_IF
+		
+		// count empty hangers
+		IF (fbReceiveFolderState.FilteredEmptyHangerOnTheWay = TRUE AND bolOldFilteredEmptyHanger = FALSE) THEN
+			SIf.Cur.uliEmptyHangerCounter := SIf.Cur.uliEmptyHangerCounter + 1;
+		END_IF
+		
+		bolOldFilteredEmptyHanger := fbReceiveFolderState.FilteredEmptyHangerOnTheWay;
+		bolOldFilteredDataReadReady := fbReceiveFolderState.FilteredDataReadReady;
+		
+		// send CAN message
+		IF (bolSendMessage = TRUE) THEN
+			fbSendFolderMessage(bStartSend:= TRUE, TxCobId := INT_TO_UINT(SIf.Cfg.intFolderCobId));
+		ELSE
+			fbSendFolderMessage(bStartSend:= FALSE, TxCobId := INT_TO_UINT(SIf.Cfg.intFolderCobId));
+		END_IF
+		
+		
+		// State Change Condition
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF(me.intCmd=cCMD_RELEASE_SHIRTS) THEN
+				bolReleaseShirtsRequested := TRUE;
+			END_IF
+		END_IF
+
+		IF (me.Alarm.eActivAlmClass<>E_AlmClass.EOFF) AND (me.Alarm.eActivAlmClass<>E_AlmClass.OFF) THEN
+			IF(bolReleaseShirtsRequested AND udiTimeSinceLastDataReadReadyFalse > SIf.Par.udiWaitTimeBeforeRelease_ms) THEN
+				me.StateMachine.intStateNext := cSTA_RELEASE_SHIRTS;
+			END_IF
+		END_IF
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		
+		bolReleaseShirtsRequested := FALSE;
+		
+	END_IF]]></ST>
+      </Implementation>
+      <ObjectProperties />
+    </Method>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

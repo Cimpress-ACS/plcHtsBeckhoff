@@ -1,0 +1,18 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_FOC_Cfg" Id="{96f83082-c850-49b8-98e5-44efa083b969}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOC_Cfg :
+STRUCT
+	/// CAN identifier of sender (thats us)
+	intCobId: INT;
+	/// CAN identifier of receiver (Folder)
+	intFolderCobId: INT;
+	/// [ms] Given CAN msg command from LineControl. When no DataReadReady signal it's an error!
+	udiMissingDataReadReadyTimeout_ms: UDINT;
+	/// [ms] Given DataReadReady signal. When LineControl sends no CAN msg command it's an error!
+	udiMissingCanMsgTimeout_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

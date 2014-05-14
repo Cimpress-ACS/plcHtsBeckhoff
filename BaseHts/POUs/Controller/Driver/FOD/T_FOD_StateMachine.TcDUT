@@ -1,0 +1,20 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_FOD_StateMachine" Id="{8d64d591-5d89-4a44-8ea6-eb13bf374f57}">
+    <Declaration><![CDATA[TYPE T_FOD_StateMachine :
+STRUCT
+	///actual state
+	intState: INT;
+	///state of last cycle
+	intStateLastCycle: INT;
+	///save history backup p.e. in ERROR state
+	intStateHistory: INT;
+	///set state for next cycle
+	intStateNext: INT;
+	///Time in this State
+	udiTimeInState_ms: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

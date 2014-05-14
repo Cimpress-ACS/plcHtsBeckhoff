@@ -1,0 +1,22 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_FOC" Id="{39ead894-fbfc-45eb-83a3-342a091a3381}">
+    <Declaration><![CDATA[TYPE T_Ctrl_SIf_FOC :
+STRUCT
+	///configuration
+	Cfg: T_Ctrl_SIf_FOC_Cfg;
+	///parameter
+	Par: T_Ctrl_SIf_FOC_Par;
+	///current values
+	Cur: T_Ctrl_SIf_FOC_Cur;
+	///io input
+	In: T_Ctrl_SIf_FOC_In;
+	///io output
+	Out: T_Ctrl_SIf_FOC_Out;
+	///alarm number used in this controller
+	Alm: ARRAY[1..5] OF T_Ctrl_Alm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+    <ObjectProperties />
+  </DUT>
+</TcPlcObject>

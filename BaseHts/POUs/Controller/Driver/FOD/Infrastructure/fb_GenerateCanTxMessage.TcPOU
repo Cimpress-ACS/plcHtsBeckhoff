@@ -1,0 +1,19 @@
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <POU Name="fb_GenerateCanTxMessage" Id="{7fc06daa-88b1-44e8-93d8-fed088f8cb66}">
+    <Declaration><![CDATA[FUNCTION_BLOCK fb_GenerateCanTxMessage
+VAR_INPUT
+	CobId: UINT;
+	BytesToSend: UINT;
+	arrDataToSend: CANMESSAGE;
+END_VAR
+VAR_OUTPUT
+	TxMessage: CANQUEUE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[TxMessage.CobId := (SHL(CobId,5)) + BytesToSend;
+TxMessage.data := arrDataToSend;]]></ST>
+    </Implementation>
+    <ObjectProperties />
+  </POU>
+</TcPlcObject>

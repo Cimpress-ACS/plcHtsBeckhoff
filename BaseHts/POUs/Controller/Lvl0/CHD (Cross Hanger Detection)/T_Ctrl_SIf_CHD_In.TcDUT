@@ -1,5 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
-  <DUT Name="T_Ctrl_SIf_CHD_In" Id="{311abf70-1d8e-4260-9127-af3c0f0e1916}">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+  <DUT Name="T_Ctrl_SIf_CHD_In" Id="{59eb21ec-b369-4ca0-85e4-be282e5db1a0}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_CHD_In :
 STRUCT
 	/// Sensor hanger passed the junction	
