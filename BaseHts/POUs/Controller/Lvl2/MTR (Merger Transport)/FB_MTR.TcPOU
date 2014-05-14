@@ -101,7 +101,6 @@ END_FOR
 // Return result
 CalcSumOfItems:= dinSumOfItems;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{07cb5ec1-77ec-46db-8f5d-c6032f195522}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -139,7 +138,6 @@ ELSE
 	SetAllChildAlmClass(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddLine" Id="{23a62a43-dace-4f3a-920c-523379ed9455}">
       <Declaration><![CDATA[METHOD AddLine
@@ -161,7 +159,6 @@ IF (usiNumOfLines <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{3ae5f8c4-d626-4e3d-abb5-7533affcaa88}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_MTR
@@ -169,7 +166,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="NumOfHangers" Id="{70a9e0ab-674f-415e-8b74-54adf7785f2d}">
       <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
@@ -179,9 +175,7 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[NumOfHangers:= SIf.Cur.dinCurrentItemCount;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Property Name="BufferFull" Id="{70d5827c-14fd-401d-8402-58e3a10e4390}">
       <Declaration><![CDATA[PROPERTY BufferFull : BOOL
@@ -191,9 +185,7 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[BufferFull:= False;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Method Name="IoInBridge" Id="{7b78afea-695f-4b56-a746-a2287d97f91a}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -210,7 +202,6 @@ ELSE
 	//simulation of global IO
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllLines" Id="{7e1861f9-af1f-4682-93b6-5131a63606ca}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllLines
@@ -230,7 +221,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{82318327-a84d-43e3-af5c-1351d9eb4e4e}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -289,7 +279,7 @@ END_VAR
 				END_IF
 				
 				// Free buffer element  
-				IF ((a_stSectionBuffer[intSec].enmState = E_Typ_MTR_SECTION_STATE.Undefined) OR (a_stSectionBuffer[intSec].enmState = E_Typ_MTR_SECTION_STATE.HangerReleased)) THEN			
+				IF ((a_stSectionBuffer[intSec].enmState = E_Typ_MTR_SECTION_STATE.Undefined) (*OR (a_stSectionBuffer[intSec].enmState = E_Typ_MTR_SECTION_STATE.HangerReleased)*)) THEN			
 					// Set start position of the section
 					a_stSectionBuffer[intSec].dinSecStartPos:= 0 - SIf.Par.dinPinLenght_um;
 					a_stSectionBuffer[intSec].enmState:= E_Typ_MTR_SECTION_STATE.StartPositionSet;
@@ -390,7 +380,7 @@ END_VAR
 			// Note: If the section end passed the position of the hanger detection sensor, the section is not engaged and the section start pos. is before position of the first line, 
 			// then the section can reserved for a line.
 			IF (a_stSectionBuffer[intSec].enmState = E_Typ_MTR_SECTION_STATE.EndPositionSet) AND 
-			   (a_stSectionBuffer[intSec].dinSecEndPos > SIf.Par.dinHangerSensorPosition_um) THEN 
+			   (a_stSectionBuffer[intSec].dinSecEndPos > (SIf.Par.dinHangerSensorPosition_um + SIf.Par.dinWaitBetweenSensorAndReservation_um)) THEN 
 			  // (a_stSectionBuffer[intSec].dinSecStartPos < a_pLineChildSIF[0]^.Par.dinPositionOfSlide_um) THEN   	// ToDO: DSC, test
 			
 	
@@ -460,7 +450,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{8483a59b-34a0-46dd-a5fe-c33c2e845b35}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -497,7 +486,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{84a8cf9e-c51f-4b06-9709-31b644d98fb9}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -517,7 +505,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUN();				
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{8db7aa5b-4b0c-422c-88b1-2d7dd41685b3}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -571,7 +558,6 @@ CIf.SwCfg.bolSimulation := FALSE;
 // parameter
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildValid" Id="{94ba4448-1305-4140-ab7a-a344e77340b4}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildValid : BOOL
@@ -588,7 +574,6 @@ ELSE
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllLines" Id="{a6a33c36-f0b2-4008-8b80-e2d50b3342da}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllLines : BOOL
@@ -626,7 +611,6 @@ IF (usiNumOfCheckedChilds = usiNumOfLines) THEN
 	checkStateAllLines:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Property Name="MaxCapacity" Id="{b8e4f081-f964-4257-93db-b03336b6a073}">
       <Declaration><![CDATA[PROPERTY MaxCapacity : DINT
@@ -636,9 +620,7 @@ END_IF]]></ST>
         <Implementation>
           <ST><![CDATA[MaxCapacity:= SIf.Cur.dinMaxCapacity;]]></ST>
         </Implementation>
-        <ObjectProperties />
       </Get>
-      <ObjectProperties />
     </Property>
     <Method Name="sta_STOPBusy" Id="{c34ce03e-c1bc-4906-8ce7-8d367c30ecd2}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -672,7 +654,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CalcMaxCapacity" Id="{c35dc5a9-65e1-4d3b-9337-d8102cf5aaf7}">
       <Declaration><![CDATA[METHOD PROTECTED CalcMaxCapacity : DINT
@@ -697,7 +678,6 @@ END_FOR
 // Return result
 CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{c6a95020-750c-4ad0-b257-ce472ce193c3}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -727,7 +707,6 @@ CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{e8d4aee0-c1ef-4194-b036-6c56c29362bf}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -774,7 +753,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{e911ff6e-bb85-48fa-8010-1d284dac476c}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -855,7 +833,6 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 	me.StateMachine.intStateNext := cSTA_OFFBusy;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{f48e1c2e-66ed-41a5-90a1-a4e9e6aadfe2}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -883,7 +860,6 @@ END_FOR
 //----------------------------------------------------------------------
 dinPositionOfLastLine_um:= a_pLineChildSIF[usiNumOfLines-1]^.Par.dinPositionOfSlide_um;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

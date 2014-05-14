@@ -12,6 +12,8 @@ STRUCT
 	dinTrigEndOffset_um: DINT;
 	/// [um] Hanger Detection Sensor Position (measured from ZEROPOINT)
 	dinHangerSensorPosition_um: DINT;
+	// [um] Wait between Hanger Detection Sensor Position and Reservation
+	dinWaitBetweenSensorAndReservation_um: DINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>
