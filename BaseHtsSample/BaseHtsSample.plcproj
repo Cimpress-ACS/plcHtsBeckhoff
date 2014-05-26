@@ -79,13 +79,13 @@
     <Folder Include="POUs\Utility Functions\" />
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.1.6,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.9,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_Hts,0.0.0.39,Vistaprint">
+    <LibraryReference Include="Base_Hts,0.0.0.41,Vistaprint">
       <Namespace>Base_Hts</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.4.4,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.4.5,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc3_Module,3.3.5.0,Beckhoff Automation GmbH">
