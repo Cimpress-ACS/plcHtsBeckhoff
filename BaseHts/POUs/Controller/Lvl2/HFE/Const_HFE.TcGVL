@@ -1,7 +1,7 @@
 ﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <GVL Name="Const_HFE" Id="{dff3989f-620a-4448-99a3-71d687dfd026}">
     <Declaration><![CDATA[VAR_GLOBAL CONSTANT
-	cuintMaxStation: INT := 4;
+	cuintMaxStation: UINT := 4;
 END_VAR]]></Declaration>
     <ObjectProperties />
   </GVL>

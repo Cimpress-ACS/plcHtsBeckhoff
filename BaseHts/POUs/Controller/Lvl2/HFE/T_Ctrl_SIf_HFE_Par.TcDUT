@@ -2,9 +2,13 @@
   <DUT Name="T_Ctrl_SIf_HFE_Par" Id="{c4f68cd5-6f96-4b11-83e5-10bc26e3b81f}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_HFE_Par :
 STRUCT
-	/// Waiting between SLB-STB Close and Junction open
+	// Waiting between SLB-STB Close and Junction open
 	udiWaitingTime_ms: UDINT;
-	/// Enable Junction to LDS
+	// Open junction time
+	a_udiTimeOpen_ms: ARRAY[0..cuintMaxStation] OF UDINT;
+	// Close junction time
+	a_udiTimeClose_ms: ARRAY[0..cuintMaxStation] OF UDINT;
+	// Enable Junction to LDS
 	a_bolEnableJunction: ARRAY[0..cuintMaxStation] OF BOOL;
 END_STRUCT
 END_TYPE

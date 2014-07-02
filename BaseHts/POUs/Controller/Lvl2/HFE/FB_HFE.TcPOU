@@ -91,7 +91,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{2785aa7e-8b1e-4b90-ab2a-ef8c705cc460}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -107,7 +106,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RUNBusy();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{38a63fb6-18ba-49bf-b019-0f3d98495c64}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -133,7 +131,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddJunction" Id="{5540d54a-f506-4b0d-99c2-3c260241ccce}">
       <Declaration><![CDATA[METHOD AddJunction
@@ -155,7 +152,6 @@ IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{5fc078fa-9c7e-42fa-bafa-cab6d54b3c09}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HFE
@@ -163,7 +159,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{6210d5a1-7a82-4e48-85c7-024e0dd57ae0}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -199,7 +194,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{78be845b-6cb3-4729-99d3-ceb4ab98388e}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -215,7 +209,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	//THIS^.Out_Clamping := SIf.Out.bolClamping.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{87c349ad-3c09-4d5e-b5f7-9476c0ddfb4c}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -231,7 +224,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{894533f3-8f3a-47da-891a-a7947aa13be9}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -267,7 +259,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Refill" Id="{a70ee1c9-ddec-4fbe-9641-717811c70682}">
       <Declaration><![CDATA[METHOD Refill
@@ -310,10 +301,13 @@ CASE intSubState[intNbOfLDS] OF
 		udiTimeInStateRefill_ms[intNbOfLDS]:= udiTimeInStateRefill_ms[intNbOfLDS] + me.FUBInfo.udiSample_ms;
 		IF (udiTimeInStateRefill_ms[intNbOfLDS] > SIf.Par.udiWaitingTime_ms) THEN
 			intSubState[intNbOfLDS] := cSTA_SUB_Open;
+			udiTimeInStateRefill_ms[intNbOfLDS] := 0;			
 		END_IF
 		
 	cSTA_SUB_Open:	
-		IF (a_bolLDSNeedsHanger[intNbOfLDS] = 0) THEN
+		udiTimeInStateRefill_ms[intNbOfLDS]:= udiTimeInStateRefill_ms[intNbOfLDS] + me.FUBInfo.udiSample_ms;
+		IF ((Sif.Par.a_udiTimeOpen_ms[intNbOfLDS] <> 0) AND (Sif.Par.a_udiTimeOpen_ms[intNbOfLDS] < udiTimeInStateRefill_ms[intNbOfLDS])) OR 
+		(a_bolLDSNeedsHanger[intNbOfLDS] = 0) THEN
 			intSubState[intNbOfLDS] := cSTA_SUB_WaitClose;
 		END_IF
 		
@@ -330,12 +324,13 @@ CASE intSubState[intNbOfLDS] OF
 		udiTimeInStateRefill_ms[intNbOfLDS]:= udiTimeInStateRefill_ms[intNbOfLDS] + me.FUBInfo.udiSample_ms;
 		IF (udiTimeInStateRefill_ms[intNbOfLDS] > SIf.Par.udiWaitingTime_ms) THEN
 			a_pMultiChildCIF[intNbOfLDS]^.Job.intACmd:= Base_Elements.VLV_CmdState.cCMD_Close;
-			intSubState[intNbOfLDS] := cSTA_SUB_WaitForJob;
+			IF ((Sif.Par.a_udiTimeClose_ms[intNbOfLDS] < udiTimeInStateRefill_ms[intNbOfLDS])) THEN
+				intSubState[intNbOfLDS] := cSTA_SUB_WaitForJob;
+			END_IF
 		END_IF
 END_CASE
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{c71e8941-26c5-4fe3-ba0e-2d2f1350a90d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -354,7 +349,7 @@ END_VAR
 		//fbSimulationTimer.PT := UDINT_TO_TIME(SIf.Par.udi_pulseTimeout_ms/10);
 		//fbSimulationTimer(); // set time/reset timer
 		//fbSimulationTimer.IN := TRUE; // start timer
-		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+		FOR intNbOfLDS := 0 TO UINT_TO_INT(cuintMaxStation) DO
 			intSubState[intNbOfLDS] := 500;	// Init Refill Substate
 		END_FOR
 	END_IF
@@ -378,7 +373,7 @@ END_VAR
 		//IF NOT(pSLB_SIf^.Cur.bolBufferFull) THEN
 		//	pStopperBuffer_CIf^.Job.intACmd := STB_CmdState.cCMD_RELEASE;
 		//END_IF
-		FOR intNbOfLDS := 0 TO cuintMaxStation DO
+		FOR intNbOfLDS := 0 TO UINT_TO_INT(cuintMaxStation) DO
 			IF (SIf.Par.a_bolEnableJunction[intNbOfLDS]) AND (a_pMultiChildCtrl[intNbOfLDS]<>0) THEN
 				Refill(intNbOfLDS);
 			END_IF
@@ -406,7 +401,6 @@ END_VAR
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{e7c5b937-9ee0-4d79-b978-8457f8d90220}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -430,7 +424,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	a_pMultiChildSIF[ii]:= a_pMultiChildCtrl[ii]^.getCtrlSIf();
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{fe94e761-66c6-4876-9312-76755a5c43ca}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -480,6 +473,10 @@ CIf.SwCfg.bolExist := TRUE;
 CIf.SwCfg.bolSimulation := FALSE;
 
 // parmeter
+FOR ii:= 0 TO cuintMaxStation DO
+	SIf.Par.a_udiTimeClose_ms[ii] := 10000;
+	SIf.Par.a_udiTimeOpen_ms[ii] := 10000;
+END_FOR
 SIf.Par.udiWaitingTime_ms := 100;
 SIf.Par.a_bolEnableJunction[0] := TRUE; // First LDS is enabled
 
@@ -489,7 +486,6 @@ SIf.Cfg.uintNbOfLDS := 1;
 // actual values
 //SIf.Cur.dinCounter := 0;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>
