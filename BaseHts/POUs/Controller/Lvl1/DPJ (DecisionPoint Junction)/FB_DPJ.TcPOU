@@ -85,6 +85,8 @@ VAR
 	intIndexGetEntry: INT;
 	dinSimTimerAcknowledge: DINT;
 	dinSimTimerProcessTimeLine: DINT;
+	// Time for waiting for the second signal (Sensor or RFID) 
+	udiWaitingForSecondSignal_ms: UDINT;
 END_VAR
 VAR CONSTANT
 	cSTA_SUB_SimWaitForDataReady: INT := 1000;
@@ -129,6 +131,7 @@ Version		Date			Author		Comment
 										Reworked in sta_STOPBusy calculation of bolNoJobActive
 0.00.7		03.02.2014		AVME/MRU	sta_RUN entry action reworked
 0.00.8		24.04.2014		AVME/MRU	Replaced with latest version of ShirtStream
+0.00.9		10.07.2014		AVME/MRU	Check Time-Out Waitung for Signal or RFID-Tag, new function for preventing miss-readed Tags (so called N+1-Problem)
 										
 ___________________________________________________________________________________________________*)
 
@@ -212,6 +215,8 @@ SIf.Alm[12].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[12].strText := 'Hanger passed the last instead of selected junction';
 SIf.Alm[13].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
+SIf.Alm[14].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[14].strText := 'To long time between RFID and Sensor-Signal';
 
 //*******************************************************************************
 // initial values
@@ -229,6 +234,7 @@ SIf.Par.dinSimTimeAcknowledgeDataChl_ms:= 1500;
 SIf.Par.dinSimProcessTimeOnLineCtrl_ms:= 2000;
 SIf.Par.dinSimTarget:= 1;
 SIf.Par.intSimDischargingEveryXtenHanger:= 1;
+SIf.Par.udiWaitingForSecondSignalTimeout_ms:= 2000;
 
 // configuration
 SIf.Cfg.bolHangerDetectionExist := TRUE;
@@ -243,7 +249,6 @@ intSimStateChlToPLC:= cSTA_SUB_SimWaitForNewData;
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="SetAlmClassAllMultiChild" Id="{16aadde4-bbd6-49d0-8c5e-84abf870129b}">
       <Declaration><![CDATA[METHOD PROTECTED SetAlmClassAllMultiChild
@@ -260,7 +265,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	a_pMultiChildCIF[ii]^.Job.eParent_ActivAlmClass:= In_AlmClass;	
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CmdToAllMultiChild" Id="{22edd75d-a760-43dd-8304-58221cd4a28b}">
       <Declaration><![CDATA[METHOD PROTECTED CmdToAllMultiChild
@@ -280,7 +284,6 @@ END_FOR
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{2390edb4-396c-4e3c-87f2-2fdeb40528b4}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -616,7 +619,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildAlmClass" Id="{2b2d893a-02e8-43b0-a8e4-404e6217af41}">
       <Declaration><![CDATA[METHOD checkChildAlmClass : BOOL
@@ -654,7 +656,6 @@ ELSE
 	THIS^.SetAlmClassAllMultiChild(E_AlmClass.NONE);
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{4501f9e4-4733-42dc-95d6-7e851af08427}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -771,9 +772,11 @@ END_IF]]></ST>
 					ELSE	// Hanger detection first
 						// Start actual position
 						// ToDo: Tel. mit PRE. muss anders behandelt werden
-						//aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;	
-						aTblDecision[uinLoopRFID].dinActPos_um := 0;
-						dinPositionRFID_um := -1;
+						aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;
+						dinPositionRFID_um := 0;	
+						// DSC-Alternative 2
+						//aTblDecision[uinLoopRFID].dinActPos_um := 0;
+						//dinPositionRFID_um := -1;
 					END_IF
 
 					bolJobFound := TRUE;
@@ -814,9 +817,11 @@ END_IF]]></ST>
 						ELSE		// Hanger detection first
 							// Start actual position
 							// ToDo: Tel. mit PRE. muss anders behandelt werden
-							//aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;	
-							aTblDecision[uinLoopRFID].dinActPos_um := 0;
-							dinPositionRFID_um := -1;										
+							aTblDecision[uinLoopRFID].dinActPos_um := dinPositionRFID_um;
+							dinPositionRFID_um := 0;	
+							// DSC-Alternative 2
+							//aTblDecision[uinLoopRFID].dinActPos_um := 0;
+							//dinPositionRFID_um := -1;										
 						END_IF
 							
 						EXIT;
@@ -827,6 +832,17 @@ END_IF]]></ST>
 			
 		END_IF		
 		
+		// Check Time-Out Waitung for Signal or RFID-Tag, new function for preventing miss-readed Tags (so called N+1-Problem)
+		IF ((dinPositionRFID_um = -1) OR (dinPositionRFID_um > 1)) THEN 								// Start Waiting time conditions
+			udiWaitingForSecondSignal_ms :=  udiWaitingForSecondSignal_ms + me.FUBInfo.udiSample_ms;	// Calculate Waiting time
+			IF (udiWaitingForSecondSignal_ms > SIf.Par.udiWaitingForSecondSignalTimeout_ms) THEN		// Waiting time over
+				// SIf.Alm[14].strText := 'To long time between RFID and Sensor-Signal';				// Set an Info 
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,14,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+				dinPositionRFID_um := 0;																// Reset Counter
+			END_IF
+		ELSE																							// Reset Waiting time
+			udiWaitingForSecondSignal_ms := 0;
+		END_IF
 		
 		// State Change Condition
 		// OFF done in always state
@@ -835,7 +851,7 @@ END_IF]]></ST>
 		END_IF;
 	END_IF
 
-
+ 
 
 
 //--------------------------------------------------------------------------------------
@@ -844,7 +860,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="AddJunction" Id="{4c57849c-46a5-4731-a75e-f71f02651225}">
       <Declaration><![CDATA[METHOD AddJunction
@@ -866,7 +881,6 @@ IF (usiNumOfMultiChild <= (Base_Const.cMaxNrOfChilds-1)) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="DtChnToPLC_Decision" Id="{56293b13-f99b-44db-ad67-f888502ddf16}">
       <Declaration><![CDATA[METHOD DtChnToPLC_Decision : BOOL
@@ -1168,7 +1182,6 @@ CASE intStatemachine OF
 			
 END_CASE]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkStateAllMultiChild" Id="{73e0bb5b-c9d6-45bb-a589-c91a67dae0f9}">
       <Declaration><![CDATA[METHOD PROTECTED checkStateAllMultiChild : BOOL
@@ -1203,7 +1216,6 @@ IF (usiNumOfCheckedChilds = usiNumOfMultiChild) THEN
 	checkStateAllMultiChild:= TRUE;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkChildPointer" Id="{7bd5508b-bfdc-4881-836c-b3108c8945b3}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
@@ -1217,7 +1229,6 @@ END_IF
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERROR" Id="{7e6c6344-2ecc-406f-940b-182fe9b1ecb0}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
@@ -1255,7 +1266,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{7f96c662-b4b7-4a25-99f8-0cfa8d3c7fce}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -1292,7 +1302,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="CtrlInit" Id="{9759dc91-2da4-4842-9bdb-7d64ab8fa25e}">
       <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
@@ -1348,7 +1357,6 @@ END_FOR
 
 SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{9807ff43-9de3-47df-b8ea-910b5d6fccd5}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -1427,7 +1435,6 @@ SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERRORQuit" Id="{9bcfd1cc-6449-4342-af9b-e290933dba9d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
@@ -1474,7 +1481,6 @@ SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{ab2117d5-77a7-4721-b32a-e5458f4f1f41}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -1529,7 +1535,6 @@ SIf.Cfg.bolDtChToLine_send := TRUE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{b637169d-b770-4b0f-938b-fb9a0a317dd3}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -1549,7 +1554,6 @@ ELSE
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{d0542f5d-a2c1-445c-be5a-9650e7f21dbd}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -1564,7 +1568,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="checkAlmClassAllMultiChild" Id="{d338f4e5-3995-4d1d-81b7-fd0bfd6bb919}">
       <Declaration><![CDATA[METHOD PROTECTED checkAlmClassAllMultiChild : BOOL
@@ -1590,7 +1593,6 @@ FOR ii:=0 TO usiNumOfMultiChild-1 BY 1 DO
 	END_IF
 END_FOR]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFFBusy" Id="{d46fbb3e-5803-445b-866d-32c6a7eccf4b}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
@@ -1627,7 +1629,6 @@ END_FOR]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_PON" Id="{d6308ce9-0fe2-43e4-af6a-b0dc211faedd}">
       <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
@@ -1664,7 +1665,6 @@ END_FOR]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{f8bec69e-1e4c-4bce-848e-7ce3ac62ddbc}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -1684,7 +1684,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_STOP();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{f985efa6-f5c5-41f8-a3a8-c40b2731235d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -1737,7 +1736,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{fc66c7d5-75a4-4d09-ac25-1f760ec7d8b3}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_DPJ
@@ -1745,7 +1743,6 @@ END_CASE;]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

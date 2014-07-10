@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.42</ProjectVersion>
+    <ProjectVersion>0.0.0.43</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.42 - MER - new parameter added
+    <Description>0.0.0.43 - DPJ reworked (Missed Shirt Problem)
+
+0.0.0.42 - MER - new parameter added
 	HFE reworked
 
 0.0.0.41 - BasePLC V0.3.4.5; BaseElements V0.0.1.9

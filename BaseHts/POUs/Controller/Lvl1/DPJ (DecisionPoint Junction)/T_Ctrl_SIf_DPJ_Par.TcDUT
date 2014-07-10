@@ -13,6 +13,8 @@ STRUCT
 	dinSimProcessTimeOnLineCtrl_ms: DINT;
 	dinSimTarget: DINT;
 	intSimDischargingEveryXtenHanger: INT;
+	// Timeout time for waiting for the second signal (Sensor or RFID) 
+	udiWaitingForSecondSignalTimeout_ms: UDINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>
