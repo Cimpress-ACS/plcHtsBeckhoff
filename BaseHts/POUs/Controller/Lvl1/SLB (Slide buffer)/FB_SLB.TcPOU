@@ -1133,7 +1133,7 @@ CASE SubStateMachineRefill OF
 END_CASE
 
 // Increase time, if needed
-FOR ii := 0 TO (usiNumOfBufferZones-2) DO
+FOR ii := 0 TO (usiNumOfBufferZones-1) DO
 	a_udiTimeInStateRefill_ms[ii]:= a_udiTimeInStateRefill_ms[ii] + me.FUBInfo.udiSample_ms;
 END_FOR]]></ST>
       </Implementation>
