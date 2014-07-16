@@ -78,6 +78,7 @@ Version		Date			Author		Comment
 0.00.3		02.10.2013		VP/MK,RE	Fixed multiplication issues (cast INT to REAL before division)
 0.00.4		10.12.2013		AVME/MRU	Reset aCheckPassing time at exit of sta_RUN
 0.00.5		03.02.2014		AVME/MRU	Changed 'timeout passed sensor does not detect the hanger' to INFO
+0.00.6		16.07.2014		AVME/MRU	Input Passed changed to debounced Input to prevent jitter.
 
 ___________________________________________________________________________________________________*)
 
@@ -137,7 +138,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALL" Id="{08a16b04-3c5d-4b0c-b4fe-f5afd689e3fc}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALL : BOOL
@@ -196,7 +196,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE_ALLBusy" Id="{100d2a5f-8d01-47be-91fc-96df1610dc72}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE_ALLBusy : BOOL
@@ -240,7 +239,6 @@ END_IF;
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="StateMachine" Id="{14457bfa-0eba-45a6-b7cc-1d4eb5e3aa60}">
       <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
@@ -268,7 +266,6 @@ CASE me.StateMachine.intState OF
         THIS^.sta_RELEASE();
 END_CASE;]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOPBusy" Id="{4b8c115c-9a80-4e44-8803-09aadd2fe874}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOPBusy : BOOL
@@ -307,7 +304,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERRORQuit" Id="{8252e670-98f4-4a11-8fe5-8c9d5f1a7e7b}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERRORQuit : BOOL
@@ -363,7 +359,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_STOP" Id="{85b2b704-ed0b-4275-8e75-b9f88fdf9f37}">
       <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
@@ -402,7 +397,6 @@ END_CASE;]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoOutBridge" Id="{9acf7e02-116b-47f6-ab58-3a90ca7b67ff}">
       <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
@@ -426,7 +420,6 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 	THIS^.Out_bolOpen := SIf.Out.bolOpen.map;
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_PON" Id="{9f57f253-0c6d-42dc-914f-90c5f0fbccee}">
       <Declaration><![CDATA[METHOD PROTECTED sta_PON : BOOL
@@ -471,7 +464,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_OFF" Id="{9fc68848-0d83-41d4-bf0b-201d60fd0f27}">
       <Declaration><![CDATA[METHOD PROTECTED sta_OFF : BOOL
@@ -517,7 +509,6 @@ END_IF]]></ST>
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="FB_init" Id="{aba00438-dbd0-4cb2-8cf1-d6b2e8e5ea59}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -594,13 +585,14 @@ SIf.Par.udiSimPassTime_ms := SIf.Par.udiPassTime_ms/2;
 SIf.Par.dinPosition_um := 10000000;
 SIf.Par.dinOpenWay_um := 200000;
 
+SIf.Par.udiDebounceTimePassed_ms := 20;
+
 //*******************************************************************************
 // initial values childes
 //*******************************************************************************
 
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCmdState" Id="{ad79eec7-1382-4269-9561-a168e5d18fa4}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -660,7 +652,6 @@ IF (getCmdState='') THEN // global not defined get local
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUN" Id="{b2951c87-0f74-4019-9ea1-66eac4200f3d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -921,7 +912,6 @@ END_IF
 		END_FOR;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASEBusy" Id="{c25dd37c-f4de-462d-aeb5-715909760682}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASEBusy : BOOL
@@ -1048,7 +1038,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RELEASE" Id="{d4b7020b-2134-41b7-8d61-644b097a7bce}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RELEASE : BOOL
@@ -1095,7 +1084,6 @@ END_IF
 		bolfpRelease := FALSE;		// Only start once the release if cmd is still the same
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_ERROR" Id="{ebfe77ca-202f-4c16-8fb3-724462668168}">
       <Declaration><![CDATA[METHOD PROTECTED sta_ERROR : BOOL
@@ -1133,7 +1121,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="Always" Id="{efad444c-e9bc-40cb-b73e-b19495dd981d}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -1167,7 +1154,6 @@ IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
 	END_IF
 END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="getCtrlSIf" Id="{f1f74a37-9eaa-4a82-92a4-49875bab0e4e}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_JUN
@@ -1175,7 +1161,6 @@ END_IF]]></ST>
       <Implementation>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="IoInBridge" Id="{fcb458c4-48ab-40b8-b78d-57cf3ff03480}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -1186,14 +1171,14 @@ END_IF]]></ST>
 SIf.In.bolPassed.map := THIS^.In_bolPassed;
 
 IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolPassed));
+	getInBolDebounced(CIf.Job.bolIoForce, me.FUBInfo.udiSample_ms, Sif.Par.udiDebounceTimePassed_ms, ADR(SIf.In.bolPassed));
+	//getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolPassed));
 	//ctrl.In.bol_PosSwitchBasicDefTyp.intern := getInBol(ctrl.ifc.Job.bol_Force ,ADR(ctrl.In.bol_PosSwitchBasicDefTyp);
 ELSE
 	//simulation of global IO
 END_IF
 ]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <Method Name="sta_RUNBusy" Id="{fefb1367-1385-49c8-95c6-1a8a6dfdc61d}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -1234,7 +1219,6 @@ END_IF
 		;
 	END_IF]]></ST>
       </Implementation>
-      <ObjectProperties />
     </Method>
     <ObjectProperties />
   </POU>

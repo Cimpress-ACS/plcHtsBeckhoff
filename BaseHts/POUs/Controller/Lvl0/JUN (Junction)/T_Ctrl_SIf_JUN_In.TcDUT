@@ -3,7 +3,7 @@
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_JUN_In :
 STRUCT
 	///sensor hanger passed the junction
-	bolPassed: T_Ctrl_IoBool;
+	bolPassed: Base_PLC.T_Ctrl_IoBoolDebounced;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

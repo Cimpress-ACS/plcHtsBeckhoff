@@ -15,9 +15,12 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.45</ProjectVersion>
+    <ProjectVersion>0.0.0.46</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.45 - BaseElements 0.0.1.17
+    <Description>0.0.0.46 - BaseElements 0.0.1.18
+	Some Bugs in DPJ, JUN fixed
+
+0.0.0.45 - BaseElements 0.0.1.17
 	MTR/sta_RUN Bug fixed
 
 0.0.0.44 - New Libs BasePLC 0.3.4.8, BaseElements 0.0.1.16
@@ -591,7 +594,7 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="Version\" />
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.1.17,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.18,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
     <LibraryReference Include="Base_PLC,0.3.4.8,Vistaprint">

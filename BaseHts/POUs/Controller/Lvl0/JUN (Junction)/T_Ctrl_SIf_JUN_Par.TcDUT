@@ -16,6 +16,8 @@ STRUCT
 	dinOpenWay_um: DINT;
 	/// Pointer to Hashtable from Desicion
 	pTblDecision: POINTER TO ARRAY[0..cintMaxDecisions] OF T_DecisionElement;
+	/// [ms] Debounce time until passed hanger sends signal. Prevents jitter.
+	udiDebounceTimePassed_ms: UDINT;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

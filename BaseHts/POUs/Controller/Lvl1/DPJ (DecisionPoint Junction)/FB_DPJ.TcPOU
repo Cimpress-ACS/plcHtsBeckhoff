@@ -132,6 +132,7 @@ Version		Date			Author		Comment
 0.00.7		03.02.2014		AVME/MRU	sta_RUN entry action reworked
 0.00.8		24.04.2014		AVME/MRU	Replaced with latest version of ShirtStream
 0.00.9		10.07.2014		AVME/MRU	Check Time-Out Waitung for Signal or RFID-Tag, new function for preventing miss-readed Tags (so called N+1-Problem)
+0.00.10		16.07.2014		AVME/MRU	Some Bugs fixed
 										
 ___________________________________________________________________________________________________*)
 
@@ -234,7 +235,7 @@ SIf.Par.dinSimTimeAcknowledgeDataChl_ms:= 1500;
 SIf.Par.dinSimProcessTimeOnLineCtrl_ms:= 2000;
 SIf.Par.dinSimTarget:= 1;
 SIf.Par.intSimDischargingEveryXtenHanger:= 1;
-SIf.Par.udiWaitingForSecondSignalTimeout_ms:= 2000;
+SIf.Par.udiWaitingForSecondSignalTimeout_ms:= 500;
 
 // configuration
 SIf.Cfg.bolHangerDetectionExist := TRUE;
@@ -550,11 +551,14 @@ FOR intI:=0 TO cintMaxDecisions DO
 				IF SIf.Cur.dinCurrentItemCount > 0 THEN
 					SIf.Cur.dinCurrentItemCount := SIf.Cur.dinCurrentItemCount - 1;
 				END_IF
-				 aTblDecision[intI].eState := E_DecisionState.Finished;
+				aTblDecision[intI].eState := E_DecisionState.Finished;
 			ELSE	
 				IF NOT (SIf.cfg.bolSimDtChLine) THEN						
 					// Set Alarm: SIf.Alm[9].strText := 'Data Channel Error Send Data';
 					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,9,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+				ELSE
+					// MRU 16.7.2014: Added to clean up Table in Simulation
+					aTblDecision[intI].eState := E_DecisionState.Finished;
 				END_IF
 			END_IF
 		ELSE
