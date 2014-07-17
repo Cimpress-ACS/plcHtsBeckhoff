@@ -15,9 +15,11 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.46</ProjectVersion>
+    <ProjectVersion>0.0.0.47</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.46 - BaseElements 0.0.1.18
+    <Description>0.0.0.47 - Some Bugs in DPJ fixed
+
+0.0.0.46 - BaseElements 0.0.1.18
 	Some Bugs in DPJ, JUN fixed
 
 0.0.0.45 - BaseElements 0.0.1.17

@@ -218,6 +218,8 @@ SIf.Alm[13].eAlmClass := E_AlmClass.STOP;
 SIf.Alm[13].strText := 'Hanger passed the last instead of selected junction';
 SIf.Alm[14].eAlmClass := E_AlmClass.INFO;
 SIf.Alm[14].strText := 'To long time between RFID and Sensor-Signal';
+SIf.Alm[15].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[15].strText := 'Drive Out Acknowledge missing, delete Job';
 
 //*******************************************************************************
 // initial values
@@ -499,6 +501,18 @@ FOR intI:=0 TO cintMaxDecisions DO
 			// Job not startet, set error
 			// Set Alarm: SIf.Alm[4].strText := 'Job Timeout, delete Job';
 			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,intI,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			// Clear Job										
+			aTblDecision[intI].eState := E_DecisionState.none;
+			aTblDecision[intI].dinActPos_um := 0;
+			aTblDecision[intI].dtTimeJob := DINT_TO_DT(0);
+			aTblDecision[intI].dtTimeRFID := DINT_TO_DT(0);
+			aTblDecision[intI].stDecision.dinTarget := 0;
+			aTblDecision[intI].stDecision.uliRFID := 0;
+			aTblDecision[intI].stDecision.strID := '';	
+		ELSIF (aTblDecision[intI].eState = E_DecisionState.DriveOut OR aTblDecision[intI].eState = E_DecisionState.Processed) THEN // MRU 17.07.2014 added
+			// Drive Out Acknowledge missing, set error
+			// Set Alarm: SIf.Alm[15].strText := 'Drive Out Acknowledge missing, delete Job';
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,15,intI,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
 			// Clear Job										
 			aTblDecision[intI].eState := E_DecisionState.none;
 			aTblDecision[intI].dinActPos_um := 0;
