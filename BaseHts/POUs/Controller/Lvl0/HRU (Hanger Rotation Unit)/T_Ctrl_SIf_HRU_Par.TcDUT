@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <DUT Name="T_Ctrl_SIf_HRU_Par" Id="{bb559684-4afc-4ddd-948e-58bf87c7bfe8}">
     <Declaration><![CDATA[TYPE T_Ctrl_SIf_HRU_Par :
 STRUCT
@@ -14,6 +14,8 @@ STRUCT
 	udiSimNextHangerTime_ms: UDINT;
 	/// [ms] Timeout to detect a hanger in the rotation unit
 	udiTimeOutHRU_Hanger_ms: UDINT;
+	/// Enable AutoMode, used for example at the RotaryHeatPress Output
+	bolAutoModeEnable: BOOL;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

@@ -1,4 +1,4 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.19">
+﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
   <POU Name="FB_HRU" Id="{e7da98a9-648f-45a2-b6cd-3c8fb8ea4a27}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HRU EXTENDS FB_CtrlBase
 VAR_INPUT
@@ -46,6 +46,7 @@ Version		Date			Author		Comment
 ---------------------------------------------------------------------------------------------------
 0.00.1		25.04.2013		AVME/KVO	Start history
 0.00.2		18.09.2013		AVME/MRU	Copied from CYL and renamed to HRU
+0.00.3		24.07.2013		AVME/MRU	Automode added
 
 ___________________________________________________________________________________________________*)
 
@@ -66,142 +67,143 @@ IF (me.bolActivate) THEN // cyclic call enabled
 END_IF;
 ]]></ST>
     </Implementation>
-    <Method Name="getCmdState" Id="{f92c1110-dbbf-41b3-98a4-d1e3072092cf}">
-      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
-VAR_INPUT
-	intCmdState: INT;
-	bolState: BOOL;
-END_VAR
+    <Method Name="Always" Id="{107a1b23-5daf-4da3-b36f-d0e0914536ad}">
+      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
-IF (getCmdState='') THEN // global not defined get local
-	// get string cmd/state string information in runtime
-	IF (bolState=FALSE) THEN
-		// cmd's
-		CASE intCmdState OF
-			cCMD_RETRACT: 
-				getCmdState := 'cCMD_RETRACT';
-			cCMD_EJECT: 
-				getCmdState := 'cCMD_EJECT';
-			cCMD_ROTATE: 
-				getCmdState := 'cCMD_ROTATE';
-			cCMD_RUN: 
-				getCmdState := 'cCMD_RUN';
-		END_CASE;
-	ELSE
-	
-	// states
-		CASE intCmdState OF
-			cSTA_RETRACTBusy: 
-				getCmdState := 'cSTA_RETRACTBusy';
-			cSTA_RETRACT: 
-				getCmdState := 'cSTA_RETRACT';
-			cSTA_EJECTBusy: 
-				getCmdState := 'cSTA_EJECTBusy';
-			cSTA_EJECT: 
-				getCmdState := 'cSTA_EJECT';
-			cSTA_ROTATEBusy: 
-				getCmdState := 'cSTA_ROTATEBusy';
-			cSTA_ROTATE: 
-				getCmdState := 'cSTA_ROTATE';
-			cSTA_RUNBusy: 
-				getCmdState := 'cSTA_RUNBusy';
-			cSTA_RUN: 
-				getCmdState := 'cSTA_RUN';
-				
-			// SUB states
-			cSTA_SUB_WAIT_FOR_JOB:
-				getCmdState := 'cSTA_SUB_WAIT_FOR_JOB';
-			cSTA_SUB_WAIT_WITH_HANGER:
-				getCmdState := 'cSTA_SUB_WAIT_WITH_HANGER';
-			cSTA_SUB_ROTATE:
-				getCmdState := 'cSTA_SUB_ROTATE';
-			cSTA_SUB_EJECT:
-				getCmdState := 'cSTA_SUB_EJECT';
-			cSTA_SUB_RETRACT:
-				getCmdState := 'cSTA_SUB_RETRACT';
-			cSTA_SUB_DONE:
-				getCmdState := 'cSTA_SUB_DONE';
-			cSTA_SUB_ERROR:
-				getCmdState := 'cSTA_SUB_ERROR';
+        <ST><![CDATA[SUPER^.Always();
 
-		END_CASE;
+IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
+	;
+END_IF
+
+
+// Always change actions in Base Library
+// ----------------------------------------------------------------------------------
+// overrule error always from base -> no EOFF State!! in EOFF go to OFF
+IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
+	IF (me.StateMachine.intState=cSTA_OFF) THEN
+		me.StateMachine.intStateNext := cSTA_OFF;
+	ELSE // stay in OFF
+		me.StateMachine.intStateNext := cSTA_OFFBusy;
 	END_IF
 END_IF
+
 ]]></ST>
       </Implementation>
     </Method>
-    <Method Name="FB_init" Id="{d643d3ce-c3a3-4949-99ff-f9349508240f}">
-      <Declaration><![CDATA[METHOD FB_init : BOOL
-VAR_INPUT
-	///if TRUE, the retain variables are initialized (warm start / cold start)
-	bInitRetains: BOOL;
-	///if TRUE, the instance afterwards gets moved into the copy code (online change)
-	bInCopyCode: BOOL;
-END_VAR
-VAR
-	ii: UINT;
-END_VAR
+    <Method Name="sta_EJECT" Id="{14a531a2-46cf-4064-847e-c670d34b589f}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_EJECT : BOOL
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
-// to manually change in new FUB implementation!!!
-// define valid commands for this controller
-FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
-	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
-		// found first empty array element
-		EXIT;
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
 	END_IF
-END_FOR
-CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
-CIf.Job.aCmdList[ii].strName := 'Stop'; 
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := cCMD_RETRACT;
-CIf.Job.aCmdList[ii].strName := 'Retract';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := cCMD_EJECT; // for test simulation single answer
-CIf.Job.aCmdList[ii].strName := 'EJECT';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := cCMD_ROTATE; //  MRU 18.09.2013: New command rotate
-CIf.Job.aCmdList[ii].strName := 'Rotate'; 
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
-ii := ii +1;
-CIf.Job.aCmdList[ii].intCmd := cCMD_RUN; // for test simulation single answer
-CIf.Job.aCmdList[ii].strName := 'RUN';
-CIf.Job.aCmdList[ii].bolAvailable := TRUE;
 
-// set name of class/typ
-CIf.Info.strType := 'FB_HRU';
 
-// set alarm class
-SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[1].strText := 'sensor hangerDetected always on'; 
-SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[2].strText := 'sensor hangerDetected always on';
-SIf.Alm[3].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[3].strText := 'sensor hangerDetected always on';
-SIf.Alm[4].eAlmClass := E_AlmClass.STOP;
-SIf.Alm[4].strText := 'Expected Hanger not in Rotation Unit';
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
 
-//*******************************************************************************
-// initial values
-//*******************************************************************************
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// State Change Condition
+		IF (SIf.In.bolHangerDetected.intern) THEN
+			// sensor retract always on
+			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+			me.StateMachine.intStateNext :=  cSTA_ERROR;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=HRU_CmdState.cCMD_RETRACT) THEN
+			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
+		ELSIF(me.intCmd=HRU_CmdState.cCMD_ROTATE) THEN
+			me.StateMachine.intStateNext := cSTA_ROTATEBusy;		
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
+		END_IF
+	END_IF
 
-// software configuration
-CIf.SwCfg.bolExist := TRUE;
-CIf.SwCfg.bolSimulation := FALSE;
 
-// parmeter
-SIf.Par.udiEjectTime_ms := 1000;			// No sensor, work with time
-SIf.Par.udiRetractTime_ms := 1000;			// No sensor, work with time
-SIf.Par.udiRotateTime_ms := 2000;			// No sensor, work with time
-SIf.Par.udiWaitForRotate_ms := 4000;		// No sensor, work with time
-SIf.Par.udiSimNextHangerTime_ms := 5000;	// For simulation
-SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit]]></ST>
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="IoOutBridge" Id="{1a8b54f3-45d9-4433-8efa-9df953e7be19}">
+      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolEject));
+	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRotate));
+	
+	THIS^.Out_bolEject := SIf.Out.bolEject.map;
+	THIS^.Out_bolRotate := SIf.Out.bolRotate.map;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCtrlSIf" Id="{1b617f7b-a794-4338-92da-3e6a3f0e465f}">
+      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HRU
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_ROTATEBusy" Id="{29398fc9-21df-48af-abd1-bb4882462baf}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ROTATEBusy : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+		
+		SIf.Out.bolRotate.intern := NOT SIf.Out.bolRotate.intern;	// Rotate in other direction
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// State Change Condition
+		IF (me.StateMachine.udiTimeInState_ms>SIf.Par.udiRotateTime_ms) THEN
+			me.StateMachine.intStateNext :=  cSTA_ROTATE;
+		ELSIF(me.intCmd=cCMD_OFF) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		//SIf.Cur.udiMoveTimeRetract := me.StateMachine.udiTimeInState_ms;
+		;
+	END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="sta_RETRACTBusy" Id="{320f6078-e245-4d47-a49f-217085321fcb}">
@@ -254,8 +256,52 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_EJECT" Id="{14a531a2-46cf-4064-847e-c670d34b589f}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_EJECT : BOOL
+    <Method Name="sta_RUN" Id="{452e79f6-9c6d-4c20-b538-1c5573f25e88}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+				
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		// Cyclicle action
+		
+		
+		// State Change Condition
+		IF (SIf.Par.bolAutoModeEnable = FALSE) THEN		// Stop after every cycle -> cSTA_DONE
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF (me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		ELSE // AutoMode and not stop
+			me.StateMachine.intStateNext :=  cSTA_RUNBusy;	
+		END_IF
+		
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_EJECTBusy" Id="{4877cc40-a1b7-4684-af1e-67b223137e67}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_EJECTBusy : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -276,108 +322,24 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 			;
 		END_IF
 		
+		//no change action
+		SIf.Out.bolEject.intern := TRUE;	// Eject Cylinder Valve
+		
+		
 		// State Change Condition
-		IF (SIf.In.bolHangerDetected.intern) THEN
-			// sensor retract always on
-			pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,2,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-			me.StateMachine.intStateNext :=  cSTA_ERROR;
+		IF (me.StateMachine.udiTimeInState_ms>SIf.Par.udiEjectTime_ms) THEN
+			IF (SIf.In.bolHangerDetected.intern) THEN
+				// sensor Hanger detected always on
+				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+				me.StateMachine.intStateNext :=  cSTA_ERROR;
+			ELSE
+				// Hanger ejected
+				me.StateMachine.intStateNext := cSTA_EJECT;	
+			END_IF
 		ELSIF(me.intCmd=cCMD_STOP) THEN
 			me.StateMachine.intStateNext := cSTA_STOPBusy;
 		ELSIF(me.intCmd=HRU_CmdState.cCMD_RETRACT) THEN
 			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
-		ELSIF(me.intCmd=HRU_CmdState.cCMD_ROTATE) THEN
-			me.StateMachine.intStateNext := cSTA_ROTATEBusy;		
-		ELSIF(me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_RUNBusy;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_STOP" Id="{6858f917-2fab-4582-a04f-9a9509e1f096}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		;
-		
-		
-		// State Change Condition
-		IF (me.intCmd=cCMD_OFF) THEN
-			// sensor retract always on cylinder
-			me.StateMachine.intStateNext :=  cSTA_OFFBusy;
-		ELSIF (me.intCmd=cCMD_EJECT) THEN 
-			me.StateMachine.intStateNext := cSTA_EJECTBusy;
-		ELSIF(me.intCmd=cCMD_RETRACT) THEN
-			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
-		ELSIF(me.intCmd=cCMD_ROTATE) THEN
-			me.StateMachine.intStateNext := cSTA_ROTATEBusy;
-		ELSIF (me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_RUNBusy;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_RETRACT" Id="{d8ab7be5-af2e-45de-a83b-eaced7a8b732}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RETRACT : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
-		
-		// State Change Condition
-		IF(me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		ELSIF(me.intCmd=HRU_CmdState.cCMD_EJECT) THEN
-			me.StateMachine.intStateNext := cSTA_EJECTBusy;
-		ELSIF(me.intCmd=HRU_CmdState.cCMD_ROTATE) THEN
-			me.StateMachine.intStateNext := cSTA_ROTATEBusy;
-		ELSIF(me.intCmd=cCMD_RUN) THEN
-			me.StateMachine.intStateNext := cSTA_RUNBusy;
 		END_IF
 	END_IF
 
@@ -443,11 +405,17 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 					me.SubStateMachine.intStateNext := cSTA_SUB_WAIT_WITH_HANGER;
 				END_IF
 				
-				// Time out expected hanger is not arrived
-				IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiTimeOutHRU_Hanger_ms) THEN	// Hanger Rotation Unit time out waiting
-					pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-					me.SubStateMachine.intStateNext := cSTA_SUB_ERROR;
-				END_IF
+				IF (SIf.Par.bolAutoModeEnable = FALSE) THEN // Just if not AutoMode - AutoMode does not expect the hanger in a certain time
+					// Time out expected hanger is not arrived
+					IF (me.SubStateMachine.udiTimeInState_ms > SIf.Par.udiTimeOutHRU_Hanger_ms) THEN	// Hanger Rotation Unit time out waiting
+						pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,4,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+						me.SubStateMachine.intStateNext := cSTA_SUB_ERROR;
+					END_IF
+				ELSE // Go to Stop, just in AutoMode
+					IF (me.intCmd=cCMD_STOP) THEN
+						me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+					END_IF
+ 				END_IF
 		//--------------------------------------------------------------------------------------
 			cSTA_SUB_WAIT_WITH_HANGER:
 				IF (me.SubStateMachine.intState<>me.SubStateMachine.intStateLastCycle) THEN
@@ -559,8 +527,55 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_RUN" Id="{452e79f6-9c6d-4c20-b538-1c5573f25e88}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
+    <Method Name="IoInBridge" Id="{593af27c-1a76-48d5-b3a4-1932fa43020d}">
+      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
+SIf.In.bolHangerDetected .map := THIS^.In_bolHangerDetected;
+
+IF (CIf.SwCfg.bolSimulation = FALSE) THEN
+	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetected));
+ELSE
+	//simulation of global IO
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="StateMachine" Id="{5c20de26-01e9-4464-bd05-2f21273be419}">
+      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.StateMachine();
+
+// main statemachine of base controller
+CASE me.StateMachine.intState OF
+	cSTA_ROTATEBusy: 
+        THIS^.sta_ROTATEBusy();
+    cSTA_ROTATE: 
+        THIS^.sta_ROTATE();
+	cSTA_RETRACTBusy: 
+        THIS^.sta_RETRACTBusy();
+    cSTA_RETRACT: 
+        THIS^.sta_RETRACT();
+    cSTA_EJECTBusy:				// Eject 
+        THIS^.sta_EJECTBusy();
+    cSTA_EJECT: 
+        THIS^.sta_EJECT();
+	cSTA_RUNBusy: 
+        THIS^.sta_RUNBusy();	// Auto (Wait - Rotate - Eject - Retract)
+    cSTA_RUN: 
+        THIS^.sta_RUN();
+	cSTA_STOPBusy: 				// Rotate rests in his Position, Ejector in Retract Position
+        THIS^.sta_STOPBusy();
+    cSTA_STOP: 
+        THIS^.sta_STOP();
+		
+END_CASE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_OFFBusy" Id="{66438238-6d7d-4718-a8ce-677a732faa2d}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -568,29 +583,26 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 // Entry action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-				
+		
 	END_IF
 
 
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
 		
-		// Cyclicle action
-		
+		// switch off?
+		// SIf.Out.bolEject.intern := FALSE;	// Eject Cylinder Valve
 		
 		// State Change Condition
-		IF (TRUE) THEN		// Stop after every cycle -> cSTA_DONE
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		ELSIF (me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext :=  cSTA_STOPBusy;	
+		IF (FALSE) THEN
+			;
+		ELSIF (TRUE) THEN
+			me.StateMachine.intStateNext := cSTA_OFF;
 		END_IF
 	END_IF
+
+
 
 
 //--------------------------------------------------------------------------------------
@@ -600,15 +612,8 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="getCtrlSIf" Id="{1b617f7b-a794-4338-92da-3e6a3f0e465f}">
-      <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_HRU
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_ROTATEBusy" Id="{29398fc9-21df-48af-abd1-bb4882462baf}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_ROTATEBusy : BOOL
+    <Method Name="sta_STOP" Id="{6858f917-2fab-4582-a04f-9a9509e1f096}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_STOP : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -617,27 +622,28 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
 		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
 		
-		SIf.Out.bolRotate.intern := NOT SIf.Out.bolRotate.intern;	// Rotate in other direction
-		
 	END_IF
 
 
 //--------------------------------------------------------------------------------------
 // Cyclic action
 	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
+		
+		;
+		
 		
 		// State Change Condition
-		IF (me.StateMachine.udiTimeInState_ms>SIf.Par.udiRotateTime_ms) THEN
-			me.StateMachine.intStateNext :=  cSTA_ROTATE;
-		ELSIF(me.intCmd=cCMD_OFF) THEN
-			me.StateMachine.intStateNext := cSTA_OFFBusy;
-		ELSIF(me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		IF (me.intCmd=cCMD_OFF) THEN
+			// sensor retract always on cylinder
+			me.StateMachine.intStateNext :=  cSTA_OFFBusy;
+		ELSIF (me.intCmd=cCMD_EJECT) THEN 
+			me.StateMachine.intStateNext := cSTA_EJECTBusy;
+		ELSIF(me.intCmd=cCMD_RETRACT) THEN
+			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
+		ELSIF(me.intCmd=cCMD_ROTATE) THEN
+			me.StateMachine.intStateNext := cSTA_ROTATEBusy;
+		ELSIF (me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
 		END_IF
 	END_IF
 
@@ -647,7 +653,6 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 //--------------------------------------------------------------------------------------
 // Exit action
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		//SIf.Cur.udiMoveTimeRetract := me.StateMachine.udiTimeInState_ms;
 		;
 	END_IF]]></ST>
       </Implementation>
@@ -677,6 +682,52 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 			;
 		ELSIF (TRUE) THEN
 			me.StateMachine.intStateNext := cSTA_STOP;
+		END_IF
+	END_IF
+
+
+
+
+//--------------------------------------------------------------------------------------
+// Exit action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
+		;
+	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="sta_ROTATE" Id="{ae137dec-2217-4c39-8664-d4bc46bfb94a}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_ROTATE : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// state implemetation
+//--------------------------------------------------------------------------------------
+// Entry action
+	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
+		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
+
+	END_IF
+
+
+//--------------------------------------------------------------------------------------
+// Cyclic action
+	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
+
+		// Simulation
+		IF (CIf.SwCfg.bolSimulation) THEN
+			;
+		END_IF
+		
+		
+		IF(me.intCmd=cCMD_OFF) THEN
+			me.StateMachine.intStateNext := cSTA_OFFBusy;
+		ELSIF(me.intCmd=cCMD_STOP) THEN
+			me.StateMachine.intStateNext := cSTA_STOPBusy;
+		ELSIF(me.intCmd=HRU_CmdState.cCMD_EJECT) THEN
+			me.StateMachine.intStateNext := cSTA_EJECTBusy;
+		ELSIF(me.intCmd=HRU_CmdState.cCMD_RETRACT) THEN
+			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
+		ELSIF(me.intCmd=cCMD_RUN) THEN
+			me.StateMachine.intStateNext := cSTA_RUNBusy;
 		END_IF
 	END_IF
 
@@ -734,92 +785,80 @@ SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <Method Name="sta_OFFBusy" Id="{66438238-6d7d-4718-a8ce-677a732faa2d}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_OFFBusy : BOOL
+    <Method Name="FB_init" Id="{d643d3ce-c3a3-4949-99ff-f9349508240f}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	///if TRUE, the retain variables are initialized (warm start / cold start)
+	bInitRetains: BOOL;
+	///if TRUE, the instance afterwards gets moved into the copy code (online change)
+	bInCopyCode: BOOL;
+END_VAR
+VAR
+	ii: UINT;
+END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-		
+        <ST><![CDATA[//------------------------------------------------------------------------------------------------------------------------
+// to manually change in new FUB implementation!!!
+// define valid commands for this controller
+FOR ii:= 0 TO (SIZEOF(CIf.Job.aCmdList)/SIZEOF(CIf.Job.aCmdList[0])-1) BY 1 DO
+	IF (CIf.Job.aCmdList[ii].intCmd=cCMD_INITIALIZED) THEN
+		// found first empty array element
+		EXIT;
 	END_IF
+END_FOR
+CIf.Job.aCmdList[ii].intCmd := cCMD_STOP;
+CIf.Job.aCmdList[ii].strName := 'Stop'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RETRACT;
+CIf.Job.aCmdList[ii].strName := 'Retract';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_EJECT; // for test simulation single answer
+CIf.Job.aCmdList[ii].strName := 'EJECT';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_ROTATE; //  MRU 18.09.2013: New command rotate
+CIf.Job.aCmdList[ii].strName := 'Rotate'; 
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
+ii := ii +1;
+CIf.Job.aCmdList[ii].intCmd := cCMD_RUN; // for test simulation single answer
+CIf.Job.aCmdList[ii].strName := 'RUN';
+CIf.Job.aCmdList[ii].bolAvailable := TRUE;
 
+// set name of class/typ
+CIf.Info.strType := 'FB_HRU';
 
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-		
-		// switch off?
-		// SIf.Out.bolEject.intern := FALSE;	// Eject Cylinder Valve
-		
-		// State Change Condition
-		IF (FALSE) THEN
-			;
-		ELSIF (TRUE) THEN
-			me.StateMachine.intStateNext := cSTA_OFF;
-		END_IF
-	END_IF
+// set alarm class
+SIf.Alm[1].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[1].strText := 'sensor hangerDetected always on'; 
+SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[2].strText := 'sensor hangerDetected always on';
+SIf.Alm[3].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[3].strText := 'sensor hangerDetected always on';
+SIf.Alm[4].eAlmClass := E_AlmClass.STOP;
+SIf.Alm[4].strText := 'Expected Hanger not in Rotation Unit';
 
+//*******************************************************************************
+// initial values
+//*******************************************************************************
 
+// software configuration
+CIf.SwCfg.bolExist := TRUE;
+CIf.SwCfg.bolSimulation := FALSE;
 
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
+// parmeter
+SIf.Par.udiEjectTime_ms := 1000;			// No sensor, work with time
+SIf.Par.udiRetractTime_ms := 1000;			// No sensor, work with time
+SIf.Par.udiRotateTime_ms := 2000;			// No sensor, work with time
+SIf.Par.udiWaitForRotate_ms := 4000;		// No sensor, work with time
+SIf.Par.udiSimNextHangerTime_ms := 5000;	// For simulation
+SIf.Par.udiTimeOutHRU_Hanger_ms := 10000;	// Time out no hanger in rotation unit]]></ST>
       </Implementation>
     </Method>
-    <Method Name="IoOutBridge" Id="{1a8b54f3-45d9-4433-8efa-9df953e7be19}">
-      <Declaration><![CDATA[METHOD PROTECTED IoOutBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolEject));
-	setOutBol(CIf.Job.bolIoForce ,ADR(SIf.Out.bolRotate));
-	
-	THIS^.Out_bolEject := SIf.Out.bolEject.map;
-	THIS^.Out_bolRotate := SIf.Out.bolRotate.map;
-END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="StateMachine" Id="{5c20de26-01e9-4464-bd05-2f21273be419}">
-      <Declaration><![CDATA[METHOD PROTECTED StateMachine : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.StateMachine();
-
-// main statemachine of base controller
-CASE me.StateMachine.intState OF
-	cSTA_ROTATEBusy: 
-        THIS^.sta_ROTATEBusy();
-    cSTA_ROTATE: 
-        THIS^.sta_ROTATE();
-	cSTA_RETRACTBusy: 
-        THIS^.sta_RETRACTBusy();
-    cSTA_RETRACT: 
-        THIS^.sta_RETRACT();
-    cSTA_EJECTBusy:				// Eject 
-        THIS^.sta_EJECTBusy();
-    cSTA_EJECT: 
-        THIS^.sta_EJECT();
-	cSTA_RUNBusy: 
-        THIS^.sta_RUNBusy();	// Auto (Wait - Rotate - Eject - Retract)
-    cSTA_RUN: 
-        THIS^.sta_RUN();
-	cSTA_STOPBusy: 				// Rotate rests in his Position, Ejector in Retract Position
-        THIS^.sta_STOPBusy();
-    cSTA_STOP: 
-        THIS^.sta_STOP();
-		
-END_CASE;]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_EJECTBusy" Id="{4877cc40-a1b7-4684-af1e-67b223137e67}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_EJECTBusy : BOOL
+    <Method Name="sta_RETRACT" Id="{d8ab7be5-af2e-45de-a83b-eaced7a8b732}">
+      <Declaration><![CDATA[METHOD PROTECTED sta_RETRACT : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[// state implemetation
@@ -840,108 +879,13 @@ END_CASE;]]></ST>
 			;
 		END_IF
 		
-		//no change action
-		SIf.Out.bolEject.intern := TRUE;	// Eject Cylinder Valve
-		
-		
 		// State Change Condition
-		IF (me.StateMachine.udiTimeInState_ms>SIf.Par.udiEjectTime_ms) THEN
-			IF (SIf.In.bolHangerDetected.intern) THEN
-				// sensor Hanger detected always on
-				pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
-				me.StateMachine.intStateNext :=  cSTA_ERROR;
-			ELSE
-				// Hanger ejected
-				me.StateMachine.intStateNext := cSTA_EJECT;	
-			END_IF
-		ELSIF(me.intCmd=cCMD_STOP) THEN
-			me.StateMachine.intStateNext := cSTA_STOPBusy;
-		ELSIF(me.intCmd=HRU_CmdState.cCMD_RETRACT) THEN
-			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
-		END_IF
-	END_IF
-
-
-
-
-//--------------------------------------------------------------------------------------
-// Exit action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
-		;
-	END_IF]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="IoInBridge" Id="{593af27c-1a76-48d5-b3a4-1932fa43020d}">
-      <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// digitale and analoge inputs read from hardware or forcing
-SIf.In.bolHangerDetected .map := THIS^.In_bolHangerDetected;
-
-IF (CIf.SwCfg.bolSimulation = FALSE) THEN
-	getInBol(CIf.Job.bolIoForce,ADR(SIf.In.bolHangerDetected));
-ELSE
-	//simulation of global IO
-END_IF
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="Always" Id="{107a1b23-5daf-4da3-b36f-d0e0914536ad}">
-      <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[SUPER^.Always();
-
-IF (me.StateMachine.intState<>cSTA_SINGLE_ANSWER) THEN
-	;
-END_IF
-
-
-// Always change actions in Base Library
-// ----------------------------------------------------------------------------------
-// overrule error always from base -> no EOFF State!! in EOFF go to OFF
-IF (me.StateMachine.intStateNext = cSTA_EOFFBusy) THEN
-	IF (me.StateMachine.intState=cSTA_OFF) THEN
-		me.StateMachine.intStateNext := cSTA_OFF;
-	ELSE // stay in OFF
-		me.StateMachine.intStateNext := cSTA_OFFBusy;
-	END_IF
-END_IF
-
-]]></ST>
-      </Implementation>
-    </Method>
-    <Method Name="sta_ROTATE" Id="{ae137dec-2217-4c39-8664-d4bc46bfb94a}">
-      <Declaration><![CDATA[METHOD PROTECTED sta_ROTATE : BOOL
-]]></Declaration>
-      <Implementation>
-        <ST><![CDATA[// state implemetation
-//--------------------------------------------------------------------------------------
-// Entry action
-	IF (me.StateMachine.intState<>me.StateMachine.intStateLastCycle) THEN
-		me.StateMachine.intStateLastCycle := me.StateMachine.intState;
-
-	END_IF
-
-
-//--------------------------------------------------------------------------------------
-// Cyclic action
-	IF (me.StateMachine.intState=me.StateMachine.intStateLastCycle) THEN
-
-		// Simulation
-		IF (CIf.SwCfg.bolSimulation) THEN
-			;
-		END_IF
-		
-		
-		IF(me.intCmd=cCMD_OFF) THEN
-			me.StateMachine.intStateNext := cSTA_OFFBusy;
-		ELSIF(me.intCmd=cCMD_STOP) THEN
+		IF(me.intCmd=cCMD_STOP) THEN
 			me.StateMachine.intStateNext := cSTA_STOPBusy;
 		ELSIF(me.intCmd=HRU_CmdState.cCMD_EJECT) THEN
 			me.StateMachine.intStateNext := cSTA_EJECTBusy;
-		ELSIF(me.intCmd=HRU_CmdState.cCMD_RETRACT) THEN
-			me.StateMachine.intStateNext := cSTA_RETRACTBusy;
+		ELSIF(me.intCmd=HRU_CmdState.cCMD_ROTATE) THEN
+			me.StateMachine.intStateNext := cSTA_ROTATEBusy;
 		ELSIF(me.intCmd=cCMD_RUN) THEN
 			me.StateMachine.intStateNext := cSTA_RUNBusy;
 		END_IF
@@ -955,6 +899,72 @@ END_IF
 	IF (me.StateMachine.intState<>me.StateMachine.intStateNext) THEN
 		;
 	END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="getCmdState" Id="{f92c1110-dbbf-41b3-98a4-d1e3072092cf}">
+      <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
+VAR_INPUT
+	intCmdState: INT;
+	bolState: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[getCmdState := SUPER^.getCmdState(intCmdState:=intCmdState,bolState:=bolState); // get global/base defined cmds/states
+IF (getCmdState='') THEN // global not defined get local
+	// get string cmd/state string information in runtime
+	IF (bolState=FALSE) THEN
+		// cmd's
+		CASE intCmdState OF
+			cCMD_RETRACT: 
+				getCmdState := 'cCMD_RETRACT';
+			cCMD_EJECT: 
+				getCmdState := 'cCMD_EJECT';
+			cCMD_ROTATE: 
+				getCmdState := 'cCMD_ROTATE';
+			cCMD_RUN: 
+				getCmdState := 'cCMD_RUN';
+		END_CASE;
+	ELSE
+	
+	// states
+		CASE intCmdState OF
+			cSTA_RETRACTBusy: 
+				getCmdState := 'cSTA_RETRACTBusy';
+			cSTA_RETRACT: 
+				getCmdState := 'cSTA_RETRACT';
+			cSTA_EJECTBusy: 
+				getCmdState := 'cSTA_EJECTBusy';
+			cSTA_EJECT: 
+				getCmdState := 'cSTA_EJECT';
+			cSTA_ROTATEBusy: 
+				getCmdState := 'cSTA_ROTATEBusy';
+			cSTA_ROTATE: 
+				getCmdState := 'cSTA_ROTATE';
+			cSTA_RUNBusy: 
+				getCmdState := 'cSTA_RUNBusy';
+			cSTA_RUN: 
+				getCmdState := 'cSTA_RUN';
+				
+			// SUB states
+			cSTA_SUB_WAIT_FOR_JOB:
+				getCmdState := 'cSTA_SUB_WAIT_FOR_JOB';
+			cSTA_SUB_WAIT_WITH_HANGER:
+				getCmdState := 'cSTA_SUB_WAIT_WITH_HANGER';
+			cSTA_SUB_ROTATE:
+				getCmdState := 'cSTA_SUB_ROTATE';
+			cSTA_SUB_EJECT:
+				getCmdState := 'cSTA_SUB_EJECT';
+			cSTA_SUB_RETRACT:
+				getCmdState := 'cSTA_SUB_RETRACT';
+			cSTA_SUB_DONE:
+				getCmdState := 'cSTA_SUB_DONE';
+			cSTA_SUB_ERROR:
+				getCmdState := 'cSTA_SUB_ERROR';
+
+		END_CASE;
+	END_IF
+END_IF
+]]></ST>
       </Implementation>
     </Method>
     <ObjectProperties />
