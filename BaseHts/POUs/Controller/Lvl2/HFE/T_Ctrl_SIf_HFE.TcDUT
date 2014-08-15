@@ -9,7 +9,7 @@ STRUCT
 	///current values
 	Cur: T_Ctrl_SIf_HFE_Cur;
 	///alarm number used in this controller
-	Alm: ARRAY[1..6] OF T_Ctrl_Alm;
+	Alm: ARRAY[1..2] OF T_Ctrl_Alm;
 END_STRUCT
 END_TYPE
 ]]></Declaration>

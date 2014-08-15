@@ -336,6 +336,7 @@ END_CASE
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
 VAR
 	intNbOfLDS: INT;
+	intI: INT;
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -378,10 +379,25 @@ END_VAR
 				Refill(intNbOfLDS);
 			END_IF
 			IF (INT_TO_UINT(intNbOfLDS) = (SIf.Cfg.uintNbOfLDS-1)) THEN // Last station = End of SLB, no VLV there
-				IF (a_bolLDSNeedsHanger[intNbOfLDS]= TRUE) THEN
-					IF (pSLB_SIf^.Cur.bolHangerDetected = TRUE) THEN // Just if Hanger is at Last STB
-						pSLB_CIf^.Job.intACmd := SLB_CmdState.cCMD_RELEASE;	
-					END_IF
+
+				IF (SIf.Par.a_bolEnableJunction[intNbOfLDS] = FALSE) THEN 			// Last Station is unused
+					FOR intI := 0 TO UINT_TO_INT(SIf.Cfg.uintNbOfLDS-1) DO
+						IF (SIf.Par.a_bolEnableJunction[intNbOfLDS-intI] = TRUE) THEN	// Find last used Station
+							a_pMultiChildCIF[intNbOfLDS-intI]^.Job.intACmd:= Base_Elements.VLV_CmdState.cCMD_CLOSE;	// Close last Junction
+							EXIT;	// Last used Junction found, exit loop
+						ELSE															
+							IF (INT_TO_UINT(intI) = (SIf.Cfg.uintNbOfLDS-1)) THEN					// No Station is enabled
+								// Set Alarm: SIf.Alm[1].strText := 'No Station is enabled!'; 
+								pfbAlarmCtrl^.setAlarm(CIf.Info.intCtrlId,1,0,ADR(SIf.Alm),E_AlmState.RST,CIf.Job.eMe_ActivAlmClass);
+							END_IF
+						END_IF
+					END_FOR
+				ELSE	// Last Station is enabled -> Normal Work 
+					IF (a_bolLDSNeedsHanger[intNbOfLDS]= TRUE) THEN
+						IF (pSLB_SIf^.Cur.bolHangerDetected = TRUE) THEN // Just if Hanger is at Last STB
+							pSLB_CIf^.Job.intACmd := SLB_CmdState.cCMD_RELEASE;	
+						END_IF
+					END_IF					
 				END_IF
 			END_IF
 		END_FOR
@@ -459,8 +475,8 @@ CIf.Job.aCmdList[ii].bolAvailable := TRUE;
 CIf.Info.strType := 'FB_HFE'; 
 
 // set alarm class
-//SIf.Alm[1].eAlmClass := E_AlmClass.TSTOP;
-//SIf.Alm[1].strText := 'TLKV Motor does not move after timeout.'; 
+SIf.Alm[1].eAlmClass := E_AlmClass.INFO;
+SIf.Alm[1].strText := 'No Station is enabled!'; 
 //SIf.Alm[2].eAlmClass := E_AlmClass.STOP;
 //SIf.Alm[2].strText := 'Emergency button pressed.'; 
 
