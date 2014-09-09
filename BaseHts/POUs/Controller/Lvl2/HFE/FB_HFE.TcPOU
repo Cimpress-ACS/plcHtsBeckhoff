@@ -1,4 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.24">
   <POU Name="FB_HFE" Id="{86893e81-719c-4738-b9ce-9fed71641f32}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HFE EXTENDS FB_CtrlBase
 VAR_INPUT
@@ -383,7 +384,7 @@ END_VAR
 				IF (SIf.Par.a_bolEnableJunction[intNbOfLDS] = FALSE) THEN 			// Last Station is unused
 					FOR intI := 0 TO UINT_TO_INT(SIf.Cfg.uintNbOfLDS-1) DO
 						IF (SIf.Par.a_bolEnableJunction[intNbOfLDS-intI] = TRUE) THEN	// Find last used Station
-							a_pMultiChildCIF[intNbOfLDS-intI]^.Job.intACmd:= Base_Elements.VLV_CmdState.cCMD_CLOSE;	// Close last Junction
+							a_pMultiChildCIF[intNbOfLDS-intI]^.Job.intACmd:= Base_Elements.VLV_CmdState.cCMD_OPEN;	// Close last Junction
 							EXIT;	// Last used Junction found, exit loop
 						ELSE															
 							IF (INT_TO_UINT(intI) = (SIf.Cfg.uintNbOfLDS-1)) THEN					// No Station is enabled
