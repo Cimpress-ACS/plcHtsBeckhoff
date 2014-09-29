@@ -1,4 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
   <POU Name="FB_JUN" Id="{e1c9ade4-8cb4-423e-ac22-126fa918e3fa}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_JUN EXTENDS FB_CtrlBase
 VAR_INPUT
@@ -83,20 +84,7 @@ Version		Date			Author		Comment
 ___________________________________________________________________________________________________*)
 
 
-IF (me.bolActivate) THEN // cyclic call enabled
-	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
-		CtrlInit();
-		CIf.Info.bolInitDone := TRUE;
-	ELSE
-		CycleStartDuty();
-	
-		Always();
-		
-		StateMachine();
-		
-		CycleEndDuty();
-	END_IF
-END_IF;
+SUPER^();
 ]]></ST>
     </Implementation>
     <Method Name="sta_OFFBusy" Id="{07b18251-8134-4bda-b2b7-8202710ac517}">

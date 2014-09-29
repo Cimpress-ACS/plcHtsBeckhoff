@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.24">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
   <POU Name="FB_HFE" Id="{86893e81-719c-4738-b9ce-9fed71641f32}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HFE EXTENDS FB_CtrlBase
 VAR_INPUT
@@ -62,20 +62,11 @@ ________________________________________________________________________________
 
 // check if child pointer valid
 IF (me.bolActivate) AND (p_fbTlpDrive<>0)  AND (THIS^.checkChildPointer()) AND (p_fbSLB<>0) THEN // cyclic call enabled
-	
-	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
-		CtrlInit();
-		CIf.Info.bolInitDone := TRUE;
-	ELSE
-		CycleStartDuty();
-	
-		Always();
-		
-		StateMachine();
-		
-		CycleEndDuty();
-	END_IF
-	
+	FirstCycleInit();
+	CycleStartDuty();
+	Always();
+	StateMachine();
+	CycleEndDuty();
 END_IF;
 
 ]]></ST>
@@ -420,7 +411,7 @@ END_VAR
       </Implementation>
     </Method>
     <Method Name="CtrlInit" Id="{e7c5b937-9ee0-4d79-b978-8457f8d90220}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC CtrlInit : BOOL
 VAR
 	ii: INT;
 END_VAR

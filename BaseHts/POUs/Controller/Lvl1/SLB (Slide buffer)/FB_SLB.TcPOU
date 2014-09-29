@@ -1,4 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
   <POU Name="FB_SLB" Id="{a8d184de-0031-4d57-b755-906e09d6b4da}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_SLB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR
@@ -74,18 +75,11 @@ ________________________________________________________________________________
 
 
 IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
-	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
-		CtrlInit();
-		CIf.Info.bolInitDone := TRUE;
-	ELSE
-		CycleStartDuty();
-	
-		Always();
-		
-		StateMachine();
-		
-		CycleEndDuty();
-	END_IF
+	FirstCycleInit();
+	CycleStartDuty();
+	Always();
+	StateMachine();
+	CycleEndDuty();
 END_IF;
 
 ]]></ST>
@@ -668,7 +662,7 @@ CalcMaxCapacity:= dinSumMaxCapacity;]]></ST>
       </Implementation>
     </Method>
     <Method Name="CtrlInit" Id="{80f434e8-26ce-4a65-95e8-ebcc6e3c0c62}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC CtrlInit : BOOL
 VAR
 	ii: INT;
 END_VAR

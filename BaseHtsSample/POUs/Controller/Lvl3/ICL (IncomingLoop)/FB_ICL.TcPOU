@@ -1,4 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
   <POU Name="FB_ICL" Id="{02a250b4-4676-41ca-9fdd-76c07d8e8914}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_ICL EXTENDS FB_CtrlModule
 VAR
@@ -61,23 +62,16 @@ ________________________________________________________________________________
 
 
 IF (me.bolActivate) AND (SUPER^.checkValidPointer() AND (p_fbDPJ_4<>0) AND (p_fbDPJ_9<>0) AND (p_fbMER_8<>0) AND (p_fbCHD_4<>0) AND (p_fbTLP_4<>0) AND (p_fbTLP_10<>0) AND (p_fbTLK_9<>0)) THEN // cyclic call enabled
-	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
-		CtrlInit();
-		CIf.Info.bolInitDone := TRUE;
-	ELSE
-		CycleStartDuty();
-	
-		Always();
-		
-		StateMachine();
-		
-		CycleEndDuty();
-	END_IF
+	FirstCycleInit();
+	CycleStartDuty();
+	Always();
+	StateMachine();
+	CycleEndDuty();
 END_IF;
 ]]></ST>
     </Implementation>
     <Method Name="CtrlInit" Id="{3492776b-3f49-40a6-ac0f-02e7683c14ba}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC CtrlInit : BOOL
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[SUPER^.CtrlInit();

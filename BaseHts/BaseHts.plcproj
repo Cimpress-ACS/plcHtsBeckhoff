@@ -15,9 +15,10 @@
     <LibraryReferences>{5700a827-0754-4a41-8cd1-aa5d95c0cdf8}</LibraryReferences>
     <Company>Vistaprint</Company>
     <Title>Base_Hts</Title>
-    <ProjectVersion>0.0.0.50</ProjectVersion>
+    <ProjectVersion>0.0.0.51</ProjectVersion>
     <Released>True</Released>
-    <Description>0.0.0.50 - HFE: Bug fixed
+    <Description>0.0.0.51 - PC: Added new Base Libraries
+0.0.0.50 - HFE: Bug fixed
 
 0.0.0.49 - HFE: desable of last station
 
@@ -602,10 +603,10 @@ DPJ STOPBusy reworked, HRU Errors reworked, DPJ new Errors 12 and 13 added
     <Folder Include="Version\" />
   </ItemGroup>
   <ItemGroup>
-    <LibraryReference Include="Base_Elements,0.0.1.18,Vistaprint">
+    <LibraryReference Include="Base_Elements,0.0.1.21,Vistaprint">
       <Namespace>Base_Elements</Namespace>
     </LibraryReference>
-    <LibraryReference Include="Base_PLC,0.3.4.8,Vistaprint">
+    <LibraryReference Include="Base_PLC,0.3.4.9,Vistaprint">
       <Namespace>Base_PLC</Namespace>
     </LibraryReference>
     <LibraryReference Include="Tc2_Standard,3.3.0.0,Beckhoff Automation GmbH">

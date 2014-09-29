@@ -1,4 +1,5 @@
-﻿<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.23">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
   <POU Name="FB_MTR" Id="{78a971ef-395c-47a6-99a8-13a1a416d9af}">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MTR EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
@@ -63,18 +64,11 @@ ________________________________________________________________________________
 
 
 IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
-	IF (CIf.Info.bolInitDone=FALSE) THEN // first cycle -> init
-		CtrlInit();
-		CIf.Info.bolInitDone := TRUE;
-	ELSE
-		CycleStartDuty();
-	
-		Always();
-		
-		StateMachine();
-		
-		CycleEndDuty();
-	END_IF
+	FirstCycleInit();
+	CycleStartDuty();
+	Always();
+	StateMachine();
+	CycleEndDuty();
 END_IF;
 
 ]]></ST>
@@ -836,7 +830,7 @@ END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="CtrlInit" Id="{f48e1c2e-66ed-41a5-90a1-a4e9e6aadfe2}">
-      <Declaration><![CDATA[METHOD PROTECTED CtrlInit : BOOL
+      <Declaration><![CDATA[METHOD PUBLIC CtrlInit : BOOL
 VAR
 	ii: INT;
 END_VAR
