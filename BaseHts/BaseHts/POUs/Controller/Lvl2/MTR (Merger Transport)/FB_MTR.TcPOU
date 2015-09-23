@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_MTR" Id="{78a971ef-395c-47a6-99a8-13a1a416d9af}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_MTR" Id="{78a971ef-395c-47a6-99a8-13a1a416d9af}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MTR EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
 	/// Sensor hanger detected
@@ -39,8 +39,7 @@ VAR
 	dinSimSectionLength_um: DINT := 510000;
 	/// Simulated way to trigger section start/end
 	dinSimWayTrigSection_um: DINT;
-END_VAR
-]]></Declaration>
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[(*__________________________________________________________________________________________________
 ¦	
@@ -53,25 +52,9 @@ END_VAR
 Function desription:
 This controller will be used in combination with childs of type STB to merge hangers
 from different slides into a transport system of type TLK.
-
-History:
-Version		Date			Author		Comment
----------------------------------------------------------------------------------------------------
-0.00.1		25.04.2014		AVME/DSC	Start history.				  
-0.00.2		14.07.2014		AVME/MRU	Bug fixed in sta_RUN (dinCalcTrigNegPosOffset_um)
-								
 __________________________________________________________________________________________________*)
 
-
-IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="CalcSumOfItems" Id="{040f66b4-3a90-4549-902a-0a74ac21d8c4}">
       <Declaration><![CDATA[METHOD PROTECTED CalcSumOfItems : DINT
@@ -162,13 +145,13 @@ END_IF]]></ST>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
     </Method>
-    <Property Name="NumOfHangers" Id="{70a9e0ab-674f-415e-8b74-54adf7785f2d}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+    <Property Name="NumOfItems" Id="{70a9e0ab-674f-415e-8b74-54adf7785f2d}">
+      <Declaration><![CDATA[PROPERTY NumOfItems : DINT
 ]]></Declaration>
       <Get Name="Get" Id="{81a61f84-baf4-4e04-b2a8-c612637d44e5}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinCurrentItemCount;]]></ST>
+          <ST><![CDATA[NumOfItems:= SIf.Cur.dinCurrentItemCount;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -856,6 +839,5 @@ END_FOR
 dinPositionOfLastLine_um:= a_pLineChildSIF[usiNumOfLines-1]^.Par.dinPositionOfSlide_um;]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

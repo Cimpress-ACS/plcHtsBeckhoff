@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_HPS" Id="{e8ce3a42-d33f-4dad-92e2-86f764b9eca8}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_HPS" Id="{e8ce3a42-d33f-4dad-92e2-86f764b9eca8}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HPS EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// Sensor Counter into the system
@@ -146,15 +146,7 @@ Version		Date			Author		Comment
 0.00.7		11.02.2014		AVME/DSC	Inserted ADS channel for shirt request send from heatpress
 ___________________________________________________________________________________________________*)
 
-
-IF (me.bolActivate) AND (p_fbSLB_S<>0) AND (p_fbSLB_T<>0) AND (p_fbHRU<>0) AND (THIS^.checkChildPointer()) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="IoInBridge" Id="{1809088e-e2d6-4dcb-b739-94b2af8ddf81}">
       <Declaration><![CDATA[METHOD PROTECTED IoInBridge : BOOL
@@ -1308,6 +1300,5 @@ pSEP_SIF := p_fbSEP^.getCtrlSIf();
 ]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

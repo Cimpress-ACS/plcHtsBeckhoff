@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_DPJ" Id="{9fd8bc20-453e-4a28-a32f-179bd98b3670}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_DPJ" Id="{9fd8bc20-453e-4a28-a32f-179bd98b3670}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_DPJ EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// Sensor Counter into the system
@@ -137,15 +137,7 @@ Version		Date			Author		Comment
 										
 ___________________________________________________________________________________________________*)
 
-
-IF (me.bolActivate)  AND (p_fbRFW<>0) AND (THIS^.checkChildPointer()) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="FB_init" Id="{106a959e-98af-4d2e-86b6-d36c41553583}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -1756,6 +1748,5 @@ END_CASE;]]></ST>
         <ST><![CDATA[getCtrlSIf := ADR(SIf);]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

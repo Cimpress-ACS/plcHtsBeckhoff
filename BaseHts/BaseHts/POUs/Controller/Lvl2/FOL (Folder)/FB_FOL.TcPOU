@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_FOL" Id="{9ef6989b-5973-41e8-8337-bcc97f251390}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_FOL" Id="{9ef6989b-5973-41e8-8337-bcc97f251390}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_FOL EXTENDS FB_CtrlBase
 VAR_INPUT
 	p_fbSLB: POINTER TO FB_SLB;
@@ -50,16 +50,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-
-// check if child pointer valid
-IF ((me.bolActivate) AND (p_fbSLB<>0) AND (p_fbRFW<>0) AND (p_fbTLS<>0)) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="sta_RUN" Id="{0e191e33-b779-482e-8aab-e09aa321aff8}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUN : BOOL
@@ -443,6 +434,5 @@ pTLS_CIf := THIS^.AddChild(p_fbTLS^);
 pSLB_SIF := p_fbSLB^.getCtrlSIf();]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

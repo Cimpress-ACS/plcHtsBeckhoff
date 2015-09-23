@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_HFE" Id="{86893e81-719c-4738-b9ce-9fed71641f32}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_HFE" Id="{86893e81-719c-4738-b9ce-9fed71641f32}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HFE EXTENDS FB_CtrlBase
 VAR_INPUT
 	a_bolLDSNeedsHanger: ARRAY[0..cuintMaxStation] OF BOOL;
@@ -58,18 +58,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-
-
-// check if child pointer valid
-IF (me.bolActivate) AND (p_fbTlpDrive<>0)  AND (THIS^.checkChildPointer()) AND (p_fbSLB<>0) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="checkChildPointer" Id="{2628831c-e252-490c-9419-ae88f6f74ad5}">
       <Declaration><![CDATA[METHOD PROTECTED checkChildPointer : BOOL
@@ -495,6 +484,5 @@ SIf.Cfg.uintNbOfLDS := 1;
 //SIf.Cur.dinCounter := 0;]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_HRU" Id="{e7da98a9-648f-45a2-b6cd-3c8fb8ea4a27}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_HRU" Id="{e7da98a9-648f-45a2-b6cd-3c8fb8ea4a27}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_HRU EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// Sensor input
@@ -51,9 +51,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-
-SUPER^();
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="Always" Id="{107a1b23-5daf-4da3-b36f-d0e0914536ad}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -955,6 +953,5 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

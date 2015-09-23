@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_ICL" Id="{02a250b4-4676-41ca-9fdd-76c07d8e8914}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_ICL" Id="{02a250b4-4676-41ca-9fdd-76c07d8e8914}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_ICL EXTENDS FB_CtrlModule
 VAR
 	/// Specific interface struct for public access
@@ -60,15 +60,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-
-IF (me.bolActivate) AND (SUPER^.checkValidPointer() AND (p_fbDPJ_4<>0) AND (p_fbDPJ_9<>0) AND (p_fbMER_8<>0) AND (p_fbCHD_4<>0) AND (p_fbTLP_4<>0) AND (p_fbTLP_10<>0) AND (p_fbTLK_9<>0)) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="CtrlInit" Id="{3492776b-3f49-40a6-ac0f-02e7683c14ba}">
       <Declaration><![CDATA[METHOD PUBLIC CtrlInit : BOOL
@@ -400,6 +392,5 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

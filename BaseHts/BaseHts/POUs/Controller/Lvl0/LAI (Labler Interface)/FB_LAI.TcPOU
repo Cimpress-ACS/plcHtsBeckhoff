@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_LAI" Id="{a3444747-6136-4ac4-a525-e1307f42dcf1}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_LAI" Id="{a3444747-6136-4ac4-a525-e1307f42dcf1}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_LAI EXTENDS FB_CtrlBase
 VAR_INPUT
 	In_bolReady: BOOL;
@@ -60,9 +60,7 @@ Version		Date			Author		Comment
 0.00.6		04.12.2013		AVME/DSC	Some changes for Simulation
 ___________________________________________________________________________________________________*)
 
-
-SUPER^();
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="getCtrlSIf" Id="{1309b030-cb95-4905-9e01-b3d33268a531}">
       <Declaration><![CDATA[METHOD getCtrlSIf : POINTER TO T_Ctrl_SIf_LAI
@@ -533,6 +531,5 @@ END_IF]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

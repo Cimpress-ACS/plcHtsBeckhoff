@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_MER" Id="{655345de-45fc-4d15-8a2c-bd4733934af8}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_MER" Id="{655345de-45fc-4d15-8a2c-bd4733934af8}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_MER EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
 	/// Sensors for jam detection
@@ -90,19 +90,9 @@ Version		Date			Author		Comment
 0.00.13		22.01.2014		AVME/MRU	udiJamReleaseDelayTime_ms added; Timing "Check jam detection" reworked
 0.00.14		30.04.2014		AVME/DSC    Deleted complete handling for mode "MergeIntoTrp" and implemented function into new controller FB_MTR.
 0.00.15		25.06.2014		AVME/MRU	Par.a_bolEnableHangerRelease added for stopping a line with LineControl
-									
 __________________________________________________________________________________________________*)
 
-
-IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="sta_RUNBusy" Id="{0fcb1e67-1be0-47bb-8f51-da3956adeb51}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNBusy : BOOL
@@ -965,13 +955,13 @@ IF (CIf.SwCfg.bolSimulation = FALSE) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <Property Name="NumOfHangers" Id="{e1824ca9-c1e8-4685-933c-b3b6047f1929}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+    <Property Name="NumOfItems" Id="{e1824ca9-c1e8-4685-933c-b3b6047f1929}">
+      <Declaration><![CDATA[PROPERTY NumOfItems : DINT
 ]]></Declaration>
       <Get Name="Get" Id="{3fd94293-1723-4411-9081-8e4d8ecb48fe}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinCurrentItemCount;]]></ST>
+          <ST><![CDATA[NumOfItems:= SIf.Cur.dinCurrentItemCount;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -1023,6 +1013,5 @@ END_FOR
 CalcSumOfItems:= dinSumOfItems;]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

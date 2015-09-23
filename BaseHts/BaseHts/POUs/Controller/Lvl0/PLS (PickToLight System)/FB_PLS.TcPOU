@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_PLS" Id="{dc3a5d64-991d-4cf2-949e-52421f174485}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_PLS" Id="{dc3a5d64-991d-4cf2-949e-52421f174485}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_PLS EXTENDS FB_CtrlBase
 VAR_OUTPUT
 	Out_Lights: ARRAY[0..MAX_SKUS] OF BYTE;
@@ -36,9 +36,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-
-SUPER^();
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="Always" Id="{101d81bf-485c-437d-a0d2-4f699043b1f1}">
       <Declaration><![CDATA[METHOD PROTECTED Always : BOOL
@@ -369,6 +367,5 @@ CIf.SwCfg.bolSimulation := FALSE;
 SIf.Cur.dinCounter := 0;]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <GVL Name="COS_CmdState" Id="{7e7d4697-063c-4b3c-acb2-bd987a74d87c}">
+    <Declaration><![CDATA[VAR_GLOBAL CONSTANT
+	///ctrl commands definitions
+	///specific commands >200 - every command has to be a even number
+	cCMD_RELEASE: INT := 306;
+	/// ctrl specific states definitions
+	cSTA_RELEASEBusy: INT := 305;
+	cSTA_RELEASE: INT := cCMD_RELEASE;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

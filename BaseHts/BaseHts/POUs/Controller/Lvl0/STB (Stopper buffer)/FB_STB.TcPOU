@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_STB" Id="{2c0e0df1-8c09-41f8-a0bd-c96c8ecb57b7}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_STB" Id="{2c0e0df1-8c09-41f8-a0bd-c96c8ecb57b7}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_STB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR_INPUT
 	/// Sensor hanger detected
@@ -116,9 +116,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________*)
 
-
-SUPER^();
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Property Name="BufferFull" Id="{02284bae-b0f7-4a3a-834f-eefb1f826051}">
       <Declaration><![CDATA[PROPERTY BufferFull : BOOL
@@ -879,13 +877,13 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="NumOfHangers" Id="{b24fd635-1ab3-48c6-a9c5-bd58c8c8acc3}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+    <Property Name="NumOfItems" Id="{b24fd635-1ab3-48c6-a9c5-bd58c8c8acc3}">
+      <Declaration><![CDATA[PROPERTY NumOfItems : DINT
 ]]></Declaration>
       <Get Name="Get" Id="{4bed2c26-83de-4352-b891-1fd833c50d9a}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
+          <ST><![CDATA[NumOfItems:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -1373,6 +1371,5 @@ IF (((me.Alarm.eActivAlmClass=E_AlmClass.EOFF) OR (me.Alarm.eActivAlmClass=E_Alm
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_SLB" Id="{a8d184de-0031-4d57-b755-906e09d6b4da}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_SLB" Id="{a8d184de-0031-4d57-b755-906e09d6b4da}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_SLB EXTENDS FB_CtrlBase IMPLEMENTS IBuffer
 VAR
 	/// Specific interface struct for public access
@@ -73,16 +73,7 @@ Version		Date			Author		Comment
 										
 __________________________________________________________________________________________________*)
 
-
-IF ((me.bolActivate) AND (THIS^.checkChildValid())) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="RefillZones" Id="{0264125e-745d-4440-aecd-3f3663f5c29a}">
       <Declaration><![CDATA[METHOD RefillZones
@@ -233,13 +224,13 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <Property Name="NumOfHangers" Id="{0f3cb782-bd9d-4f2b-b176-7d0728a76bab}">
-      <Declaration><![CDATA[PROPERTY NumOfHangers : DINT
+    <Property Name="NumOfItems" Id="{0f3cb782-bd9d-4f2b-b176-7d0728a76bab}">
+      <Declaration><![CDATA[PROPERTY NumOfItems : DINT
 ]]></Declaration>
       <Get Name="Get" Id="{26bc69bc-d765-4bc9-98c5-cb2b9118f79d}">
         <Declaration><![CDATA[]]></Declaration>
         <Implementation>
-          <ST><![CDATA[NumOfHangers:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
+          <ST><![CDATA[NumOfItems:= SIf.Cur.dinNumOfHangersInBuffer;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -1209,6 +1200,5 @@ IF (usiNumOfFullZones = usiNumOfBufferZones) THEN
 END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

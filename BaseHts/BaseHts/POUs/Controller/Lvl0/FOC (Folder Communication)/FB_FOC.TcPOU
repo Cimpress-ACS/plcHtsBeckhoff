@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_FOC" Id="{13298bb1-5c26-4643-81f4-0ef34493f2e9}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_FOC" Id="{13298bb1-5c26-4643-81f4-0ef34493f2e9}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_FOC EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// 0=No Error
@@ -52,9 +52,7 @@ Version		Date			Author		Comment
 0.00.4		12.12.2013		VP/RE		Implemented RELEASE_SHIRTS. Implemented safe stack building (RFID and DataReadReady signal must given within a time window).
 ___________________________________________________________________________________________________*)
 
-
-SUPER^();
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="sta_RUNbusy" Id="{281a748f-8f64-416f-80c0-88769ddfaa57}">
       <Declaration><![CDATA[METHOD PROTECTED sta_RUNbusy : BOOL
@@ -591,6 +589,5 @@ SIf.Par.udiWaitTimeBeforeRelease_ms := 16000;]]></ST>
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>

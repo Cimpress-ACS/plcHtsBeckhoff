@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_CHD" Id="{83204994-a22f-49ea-a6fa-4001bfaa8fc8}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_CHD" Id="{83204994-a22f-49ea-a6fa-4001bfaa8fc8}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_CHD EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// Sensor Slide full
@@ -119,7 +119,7 @@ Version		Date			Author		Comment
 
 ___________________________________________________________________________________________________*)
 
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="FB_init" Id="{1979fe4e-e75f-4e60-8094-41baa764e45c}">
       <Declaration><![CDATA[METHOD FB_init : BOOL
@@ -1015,6 +1015,5 @@ END_IF
 ]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>
