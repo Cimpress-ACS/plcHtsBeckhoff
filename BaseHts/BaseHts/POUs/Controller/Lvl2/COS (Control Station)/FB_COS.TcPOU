@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.25">
-  <POU Name="FB_COS" Id="{e4d8f4f1-e925-490d-92bc-902b2143a388}">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="FB_COS" Id="{e4d8f4f1-e925-490d-92bc-902b2143a388}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_COS EXTENDS FB_CtrlBase
 VAR_INPUT
 	/// push button next shirt
@@ -63,15 +63,7 @@ Version		Date			Author		Comment
 						
 ___________________________________________________________________________________________________*)
 
-
-IF ((me.bolActivate) AND (p_fbSLB<>0) AND (p_fbRFW<>0) AND (p_fbSSB<>0) AND (p_fbTLS<>0)) THEN // cyclic call enabled
-	FirstCycleInit();
-	CycleStartDuty();
-	Always();
-	StateMachine();
-	CycleEndDuty();
-END_IF;
-]]></ST>
+SUPER^();]]></ST>
     </Implementation>
     <Method Name="getCmdState" Id="{00e638c1-9f1d-49a5-b16f-8b594948c420}">
       <Declaration><![CDATA[METHOD PROTECTED getCmdState : STRING
@@ -567,6 +559,5 @@ END_IF
 	END_IF]]></ST>
       </Implementation>
     </Method>
-    <ObjectProperties />
   </POU>
 </TcPlcObject>
